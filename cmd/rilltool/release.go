@@ -55,12 +55,28 @@ func loadManifest() (*release.Manifest, error) {
 	return release.Parse(string(text))
 }
 
+func publishedFully(pkg release.Package) (bool, error) {
+	if pkg.Kind != release.KindNPM {
+		return release.Published(pkg)
+	}
+	for _, member := range npmMembers(pkg.Name) {
+		on, err := release.OnRegistry(member, pkg.Version)
+		if err != nil {
+			return false, err
+		}
+		if !on {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func releaseStatuses() ([]release.Status, error) {
 	manifest, err := loadManifest()
 	if err != nil {
 		return nil, err
 	}
-	return release.Plan(manifest, release.Published, release.Changed)
+	return release.Plan(manifest, publishedFully, release.Changed)
 }
 
 func releasePlan(args []string) error {
@@ -143,7 +159,7 @@ func chosen(manifest *release.Manifest, name string) ([]release.Package, error) 
 		}
 		return []release.Package{pkg}, nil
 	}
-	statuses, err := release.Plan(manifest, release.Published, release.Changed)
+	statuses, err := release.Plan(manifest, publishedFully, release.Changed)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +263,7 @@ func releaseTags() error {
 		if pkg.Kind == release.KindGo {
 			continue
 		}
-		published, err := release.Published(pkg)
+		published, err := publishedFully(pkg)
 		if err != nil {
 			return err
 		}
