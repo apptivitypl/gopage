@@ -29,13 +29,15 @@ and a project with no interactive component ships none of it. The bundler and th
 compiler are native binaries, so no Node process runs at build time and none at run time; a
 template that uses React still needs npm, pnpm, yarn or bun once, to fetch React itself.
 
-It is in development. Nothing is released yet, the config format has changed once already, and it
-will change again before 1.0.
+> [!WARNING]
+> rill is in development. Nothing is released yet, the config format has changed once already, and
+> it will change again before 1.0. Read it, run it, tell us where it is wrong — but do not put it
+> under something that has to keep working.
 
 ## Try it online
 
-Nothing to install. The starter is committed at [examples/hello-world](examples/hello-world), with a
-[blog](examples/blog) beside it, and all three buttons open that folder.
+No install, no account, no clone. Both starters are committed under [examples/](examples), and every
+button opens one.
 
 <p align="center">
   <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="32"></a>
@@ -43,12 +45,10 @@ Nothing to install. The starter is committed at [examples/hello-world](examples/
   <a href="https://codespaces.new/apptivitypl/rill?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
 </p>
 
-CodeSandbox and Codespaces hand you the real thing: a machine with Go on it and `rill dev` already
-running, so editing a template rebuilds and reloads. The first boot compiles the framework, which
-takes a minute or two.
-
-StackBlitz starts in seconds instead, because it runs the page prebuilt to WebAssembly. The same Go
-code answers every request there; it only cannot recompile a template, which needs a Go toolchain.
+CodeSandbox and Codespaces boot a machine with Go on it and leave `rill dev` running, so editing a
+template rebuilds and reloads; the first boot takes a minute or two. StackBlitz has no Go toolchain,
+so it serves the page prebuilt to WebAssembly instead — up in seconds, still answered by this Go
+code, but a template edit will not rebuild.
 
 ## Install
 
@@ -114,13 +114,13 @@ cd my-site && rill dev
 
 `rill new` writes the project, runs `go mod tidy`, and installs the browser packages if the
 template needs them. Without `--yes` it asks for the module path, template, languages, navigation
-mode, css engine and theme. Its output for two of the templates is committed under
-[examples/](examples), so you can read what it writes without running it.
+mode, css engine and theme.
 
-Three templates ship. `hello-world` is one page with a live component, a fetched list and a JSON
-route; `blog` is markdown posts with a feed; `catalog` carries the wider surface — filters,
-differential navigation, a form without javascript, server-sent events, and both a cached and a
-deferred fragment.
+Three templates ship. [`hello-world`](examples/hello-world) is one page with a live component, a
+fetched list and a JSON route; [`blog`](examples/blog) is markdown posts with a feed; `catalog`
+carries the wider surface — filters, differential navigation, a form without javascript,
+server-sent events, and both a cached and a deferred fragment. The first two are committed under
+[examples/](examples), so you can read what `rill new` writes without running it.
 
 ## Project layout
 
@@ -165,29 +165,28 @@ one the browser already has can answer with just the fragment that changed.
 
 ## Configuration
 
-`rill.jsonc` — JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`.
+`rill.jsonc` — JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`. What
+`rill new` writes is about this long; every key not named has a default.
 
 ```jsonc
 {
   "$schema": "https://raw.githubusercontent.com/apptivitypl/rill/main/schema/rill.schema.json",
   "app": {"name": "my-site"},
-  "i18n": {
-    "mode": "path",
-    "defaultLocale": "en",
-    "locales": ["en", "pl"]
-  },
-  // a sheet smaller than this goes into the document, anything larger is
-  // served as its own cached file; "0" links every stylesheet. Every file
-  // under styles/ is a sheet, and the inlined ones are written before the
-  // linked ones so a full sheet still overrides a small critical one
+  "i18n": {"mode": "path", "defaultLocale": "en", "locales": ["en", "pl"]},
   "css": {"engine": "tailwind", "inlineLimit": "4kb"},
   "nav": {"mode": "partial"},
-  // the largest body a submission or an api route will read, the origins
-  // allowed to write across sites, and a ceiling on concurrent connections
-  // for the native server; omit maxConnections for no limit
   "security": {"maxBodySize": "8mb", "trustedOrigins": [], "maxConnections": 0}
 }
 ```
+
+The four that decide something worth knowing about:
+
+| key | |
+| --- | --- |
+| `i18n.mode` | `path` puts every locale but the default behind a prefix, `subdomain` maps hosts to languages, `single` turns the whole thing off |
+| `css.inlineLimit` | a stylesheet under this size is written into the document, a larger one is served as its own cached file; `0` links every sheet. Inlined sheets are written before linked ones, so a full sheet still overrides a small critical one |
+| `nav.mode` | `partial` sends only the part of the document that changed |
+| `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead |
 
 Unknown keys are an error, not a shrug — a misspelled setting names itself and the line it is on.
 The [schema](schema/rill.schema.json) drives editor completion, and CI fails if it and the Go
@@ -232,11 +231,8 @@ would.
 
 - No release yet, so the install scripts and the npm packages have nothing to fetch. Build from
   source until there is one.
-- Windows is built and tested, but a handful of tests skip there: ten rely on a read-only
-  directory, which Windows lets the owner write into anyway, and four execute a shell-script stub,
-  which it cannot run at all.
-- The committed examples require a published rill, so until the first release they only build
-  against a workspace, which `go run ./cmd/rilltool example --workspace` writes.
+- Windows is built and tested on every change, but a handful of tests skip there because they rely
+  on Unix file semantics, so it gets less coverage than Linux and macOS.
 - Streaming a page in more than one flush is limited to the deferred-fragment modes.
 
 ## Contributing
