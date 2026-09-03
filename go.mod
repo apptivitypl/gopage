@@ -4,7 +4,7 @@ go 1.26.0
 
 toolchain go1.26.8
 
-require github.com/bmatcuk/doublestar/v4 v4.7.1
+require github.com/bmatcuk/doublestar/v4 v4.10.0
 
 require (
 	github.com/andybalholm/brotli v1.2.3
@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20260830003929-9f48cc723c1c
 	github.com/evanw/esbuild v0.28.2
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/tdewolff/minify/v2 v2.24.5
+	github.com/tdewolff/minify/v2 v2.24.17
 	golang.org/x/net v0.58.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
