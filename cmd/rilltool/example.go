@@ -10,10 +10,11 @@ import (
 	"github.com/apptivitypl/rill/internal/scaffold"
 	"github.com/apptivitypl/rill/internal/tool/examplecheck"
 	"github.com/apptivitypl/rill/internal/tool/release"
-	"github.com/apptivitypl/rill/internal/tool/shell"
 )
 
 const exampleModule = "github.com/apptivitypl/rill"
+
+var workspaceEnv = []string{"GOWORK="}
 
 func exampleCmd(args []string) error {
 	var update, workspace bool
@@ -158,11 +159,13 @@ func writeWorkspace(root, version string) error {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	if err := shell.Run("go", uses...); err != nil {
+	runner := build.ExecRunner{Verbose: true}
+	if err := runner.Run(build.Command{Dir: root, Env: workspaceEnv, Name: "go", Args: uses}); err != nil {
 		return err
 	}
 	replacement := fmt.Sprintf("%s@%s=.", exampleModule, version)
-	if err := shell.Run("go", "work", "edit", "-replace", replacement); err != nil {
+	edit := []string{"work", "edit", "-replace", replacement}
+	if err := runner.Run(build.Command{Dir: root, Env: workspaceEnv, Name: "go", Args: edit}); err != nil {
 		return err
 	}
 	fmt.Printf("example: go.work points %s %s at this checkout\n", exampleModule, version)

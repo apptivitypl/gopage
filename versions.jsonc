@@ -2,7 +2,7 @@
   "packages": {
     "rill": {
       "kind": "go",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "tag": "v{version}",
       "release": "goreleaser",
       "paths": [
