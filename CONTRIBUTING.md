@@ -118,6 +118,11 @@ Nothing in CI holds an npm token, and the workflow reads no npm secret at all. E
 configured on npmjs.com with a trusted publisher pointing at `publish.yml`, so the workflow
 authenticates over OIDC and npm attaches provenance by itself.
 
+The publish job deliberately calls `actions/setup-node` without `registry-url`. With it, the action
+writes `_authToken=${NODE_AUTH_TOKEN}` into an npmrc; with no token in the environment that expands
+to nothing, npm reads it as auth already being configured, never asks for an OIDC credential and
+fails with a 401. Adding `registry-url` back breaks publishing.
+
 Adding a package to that set is the one thing OIDC cannot do for you, because npm refuses to
 configure a trusted publisher for a name it has never seen, and `npm trust` itself is not covered by
 OIDC. Onboarding one means publishing its first version from a maintainer's own machine and then
