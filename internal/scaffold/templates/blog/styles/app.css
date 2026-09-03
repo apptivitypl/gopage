@@ -1,0 +1,71 @@
+:root {
+    color-scheme: light dark;
+    --ink: #16181d;
+    --paper: #fdfdfc;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ink: #e8eaed;
+        --paper: #14161a;
+        --muted: #9aa3b2;
+        --line: #2a2e37;
+    }
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 ui-serif, Georgia, serif;
+    margin: 0;
+    padding: 3rem 1.5rem;
+}
+
+header,
+main {
+    margin: 0 auto;
+    max-width: 40rem;
+}
+
+.brand {
+    color: var(--muted);
+    font: 600 0.8rem/1 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.posts {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+}
+
+.posts li {
+    border-top: 1px solid var(--line);
+}
+
+.post-card {
+    color: inherit;
+    display: grid;
+    gap: 0.15rem;
+    padding: 1rem 0;
+    text-decoration: none;
+}
+
+.post-title {
+    font-weight: 600;
+}
+
+.post-date,
+.post-summary {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.post .meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+}

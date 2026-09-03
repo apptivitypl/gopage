@@ -1,0 +1,15 @@
+---
+type Props struct {
+	Heading string
+}
+
+func Meta(ctx *rill.Ctx, p Props) rill.Meta {
+	return rill.Meta{Title: p.Heading, Robots: "noindex"}
+}
+
+func Load(ctx *rill.Ctx) (Props, error) {
+	return Props{Heading: "page not found"}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+<p>No route answers this address. <a href="/">Back to the start.</a></p>

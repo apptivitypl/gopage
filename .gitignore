@@ -1,0 +1,22 @@
+# Test binaries left behind by `go test -c`. The pattern is anchored to a
+# suffix rather than a name: an unanchored rule here once matched a source
+# file and CI could not build the package that needed it.
+*.test
+
+# Compiled binaries of this repository's own commands.
+/rill
+/rilltool
+
+# Coverage output, never committed.
+/.coverage
+coverage.html
+
+# What a scaffolded project generates, for when one is created at this root.
+/dist
+/.rill
+/.wrangler
+
+# The reference application, which `rilltool smoke --reference` regenerates.
+/demo
+
+node_modules/

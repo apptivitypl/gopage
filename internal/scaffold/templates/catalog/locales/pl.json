@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "katalog"
+  },
+  "status": {
+    "active": "aktywna",
+    "paused": "wstrzymana",
+    "archived": "zarchiwizowana"
+  },
+  "items": {
+    "empty": "nic nie pasuje",
+    "per_m2": "za m2",
+    "count": {
+      "one": "{count} oferta",
+      "few": "{count} oferty",
+      "many": "{count} ofert"
+    },
+    "cheapest": "najtańsze najpierw"
+  },
+  "enquiry": {
+    "title": "zapytaj o tę ofertę",
+    "name": "twoje imię",
+    "email": "twój email",
+    "message": "wiadomość",
+    "consent": "możesz odpisać",
+    "send": "wyślij",
+    "sent": "zapytanie przyjęte, a komunikat przeżył jeden odczyt"
+  }
+}

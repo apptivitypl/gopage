@@ -1,0 +1,39 @@
+name: tag
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: tag what VERSION says
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Push the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="v$(go run ./cmd/rilltool version)"
+          if git rev-parse "$version" >/dev/null 2>&1; then
+            echo "$version already exists" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          git tag "$version"
+          git push origin "$version"
+          echo "pushed $version" >> "$GITHUB_STEP_SUMMARY"

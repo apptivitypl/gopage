@@ -1,0 +1,18 @@
+{
+  "name": "{{.Name}}",
+  "private": true,
+{{- if eq .Engine "preact"}}
+  "dependencies": {
+    "preact": "^10.26.0"
+  }
+{{- else}}
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  }
+{{- end}}
+}

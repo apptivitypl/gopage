@@ -1,0 +1,1 @@
+<span :class="{ 'badge': true, 'badge-ok': Tone == 'ok', 'badge-muted': Tone == '' }">{{ Label }}</span>

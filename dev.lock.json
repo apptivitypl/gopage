@@ -1,0 +1,81 @@
+{
+  "coverage": {
+    "packages": {
+      ".": 100,
+      "internal/action": 100,
+      "internal/api": 100,
+      "internal/assets": 100,
+      "internal/build": 93.80530973451327,
+      "internal/bundle": 100,
+      "internal/cache": 94.26751592356688,
+      "internal/codegen": 98.72340425531915,
+      "internal/compile": 95.73033707865169,
+      "internal/config": 95.18072289156626,
+      "internal/csrf": 100,
+      "internal/css": 88.88888888888889,
+      "internal/devserver": 94.33962264150944,
+      "internal/diag": 100,
+      "internal/form": 99.21259842519684,
+      "internal/i18n": 100,
+      "internal/initui": 99.23664122137404,
+      "internal/invariant": 96.29629629629629,
+      "internal/ir": 97.14285714285714,
+      "internal/lsp": 99.53703703703704,
+      "internal/runtime": 100,
+      "internal/scaffold": 96.80851063829788,
+      "internal/schema": 96.28378378378379,
+      "internal/seo": 100,
+      "internal/server": 99.83525535420098,
+      "internal/syntax": 96.59442724458205,
+      "internal/validate": 100
+    },
+    "total": 97.31407942238268
+  },
+  "bench": {
+    "benchmarks": {
+      "BenchmarkAppendEscaped": {
+        "ns_per_op": 24.51,
+        "bytes_per_op": 0,
+        "allocs_per_op": 0
+      },
+      "BenchmarkFast": {
+        "ns_per_op": 51650,
+        "bytes_per_op": 32,
+        "allocs_per_op": 0
+      },
+      "BenchmarkGzip": {
+        "ns_per_op": 79462,
+        "bytes_per_op": 54,
+        "allocs_per_op": 0
+      },
+      "BenchmarkRender": {
+        "ns_per_op": 53.16,
+        "bytes_per_op": 0,
+        "allocs_per_op": 0
+      },
+      "BenchmarkRouterMatch": {
+        "ns_per_op": 590.9,
+        "bytes_per_op": 368,
+        "allocs_per_op": 3
+      },
+      "BenchmarkRouterMiss": {
+        "ns_per_op": 487.9,
+        "bytes_per_op": 48,
+        "allocs_per_op": 1
+      },
+      "BenchmarkServeRequest": {
+        "ns_per_op": 1632,
+        "bytes_per_op": 3730,
+        "allocs_per_op": 42
+      },
+      "BenchmarkTranslator": {
+        "ns_per_op": 21.68,
+        "bytes_per_op": 32,
+        "allocs_per_op": 1
+      }
+    },
+    "worker_module_brotli_bytes": 1856741,
+    "client_runtime_brotli_bytes": 2059,
+    "client_chunks_brotli_bytes": 54690
+  }
+}

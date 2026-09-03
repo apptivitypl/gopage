@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="rill">
+  <rect x="2" y="2" width="252" height="252" rx="56" fill="#0b0e13" stroke="#3a4351" stroke-width="4"/>
+  <g transform="translate(48 48) scale(2.8070)" fill="#ece7dd">
+    <rect x="15" y="0" width="12" height="12" rx="2"/>
+    <rect x="30" y="0" width="12" height="12" rx="2"/>
+    <rect x="0" y="15" width="12" height="12" rx="2"/>
+    <rect x="45" y="15" width="12" height="12" rx="2"/>
+    <rect x="0" y="30" width="12" height="12" rx="2"/>
+    <rect x="45" y="30" width="12" height="12" rx="2"/>
+    <rect x="15" y="45" width="12" height="12" rx="2"/>
+    <rect x="30" y="45" width="12" height="12" rx="2"/>
+  </g>
+</svg>

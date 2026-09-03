@@ -1,0 +1,55 @@
+name: Bug report
+description: Something rill does that it should not, or does not do that it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: if the build stopped with a code like `RILL-C318`, its page under
+        `docs/errors/` explains what the compiler refused and why.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, and what came back. Paste the output rather than describing it.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      description: The smallest project or `.rill` file that shows it. A `rill new` starter plus the one edit is ideal.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: Build target
+      options:
+        - native binary
+        - cloudflare worker
+        - both
+        - not a build problem
+    validations:
+      required: true
+
+  - type: textarea
+    id: version
+    attributes:
+      label: Versions
+      description: Output of `rill version` and `go version`.
+      render: text
+    validations:
+      required: true
