@@ -38,6 +38,9 @@ const (
 	WorkerDir    = "dist/worker"
 	WorkerBinary = "dist/worker/app.wasm"
 	NativeBinary = "dist/server"
+	DemoDir      = "dist/demo"
+	DemoBinary   = "dist/demo/app.wasm"
+	DemoAssets   = "dist/demo/assets"
 )
 
 const (

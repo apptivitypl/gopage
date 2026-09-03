@@ -256,6 +256,54 @@ jobs:
       - name: Build a project and probe what it answers
         run: PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/rilltool smoke ${{ matrix.flag }}
 
+  example:
+    name: committed examples
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Keep the downloaded binary between runs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/rill
+          key: tailwind-${{ runner.os }}
+
+      - name: They are still what the templates write
+        run: go run ./cmd/rilltool example
+
+      - name: Point them at this checkout
+        run: go run ./cmd/rilltool example --workspace
+
+      - run: pnpm --dir examples/hello-world install --no-frozen-lockfile
+
+      - name: They build, and the demo target answers from wasm
+        run: |
+          go run ./cmd/rill build --dir examples/blog
+          go run ./cmd/rill build --dir examples/hello-world --target demo
+          PORT=3123 node examples/hello-world/dist/demo/server.mjs &
+          for _ in $(seq 1 40); do
+            curl -fsS -o /dev/null http://127.0.0.1:3123/ && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3123/api/health | grep -q '"runtime":"go"'
+          curl -fsS -o /dev/null http://127.0.0.1:3123/
+
   tailwind:
     name: tailwind stylesheet
     runs-on: ubuntu-latest
@@ -282,11 +330,11 @@ jobs:
 
       - name: Build the starter with tailwind
         run: |
-          go run ./cmd/rill new demo --module example.com/demo --rill-path "$PWD" --css tailwind --yes
-          go run ./cmd/rill build --dir demo
+          go run ./cmd/rill new "$RUNNER_TEMP/starter" --module example.com/demo --rill-path "$PWD" --css tailwind --yes
+          go run ./cmd/rill build --dir "$RUNNER_TEMP/starter"
 
       - name: The stylesheet carries the classes the compiler found
-        run: grep -q 'max-w-3xl' demo/dist/assets/assets/app.*.css
+        run: grep -q 'max-w-3xl' "$RUNNER_TEMP"/starter/dist/assets/assets/app.*.css
 
   workflows:
     name: workflow audit

@@ -1,0 +1,117 @@
+name: publish
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: what versions.jsonc says is missing
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      packages: ${{ steps.plan.outputs.packages }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - id: plan
+        run: |
+          go run ./cmd/rilltool release plan | tee -a "$GITHUB_STEP_SUMMARY"
+          go run ./cmd/rilltool release plan --json > plan.json
+          {
+            echo "packages<<PLAN"
+            cat plan.json
+            echo "PLAN"
+          } >> "$GITHUB_OUTPUT"
+
+  tag:
+    name: tag the go module
+    needs: plan
+    if: contains(needs.plan.outputs.packages, '"kind": "go"')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Push the tag the manifest asks for
+        env:
+          PLAN: ${{ needs.plan.outputs.packages }}
+        run: |
+          tag=$(printf '%s' "$PLAN" |
+            python3 -c 'import json,sys; [print(p["tag"]) for p in json.load(sys.stdin) if p["kind"] == "go"]')
+          for name in $tag; do
+            git tag "$name"
+            git push origin "$name"
+            echo "pushed $name" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  npm:
+    name: publish the npm packages
+    needs: plan
+    if: contains(needs.plan.outputs.packages, '"kind": "npm"')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Trusted publishing needs npm 11.5.1 or later
+        run: npm install --global npm@latest
+
+      - name: The demo packages are built from the examples
+        run: pnpm --dir examples/hello-world install --no-frozen-lockfile
+
+      - name: Fetch the archives the binaries come from
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(go run ./cmd/rilltool version)
+          if ! gh release view "v$version" >/dev/null 2>&1; then
+            echo "v$version is not released yet; run the tag job first, wait for goreleaser, then run this again" >&2
+            exit 1
+          fi
+          gh release download "v$version" --dir archives --pattern 'rill_*'
+
+      - name: Publish what is missing
+        env:
+          PLAN: ${{ needs.plan.outputs.packages }}
+        run: |
+          names=$(printf '%s' "$PLAN" |
+            python3 -c 'import json,sys; [print(p["name"]) for p in json.load(sys.stdin) if p["kind"] == "npm"]')
+          for name in $names; do
+            go run ./cmd/rilltool release run "$name" --from archives --publish
+            echo "published $name" >> "$GITHUB_STEP_SUMMARY"
+          done

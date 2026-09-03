@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "Rill"
+  },
+  "theme": {
+    "label": "switch theme"
+  },
+  "hero": {
+    "lead1": "Rendered in Go.",
+    "lead2": "Interactive",
+    "fast": "in React.",
+    "title": "Rendered in Go. Interactive in React.",
+    "lead": "Rill compiles templates into one binary and sends HTML first. JavaScript ships only for the components you mark, in React or a few lines of TypeScript. No Node at build or run time."
+  },
+  "source": {
+    "title": "one file per component, one per route",
+    "client": "Ticker.rill",
+    "list": "HackerNews.rill",
+    "server": "hackernews.go",
+    "preview": "preview",
+    "code": "code"
+  },
+  "pane": {
+    "client-code": "Ticker.rill code",
+    "client-preview": "Ticker.rill preview",
+    "list-code": "HackerNews.rill code",
+    "list-preview": "HackerNews.rill preview",
+    "server-code": "hackernews.go code",
+    "server-preview": "hackernews.go preview"
+  },
+  "missing": {
+    "title": "no route answers this address",
+    "lead": "the router walked the manifest and found nothing for this path.",
+    "back": "back to the start"
+  },
+  "failure": {
+    "title": "the page could not be rendered",
+    "lead": "a loader or the render itself returned an error. the log line names the route."
+  },
+  "news": {
+    "title": "hacker news",
+    "failed": "hacker news is not answering"
+  },
+  "footer": {
+    "by": "a product of"
+  },
+  "stars": {
+    "label": "rill on github, with the star count"
+  }
+}

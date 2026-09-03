@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/apptivitypl/rill/internal/demo"
 	"github.com/apptivitypl/rill/internal/paths"
 )
 
@@ -401,5 +402,83 @@ func TestAColouredRunnerAsksTheChildForColour(t *testing.T) {
 	cmd := Command{Dir: t.TempDir(), Name: "go", Args: []string{"version"}}
 	if err := (ExecRunner{Color: true, Out: io.Discard}).Run(cmd); err != nil {
 		t.Fatalf("Run: %v", err)
+	}
+}
+
+func TestDemoTargetGeneratesTheBrowserShimAndWasm(t *testing.T) {
+	runner := &recorder{}
+	dir := project(t, helloWorld())
+	if _, err := Run(Options{Dir: dir, Target: TargetDemo, Runner: runner}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(runner.commands) != 2 {
+		t.Fatalf("commands = %v, want the shim generator and the wasm build", runner.names())
+	}
+	if !strings.Contains(runner.names()[0], "-runtime=browser") {
+		t.Errorf("the shim must be generated for the browser runtime, got %q", runner.names()[0])
+	}
+	env := runner.commands[1].Env
+	if !slices.Contains(env, "GOOS=js") || !slices.Contains(env, "GOARCH=wasm") {
+		t.Errorf("wasm build env = %v", env)
+	}
+	if !strings.Contains(runner.names()[1], paths.DemoBinary) {
+		t.Errorf("the wasm build must land in %s, got %q", paths.DemoBinary, runner.names()[1])
+	}
+}
+
+func TestDemoTargetWritesAFolderNodeCanRun(t *testing.T) {
+	dir := project(t, helloWorld())
+	if _, err := Run(Options{Dir: dir, Target: TargetDemo, Name: "shop", Runner: &recorder{}}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, name := range []string{"server.mjs", "serve.mjs", "runtime.mjs", "package.json"} {
+		if read(t, dir, paths.DemoDir+"/"+name) == "" {
+			t.Errorf("%s is missing or empty", name)
+		}
+	}
+	var meta demo.Meta
+	if err := json.Unmarshal([]byte(read(t, dir, paths.DemoDir+"/"+demo.MetaFile)), &meta); err != nil {
+		t.Fatalf("%s is not valid JSON: %v", demo.MetaFile, err)
+	}
+	if meta.Name != "shop" {
+		t.Errorf("name = %q", meta.Name)
+	}
+	if !slices.Contains(meta.WorkerFirst, "/api/*") {
+		t.Errorf("workerFirst = %v, want the api namespace", meta.WorkerFirst)
+	}
+}
+
+func TestDemoTargetCarriesTheAssetsWithIt(t *testing.T) {
+	dir := project(t, helloWorld())
+	if _, err := Run(Options{Dir: dir, Target: TargetDemo, Runner: &recorder{}}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if read(t, dir, paths.DemoAssets+"/about/index.html") == "" {
+		t.Error("a static page did not travel into the demo folder")
+	}
+}
+
+func TestCopyingReportsATreeThatIsNotThere(t *testing.T) {
+	if err := copyTree(filepath.Join(t.TempDir(), "gone"), t.TempDir()); err == nil {
+		t.Error("copyTree should report a source it cannot walk")
+	}
+}
+
+func TestDemoTargetStopsWhenAStepFails(t *testing.T) {
+	dir := project(t, helloWorld())
+	runner := &recorder{fail: errors.New("no toolchain")}
+	if _, err := Run(Options{Dir: dir, Target: TargetDemo, Runner: runner}); err == nil {
+		t.Error("Run should report the step that failed")
+	}
+}
+
+func TestDemoTargetReportsAFolderItCannotWrite(t *testing.T) {
+	dir := project(t, helloWorld())
+	taken := filepath.Join(dir, filepath.FromSlash(paths.DemoDir), demo.Entry)
+	if err := os.MkdirAll(taken, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if _, err := Run(Options{Dir: dir, Target: TargetDemo, Runner: &recorder{}}); err == nil {
+		t.Error("Run should report the demo folder it could not write")
 	}
 }

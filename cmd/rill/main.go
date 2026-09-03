@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"github.com/apptivitypl/rill/internal/build"
 	"github.com/apptivitypl/rill/internal/compile"
 	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/demo"
 	"github.com/apptivitypl/rill/internal/devserver"
 	"github.com/apptivitypl/rill/internal/diag"
 	"github.com/apptivitypl/rill/internal/initui"
@@ -156,6 +158,7 @@ func newProject(args []string) error {
 	fs.StringVar(&cfg.Template, "template", "hello-world", "project template")
 	fs.StringVar(&cfg.Name, "name", "", "project name, defaults to the directory")
 	fs.StringVar(&cfg.RillPath, "rill-path", "", "local path to the rill checkout, adds a replace directive")
+	fs.StringVar(&cfg.RillVersion, "rill-version", "", "version of rill the project requires, defaults to this binary's")
 	fs.StringVar(&cfg.CompatDate, "compat-date", "", "cloudflare compatibility date")
 	fs.StringVar(&locales, "locales", "", "comma separated languages, the first one is the default")
 	fs.StringVar(&cfg.Nav, "nav", "", "navigation mode: partial or off")
@@ -168,6 +171,9 @@ func newProject(args []string) error {
 	positional, err := parseInterleaved(fs, args)
 	if err != nil {
 		return err
+	}
+	if cfg.RillVersion == "" {
+		cfg.RillVersion = ownVersion()
 	}
 	if len(positional) != 1 {
 		return fail("rill new takes one directory, and was given %d", len(positional)).
@@ -244,7 +250,7 @@ func parseBuildFlags(name string, args []string) (buildFlags, error) {
 	var flags buildFlags
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.StringVar(&flags.dir, "dir", ".", "project directory")
-	fs.StringVar(&flags.target, "target", string(build.TargetNative), "build target: "+strings.Join(build.Targets(), " or "))
+	fs.StringVar(&flags.target, "target", string(build.TargetNative), "build target: "+strings.Join(build.Targets(), ", "))
 	fs.StringVar(&flags.name, "name", "", "worker name, defaults to the directory")
 	fs.StringVar(&flags.compatDate, "compat-date", "", "cloudflare compatibility date")
 	fs.BoolVar(&flags.verbose, "v", false, "echo the toolchain commands")
@@ -260,10 +266,10 @@ func buildProject(args []string) error {
 		return err
 	}
 	target := build.Target(flags.target)
-	if target != build.TargetNative && target != build.TargetWorkers {
+	if !slices.Contains(build.Targets(), flags.target) {
 		return fail("there is no %q target", flags.target).
 			because("A build targets one of: %s.", strings.Join(build.Targets(), ", ")).
-			try("rill build --target native", "rill build --target workers")
+			try("rill build --target native", "rill build --target workers", "rill build --target demo")
 	}
 	report, err := build.Run(build.Options{
 		Dir:        flags.dir,
@@ -281,8 +287,11 @@ func buildProject(args []string) error {
 	for _, page := range report.StaticPages {
 		fmt.Println("  ", filepath.ToSlash(page))
 	}
-	if target == build.TargetWorkers {
+	switch target {
+	case build.TargetWorkers:
 		fmt.Println("wrangler config:", paths.Wrangler)
+	case build.TargetDemo:
+		fmt.Printf("demo: %s, start it with `node %s/%s`\n", paths.DemoDir, paths.DemoDir, demo.Entry)
 	}
 	return nil
 }

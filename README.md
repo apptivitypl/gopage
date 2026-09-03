@@ -32,6 +32,28 @@ template that uses React still needs npm, pnpm, yarn or bun once, to fetch React
 It is in development. Nothing is released yet, the config format has changed once already, and it
 will change again before 1.0.
 
+## Try it online
+
+The starter is committed at [examples/hello-world](examples/hello-world), and there is a
+[blog](examples/blog) beside it. All three buttons open the same folder.
+
+<p align="center">
+  <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="32"></a>
+  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="32"></a>
+  <a href="https://codespaces.new/apptivitypl/rill?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
+</p>
+
+One folder, three ways in, because the three differ in what they can run. CodeSandbox and
+Codespaces boot a machine that has Go on it and start `rill dev`, so editing a `.rill` file rebuilds
+and reloads; the first boot compiles the framework and takes a minute or two. Their setup lives in
+the example's `.devcontainer` and `.codesandbox`.
+
+StackBlitz has no Go toolchain and never will, so `.stackblitzrc` sends it somewhere else: it starts
+the published `@apptivitypl/rill-demo-hello-world` instead of building. That package is `rill build --target
+demo` output — the same worker module the Cloudflare build produces, compiled to WebAssembly and
+served by node — so it is not a screenshot. Pages, loaders and api routes are answered by the Go code
+in this folder. It just cannot recompile a template, because that needs `go build`.
+
 ## Install
 
 On Linux and macOS:
@@ -65,6 +87,21 @@ From source, if you have Go:
 go install github.com/apptivitypl/rill/cmd/rill@latest
 ```
 
+The same binaries are on npm, which is the shortest route on a machine that already has node:
+
+```bash
+pnpm add -D @apptivitypl/rill
+```
+
+```bash
+pnpm create rill my-site
+```
+
+`@apptivitypl/rill` is a launcher plus one package per platform, pulled in as optional dependencies, so
+nothing compiles and no install script runs. `pnpm dlx @apptivitypl/rill new my-site` is the same thing
+without adding a dependency. None of it removes the need for Go: rill writes Go and then calls
+`go build`.
+
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
 ```bash
@@ -83,7 +120,8 @@ cd my-site && rill dev
 
 `rill new` writes the project, runs `go mod tidy`, and installs the browser packages if the
 template needs them. Without `--yes` it asks for the module path, template, languages, navigation
-mode, css engine and theme.
+mode, css engine and theme. Its output for two of the templates is committed under
+[examples/](examples), so you can read what it writes without running it.
 
 Three templates ship. `hello-world` is one page with a live component, a fetched list and a JSON
 route; `blog` is markdown posts with a feed; `catalog` carries the wider surface — filters,
@@ -177,6 +215,18 @@ The worker build writes `wrangler.jsonc` beside the project and puts the assets 
 expects them. The native build produces one binary with everything embedded; it needs no files
 beside it.
 
+There is a third target, for showing the project rather than deploying it:
+
+```bash
+rill build --target demo && node dist/demo/server.mjs
+```
+
+It compiles the same worker to WebAssembly, but against the browser runtime, so the module needs no
+`workerd`, no wrangler and no bindings — `dist/demo` is a folder that answers requests wherever node
+runs, and the same `worker.mjs` runs in a browser tab. That is what makes the project openable in an
+online editor that has no Go toolchain. Templates are not recompiled there, because that step does
+need Go.
+
 ## Tooling
 
 `rill dev` watches the project, rebuilds what changed and reloads the browser. It answers on
@@ -188,11 +238,12 @@ would.
 
 ## What is not there yet
 
-- No release yet, so the install scripts have nothing to fetch. Build from source until there is one.
+- No release yet, so the install scripts and the npm packages have nothing to fetch. Build from
+  source until there is one.
 - Windows is built and tested, but ten tests that rely on a read-only directory skip there,
   because Windows lets the owner write into one anyway.
-- The reference application is regenerated from the templates rather than committed, so there is no
-  example to read in this repository yet.
+- The committed examples require a published rill, so until the first release they only build
+  against a workspace, which `go run ./cmd/rilltool example --workspace` writes.
 - Streaming a page in more than one flush is limited to the deferred-fragment modes.
 
 ## Contributing

@@ -1,0 +1,20 @@
+{
+  "name": "rill blog",
+  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {"version": "24"}
+  },
+  "containerEnv": {
+    "GOTOOLCHAIN": "auto",
+    "CGO_ENABLED": "0"
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
+  },
+  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && rill css install",
+  "postAttachCommand": "rill dev --addr 0.0.0.0:3000",
+  "customizations": {
+    "vscode": {"extensions": ["golang.go"]}
+  }
+}

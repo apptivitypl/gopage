@@ -11,12 +11,17 @@
 /.coverage
 coverage.html
 
+# The workspace file the devcontainer writes to point the examples at this
+# checkout. Committed examples require a published version instead.
+/go.work
+/go.work.sum
+
+# Written into a committed example by any workers build.
+/examples/*/wrangler.jsonc
+
 # What a scaffolded project generates, for when one is created at this root.
 /dist
 /.rill
 /.wrangler
-
-# The reference application, which `rilltool smoke --reference` regenerates.
-/demo
 
 node_modules/

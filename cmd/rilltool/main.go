@@ -18,6 +18,7 @@ import (
 	"github.com/apptivitypl/rill/internal/tool/diagcheck"
 	"github.com/apptivitypl/rill/internal/tool/gate"
 	"github.com/apptivitypl/rill/internal/tool/gitdiff"
+	"github.com/apptivitypl/rill/internal/tool/release"
 	"github.com/apptivitypl/rill/internal/tool/render"
 	"github.com/apptivitypl/rill/internal/tool/schemacheck"
 	"github.com/apptivitypl/rill/internal/tool/shell"
@@ -62,6 +63,10 @@ func run(args []string) error {
 		return bench(args[1:])
 	case "smoke":
 		return smokeCmd(args[1:])
+	case "release":
+		return releaseCmd(args[1:])
+	case "example":
+		return exampleCmd(args[1:])
 	default:
 		return fmt.Errorf("unknown command %q\n\n%s", args[0], commandList())
 	}
@@ -81,6 +86,8 @@ func commandList() string {
 		"  version [--check TAG]",
 		"  bench [--check] [--record] [--accept]",
 		"  smoke [--keep]",
+		"  release plan [--json] | check | run [PACKAGE] [--from DIR] [--publish]",
+		"  example [--update] [--workspace]",
 	}, "\n")
 }
 
@@ -235,6 +242,12 @@ func ci() error {
 		return err
 	}
 	if err := schemaCmd(); err != nil {
+		return err
+	}
+	if err := releaseCheck(); err != nil {
+		return err
+	}
+	if err := exampleCmd(nil); err != nil {
 		return err
 	}
 	return runCoverage(coverageOptions{enforce: true})
@@ -450,34 +463,30 @@ func schemaCmd() error {
 	return nil
 }
 
-const versionFile = "VERSION"
+const versionPackage = "rill"
 
 func versionCmd(args []string) error {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
 	var check string
-	fs.StringVar(&check, "check", "", "fail unless this tag matches VERSION")
+	fs.StringVar(&check, "check", "", "fail unless this tag matches the manifest")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	root, err := repoRoot()
+	manifest, err := loadManifest()
 	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(filepath.Join(root, versionFile))
-	if err != nil {
-		return fmt.Errorf("read %s: %w", versionFile, err)
-	}
-	version := strings.TrimSpace(string(data))
-	if version == "" {
-		return fmt.Errorf("%s is empty", versionFile)
+	pkg, ok := manifest.Package(versionPackage)
+	if !ok {
+		return fmt.Errorf("%s has no package %q", release.FileName, versionPackage)
 	}
 	if check == "" {
-		fmt.Println(version)
+		fmt.Println(pkg.Version)
 		return nil
 	}
-	if strings.TrimPrefix(check, "v") != version {
-		return fmt.Errorf("tag %s does not match %s, which says %s", check, versionFile, version)
+	if check != pkg.TagName() {
+		return fmt.Errorf("tag %s does not match %s, which says %s", check, release.FileName, pkg.TagName())
 	}
-	fmt.Printf("%s matches %s\n", check, versionFile)
+	fmt.Printf("%s matches %s\n", check, release.FileName)
 	return nil
 }

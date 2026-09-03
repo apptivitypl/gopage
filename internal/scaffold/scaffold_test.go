@@ -110,6 +110,18 @@ func TestReplaceDirectiveIsOptional(t *testing.T) {
 	}
 }
 
+func TestTheRequiredRillVersionCanBePinned(t *testing.T) {
+	pinned := create(t, Config{RillVersion: "v0.4.2"})
+	if !strings.Contains(read(t, pinned, "go.mod"), "github.com/apptivitypl/rill v0.4.2") {
+		t.Errorf("go.mod = %q", read(t, pinned, "go.mod"))
+	}
+
+	unpinned := create(t, Config{})
+	if !strings.Contains(read(t, unpinned, "go.mod"), "github.com/apptivitypl/rill "+DefaultRillVersion) {
+		t.Errorf("go.mod = %q, want the placeholder version", read(t, unpinned, "go.mod"))
+	}
+}
+
 func TestTemplateSyntaxIsNotAppliedToRillFiles(t *testing.T) {
 	dir := create(t, Config{})
 	layout := read(t, dir, "app/layout.rill")

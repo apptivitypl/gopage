@@ -119,7 +119,7 @@ func TestServeReadsTheCertificateFromTheEnvironment(t *testing.T) {
 
 func TestServeReportsAnAddressItCannotBind(t *testing.T) {
 	app, _ := listenApp(t)
-	if err := Serve("127.0.0.1:1", app); err == nil {
+	if err := Serve("127.0.0.1:99999", app); err == nil {
 		t.Error("Serve should report a port it cannot bind")
 	}
 }

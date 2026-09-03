@@ -19,6 +19,7 @@ import (
 	"github.com/apptivitypl/rill/internal/compress"
 	"github.com/apptivitypl/rill/internal/config"
 	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/demo"
 	"github.com/apptivitypl/rill/internal/diag"
 	"github.com/apptivitypl/rill/internal/ir"
 	"github.com/apptivitypl/rill/internal/paths"
@@ -30,10 +31,11 @@ type Target string
 const (
 	TargetNative  Target = "native"
 	TargetWorkers Target = "workers"
+	TargetDemo    Target = "demo"
 )
 
 func Targets() []string {
-	return []string{string(TargetNative), string(TargetWorkers)}
+	return []string{string(TargetNative), string(TargetWorkers), string(TargetDemo)}
 }
 
 const AssetsGen = "github.com/syumai/workers/cmd/workers-assets-gen@v0.33.0"
@@ -177,10 +179,14 @@ func Run(opts Options) (Report, error) {
 		Generated:    len(packages),
 		Diagnostics:  bag.Sorted(),
 	}
-	if opts.Target == TargetWorkers {
+	switch opts.Target {
+	case TargetWorkers:
 		return report, buildWorker(opts, workerPatterns(result))
+	case TargetDemo:
+		return report, buildDemo(opts, workerPatterns(result))
+	default:
+		return report, buildNative(opts)
 	}
-	return report, buildNative(opts)
 }
 
 func moduleOf(dir string) (string, error) {
@@ -538,6 +544,55 @@ func buildWorker(opts Options, patterns []string) error {
 		}
 	}
 	return writeWrangler(opts, patterns)
+}
+
+func buildDemo(opts Options, patterns []string) error {
+	steps := []Command{
+		{
+			Dir:  opts.Dir,
+			Name: "go",
+			Args: []string{"run", AssetsGen, "-mode=go", "-runtime=browser", "-o", paths.DemoDir},
+		},
+		{
+			Dir:  opts.Dir,
+			Env:  []string{"GOOS=js", "GOARCH=wasm"},
+			Name: "go",
+			Args: []string{"build", "-o", paths.DemoBinary, "-ldflags=-s -w", paths.WorkerMain},
+		},
+	}
+	for _, step := range steps {
+		if err := opts.Runner.Run(step); err != nil {
+			return err
+		}
+	}
+	target := filepath.Join(opts.Dir, filepath.FromSlash(paths.DemoDir))
+	if err := demo.Write(target, demo.Meta{Name: opts.Name, WorkerFirst: patterns}); err != nil {
+		return err
+	}
+	return copyTree(
+		filepath.Join(opts.Dir, filepath.FromSlash(paths.AssetsDir)),
+		filepath.Join(opts.Dir, filepath.FromSlash(paths.DemoAssets)),
+	)
+}
+
+func copyTree(from, to string) error {
+	return filepath.WalkDir(from, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(from, path)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return writeFile(filepath.Join(to, relative), data)
+	})
 }
 
 type wranglerAssets struct {

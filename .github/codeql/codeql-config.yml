@@ -5,4 +5,5 @@ queries:
 
 paths-ignore:
   - internal/scaffold/templates
+  - examples
   - docs

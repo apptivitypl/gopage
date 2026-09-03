@@ -22,7 +22,13 @@ These are not style preferences. Every one of them fails a build.
    it. `rilltool diag` fails otherwise.
 6. **The config schema and the Go struct move together.** `schema/rill.schema.json` is checked
    against `internal/config` by reflection; a field added to one and not the other fails the build.
-7. **A regression is a bug until it is explained.** `rilltool bench --check` compares against the
+7. **The committed examples are the templates' output.** `rilltool example` regenerates
+   `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
+   template and running `rilltool example --update`, never by editing the example. They require a
+   published rill, so to build one against your checkout write a workspace first:
+   `rilltool example --workspace`.
+8. **Every publishable artifact carries its own version.** See Releases below.
+9. **A regression is a bug until it is explained.** `rilltool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
    in the pull request why the cost buys something worth more.
 
@@ -62,6 +68,9 @@ internal/server/     routing, caching, fragments, the HTTP surface
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
 internal/scaffold/   the templates rill new writes
+internal/demo/       the node server the demo target ships
+examples/            the templates' output, committed and checked
+npm/                 the hand-written half of the npm packages
 docs/errors/         one page per diagnostic code
 ```
 
@@ -76,10 +85,30 @@ commit that only says what the diff already shows is a wasted commit message.
 
 ## Releases
 
-The version lives in `VERSION` and nowhere else. A release is a tag that matches it: CI refuses to
-publish when the tag and the file disagree. goreleaser builds the archives, cosign signs the
-checksums against the workflow's own identity, and the release carries an SBOM and a provenance
-attestation for every artifact.
+Every artifact this repository publishes has its own entry and its own version in
+[versions.jsonc](versions.jsonc). A release is a version bump there, not a tag: `rilltool release
+plan` asks each registry whether that version already exists and publishes only what is missing, so
+running the workflow twice publishes nothing the second time. Tags are written afterwards, because
+Go modules resolve through them.
+
+`rilltool release check`, which `rilltool ci` runs, refuses a change that touches a package whose
+version is already published without raising it. Say `"unreleased": true` on the package when that
+is deliberate.
+
+For the Go module, goreleaser builds the archives, cosign signs the checksums against the workflow's
+own identity, and the release carries an SBOM and a provenance attestation for every artifact.
+
+The npm packages are assembled from those archives, never built separately:
+`rilltool release run @apptivitypl/rill --from <archives>` writes `dist/npm`, generating every
+`package.json` from the manifest so a version can never drift. With no package name it assembles
+everything the plan says is missing. Without `--publish` it stops at the folder and prints the
+`npm publish` line it would have run.
+
+Nothing in CI holds an npm token. Every package is configured on npmjs.com with a trusted publisher
+pointing at `publish.yml`, so the workflow authenticates over OIDC and npm attaches provenance by
+itself. A package npm has never seen cannot be configured that way, so its first version is
+published by hand from a maintainer's own logged-in machine; every version after that comes from the
+workflow.
 
 ## Licence
 

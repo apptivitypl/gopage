@@ -1,0 +1,67 @@
+{
+  "packages": {
+    "rill": {
+      "kind": "go",
+      "version": "0.1.0",
+      "tag": "v{version}",
+      "release": "goreleaser",
+      "paths": [
+        "*.go",
+        "go.mod",
+        "go.sum",
+        "internal/**",
+        "cmd/rill/**",
+        "schema/**",
+        "install.sh",
+        "install.ps1",
+        "uninstall.sh",
+        "uninstall.ps1",
+        ".goreleaser.yml"
+      ],
+      "exclude": [
+        "internal/tool/**"
+      ]
+    },
+
+    "@apptivitypl/rill": {
+      "kind": "npm",
+      "version": "0.1.0",
+      "dir": "npm/rill",
+      "needs": ["rill"],
+      "paths": [
+        "npm/rill/**",
+        "internal/tool/npmpkg/**"
+      ]
+    },
+
+    "create-rill": {
+      "kind": "npm",
+      "version": "0.1.0",
+      "dir": "npm/create-rill",
+      "needs": ["@apptivitypl/rill"],
+      "paths": ["npm/create-rill/**"]
+    },
+
+    "@apptivitypl/rill-demo-hello-world": {
+      "kind": "npm",
+      "version": "0.1.0",
+      "dir": "examples/hello-world",
+      "needs": ["rill"],
+      "paths": [
+        "examples/hello-world/**",
+        "internal/demo/**"
+      ]
+    },
+
+    "@apptivitypl/rill-demo-blog": {
+      "kind": "npm",
+      "version": "0.1.0",
+      "dir": "examples/blog",
+      "needs": ["rill"],
+      "paths": [
+        "examples/blog/**",
+        "internal/demo/**"
+      ]
+    }
+  }
+}

@@ -6,4 +6,4 @@ rules:
 
   artipacked:
     ignore:
-      - tag.yml
+      - publish.yml

@@ -34,6 +34,7 @@ type Config struct {
 	Name          string
 	Template      string
 	RillPath      string
+	RillVersion   string
 	CompatDate    string
 	Locales       []string
 	DefaultLocale string
@@ -42,6 +43,8 @@ type Config struct {
 	Theme         string
 	React         string
 }
+
+const DefaultRillVersion = "v0.0.0"
 
 const (
 	ReactOn     = "react"
@@ -58,6 +61,9 @@ const (
 )
 
 func (c Config) withDefaults() Config {
+	if c.RillVersion == "" {
+		c.RillVersion = DefaultRillVersion
+	}
 	if c.Template == "" {
 		c.Template = DefaultTemplate
 	}
@@ -97,6 +103,7 @@ type data struct {
 	Module        string
 	Name          string
 	RillPath      string
+	RillVersion   string
 	CompatDate    string
 	Locales       string
 	DefaultLocale string
@@ -174,6 +181,7 @@ func Create(cfg Config) error {
 		Module:        cfg.Module,
 		Name:          cfg.Name,
 		RillPath:      cfg.RillPath,
+		RillVersion:   cfg.RillVersion,
 		CompatDate:    cfg.CompatDate,
 		Locales:       quoteList(cfg.Locales),
 		DefaultLocale: cfg.DefaultLocale,

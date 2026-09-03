@@ -64,3 +64,11 @@ func short(revision string) string {
 	}
 	return revision
 }
+
+func ownVersion() string {
+	name, _, _ := stamped()
+	if !strings.HasPrefix(name, "v") || strings.ContainsAny(name, "+ ") {
+		return ""
+	}
+	return name
+}

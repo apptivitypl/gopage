@@ -1,0 +1,46 @@
+---
+import (
+	"time"
+
+	"github.com/apptivitypl/rill/examples/blog/content"
+)
+
+type Post struct {
+	Slug    string
+	Title   string
+	Date    string
+	Summary string
+}
+
+type Props struct {
+	Heading string
+	Posts   []Post
+}
+
+func Meta(ctx *rill.Ctx, p Props) rill.Meta {
+	return rill.Meta{Title: p.Heading, Description: "posts, newest first"}
+}
+
+func Load(ctx *rill.Ctx) (Props, error) {
+	stored, err := content.All()
+	if err != nil {
+		return Props{}, err
+	}
+	posts := make([]Post, 0, len(stored))
+	for _, post := range stored {
+		posts = append(posts, Post{Slug: post.Slug, Title: post.Title, Date: post.Date, Summary: post.Summary})
+	}
+	ctx.Cache().TTL(time.Minute).Stale(time.Hour).Tag("posts")
+	return Props{Heading: "posts", Posts: posts}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+{% fragment "list" cache="5m" %}
+<ul class="posts">
+{% for post in Posts %}
+    <li><PostCard :Post="post" /></li>
+{% else %}
+    <li>{{ t("posts.empty") }}</li>
+{% endfor %}
+</ul>
+{% endfragment %}

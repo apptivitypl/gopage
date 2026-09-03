@@ -1,0 +1,20 @@
+{
+  "$schema": "https://codesandbox.io/schemas/tasks.json",
+  "setupTasks": [
+    {"name": "Install rill", "command": "go install github.com/apptivitypl/rill/cmd/rill@latest"},
+    {"name": "Install the browser packages", "command": "corepack enable && pnpm install"},
+    {"name": "Install tailwind", "command": "rill css install"}
+  ],
+  "tasks": {
+    "dev": {
+      "name": "rill dev",
+      "command": "rill dev --addr 0.0.0.0:3000",
+      "runAtStart": true,
+      "preview": {"port": 3000}
+    },
+    "build": {
+      "name": "rill build",
+      "command": "rill build"
+    }
+  }
+}
