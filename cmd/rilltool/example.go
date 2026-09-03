@@ -146,6 +146,9 @@ func resolve(dir string) error {
 	if err := (build.ExecRunner{}).Run(tidy); err != nil {
 		fmt.Fprintf(os.Stderr, "example: %s has no go.sum yet, because %s is not published: %v\n",
 			dir, versionPackage, err)
+		if err := os.Remove(filepath.Join(dir, "go.sum")); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 	}
 	return nil
 }

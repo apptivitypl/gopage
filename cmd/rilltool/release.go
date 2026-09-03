@@ -14,6 +14,11 @@ import (
 	"github.com/apptivitypl/rill/internal/tool/shell"
 )
 
+const (
+	trustRepository = "apptivitypl/rill"
+	trustWorkflow   = "publish.yml"
+)
+
 func releaseCmd(args []string) error {
 	if len(args) == 0 {
 		return errors.New("missing subcommand\n\n" + releaseList())
@@ -25,13 +30,15 @@ func releaseCmd(args []string) error {
 		return releaseCheck()
 	case "run":
 		return releaseRun(args[1:])
+	case "trust":
+		return releaseTrust()
 	default:
 		return fmt.Errorf("unknown release subcommand %q\n\n%s", args[0], releaseList())
 	}
 }
 
 func releaseList() string {
-	return "release subcommands:\n  plan [--json]\n  check\n  run <package> [--from DIR] [--out DIR] [--publish]"
+	return "release subcommands:\n  plan [--json]\n  check\n  run [package] [--from DIR] [--out DIR] [--publish]\n  trust"
 }
 
 func loadManifest() (*release.Manifest, error) {
@@ -186,4 +193,34 @@ func resolveOut(root, out string) string {
 		return out
 	}
 	return filepath.Join(root, out)
+}
+
+func releaseTrust() error {
+	manifest, err := loadManifest()
+	if err != nil {
+		return err
+	}
+	for _, pkg := range manifest.Packages() {
+		if pkg.Kind != release.KindNPM {
+			continue
+		}
+		for _, member := range npmMembers(pkg.Name) {
+			if err := trustOne(member); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func trustOne(name string) error {
+	if held, err := shell.Capture("npm", "trust", "list", name); err == nil && strings.Contains(held, npmpkg.Repository) {
+		fmt.Printf("%s already trusts this repository\n", name)
+		return nil
+	}
+	return shell.Run("npm", "trust", "github", name,
+		"--repo", trustRepository,
+		"--file", trustWorkflow,
+		"--allow-publish",
+		"--yes")
 }

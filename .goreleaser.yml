@@ -79,6 +79,6 @@ release:
     cosign verify-blob checksums.txt \
       --certificate checksums.txt.pem \
       --signature checksums.txt.sig \
-      --certificate-identity-regexp 'https://github\.com/apptivitypl/rill/\.github/workflows/release\.yml@.*' \
+      --certificate-identity-regexp 'https://github\.com/apptivitypl/rill/\.github/workflows/publish\.yml@.*' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com
     ```

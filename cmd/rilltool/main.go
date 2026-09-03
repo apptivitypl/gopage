@@ -86,7 +86,7 @@ func commandList() string {
 		"  version [--check TAG]",
 		"  bench [--check] [--record] [--accept]",
 		"  smoke [--keep]",
-		"  release plan [--json] | check | run [PACKAGE] [--from DIR] [--publish]",
+		"  release plan [--json] | check | run [PACKAGE] [--from DIR] [--publish] | trust",
 		"  example [--update] [--workspace]",
 	}, "\n")
 }

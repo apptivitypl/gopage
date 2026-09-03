@@ -9,6 +9,11 @@ concurrency:
   group: publish
   cancel-in-progress: false
 
+env:
+  CGO_ENABLED: "0"
+  GOTOOLCHAIN: auto
+  GOLANGCI_LINT_VERSION: v2.13.1
+
 jobs:
   plan:
     name: what versions.jsonc says is missing
@@ -16,9 +21,10 @@ jobs:
     permissions:
       contents: read
     outputs:
-      packages: ${{ steps.plan.outputs.packages }}
-      go: ${{ steps.plan.outputs.go }}
+      tag: ${{ steps.plan.outputs.tag }}
+      released: ${{ steps.plan.outputs.released }}
       npm: ${{ steps.plan.outputs.npm }}
+      packages: ${{ steps.plan.outputs.packages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -31,9 +37,18 @@ jobs:
           cache: false
 
       - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           go run ./cmd/rilltool release plan | tee -a "$GITHUB_STEP_SUMMARY"
           go run ./cmd/rilltool release plan --json > plan.json
+          tag="v$(go run ./cmd/rilltool version)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
           {
             echo "packages<<PLAN"
             cat plan.json
@@ -42,14 +57,12 @@ jobs:
           python3 - <<'KINDS' >> "$GITHUB_OUTPUT"
           import json
           kinds = {p["kind"] for p in json.load(open("plan.json"))}
-          print("go=" + str("go" in kinds).lower())
           print("npm=" + str("npm" in kinds).lower())
           KINDS
 
   tag:
     name: tag the go module
     needs: plan
-    if: needs.plan.outputs.go == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -58,26 +71,90 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push the tag the manifest asks for
+      - name: Create the tag the manifest asks for, if it is not there
         env:
-          PLAN: ${{ needs.plan.outputs.packages }}
+          TAG: ${{ needs.plan.outputs.tag }}
         run: |
-          tag=$(printf '%s' "$PLAN" |
-            python3 -c 'import json,sys; [print(p["tag"]) for p in json.load(sys.stdin) if p["kind"] == "go"]')
-          for name in $tag; do
-            git tag "$name"
-            git push origin "$name"
-            echo "pushed $name" >> "$GITHUB_STEP_SUMMARY"
-          done
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG is already tagged" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "pushed $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: build and sign the release
+    needs: [plan, tag]
+    if: needs.plan.outputs.released != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+    steps:
+      - name: Build the tag's tree, with this workflow as it is on the default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.plan.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: The tag has to match the manifest
+        run: go run ./cmd/rilltool version --check "$TAG"
+
+      - name: Install the pinned linter
+        run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+
+      - name: Run every gate
+        run: go run ./cmd/rilltool ci
+
+      - name: Install cosign, which goreleaser signs with
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+        with:
+          cosign-release: v2.6.5
+
+      - name: Install the SBOM generator goreleaser expects
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          syft-version: v1.51.0
+
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94
+        with:
+          distribution: goreleaser
+          version: v2.18.0
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ needs.plan.outputs.tag }}
+
+      - name: Attest everything the release publishes
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sbom.json
+            dist/checksums.txt
 
   npm:
     name: publish the npm packages
-    needs: plan
-    if: needs.plan.outputs.npm == 'true'
+    needs: [plan, release]
+    if: always() && needs.plan.outputs.npm == 'true' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -96,7 +173,7 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Trusted publishing needs npm 11.5.1 or later
+      - name: Trusted publishing needs npm 11.15.1 or later
         run: npm install --global npm@latest
 
       - name: The demo packages are built from the examples
@@ -105,15 +182,9 @@ jobs:
       - name: Fetch the archives the binaries come from
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          version=$(go run ./cmd/rilltool version)
-          if ! gh release view "v$version" >/dev/null 2>&1; then
-            echo "v$version is not released yet; run the tag job first, wait for goreleaser, then run this again" >&2
-            exit 1
-          fi
-          gh release download "v$version" --dir archives --pattern 'rill_*'
+        run: gh release download "$TAG" --dir archives --pattern 'rill_*'
 
-      - name: Publish what is missing
+      - name: Publish what the registry does not have
         env:
           PLAN: ${{ needs.plan.outputs.packages }}
         run: |
@@ -123,3 +194,7 @@ jobs:
             go run ./cmd/rilltool release run "$name" --from archives --publish
             echo "published $name" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      - name: Hand the packages over to OIDC, so the next release needs no token
+        if: env.NODE_AUTH_TOKEN != ''
+        run: go run ./cmd/rilltool release trust

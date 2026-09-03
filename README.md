@@ -90,8 +90,11 @@ pnpm create rill my-site
 ```
 
 ```bash
-pnpm add -D @apptivitypl/rill
+pnpm dlx @apptivitypl/rill dev
 ```
+
+The first scaffolds a project, the second runs rill without installing anything. A project that
+already has a `package.json` can pin the version for everyone with `pnpm add -D @apptivitypl/rill`.
 
 Nothing compiles and no install script runs: the binary for your platform arrives as an optional
 dependency. None of it removes the need for Go, though: rill writes Go and then calls `go build`.
