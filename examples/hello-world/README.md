@@ -14,11 +14,11 @@ JSON route beside the page.
 The hero, the copy and the source panel are HTML the server wrote. No JavaScript is involved in
 them, and none is sent for them. Four things are interactive, and each one ships only itself:
 
-- **Ticker** — a counter, the smallest thing that has to run in the browser.
-- **Stars** — asks GitHub for the star count once the page is already readable, and remembers the
+- **Ticker** is a counter, the smallest thing that has to run in the browser.
+- **Stars** asks GitHub for the star count once the page is already readable, and remembers the
   answer for an hour.
-- **Response** — calls `/api/stories` and shows the status, the content type and how long it took.
-- **Theme toggle** — writes the choice to `localStorage`. The document reads it in a blocking script
+- **Response** calls `/api/stories` and shows the status, the content type and how long it took.
+- **Theme toggle** writes the choice to `localStorage`. The document reads it in a blocking script
   in `app/layout.rill`, before first paint, so the page never flashes the wrong theme.
 
 The Hacker News list is the opposite case: `HackerNews` in `app/page.rill` fetches it while the
@@ -28,7 +28,7 @@ request is being handled, so it arrives as HTML with everything else.
 
 | file | what it shows |
 | --- | --- |
-| `app/page.rill` | frontmatter is Go — `Props`, `Meta`, and a loader that returns the stories |
+| `app/page.rill` | frontmatter is Go: `Props`, `Meta`, and a loader that returns the stories |
 | `app/layout.rill` | the document every page renders into |
 | `app/api/stories/route.go` | a route is a `GET` function returning `rill.JSON` |
 | `app/not-found.rill`, `app/error.rill` | the two pages you do not write until you need them |
@@ -65,9 +65,9 @@ expects them. The native build is one binary with everything inside it.
 
 ## When the story list looks canned
 
-The loader calls the Hacker News API. Where nothing can reach it — a worker without outbound access,
-or the WebAssembly demo in a browser tab — `server/hackernews/edge.go` answers with a built-in list
-instead, so the page still renders. That is the intended behaviour, not a failure.
+The loader calls the Hacker News API. Where nothing can reach it, which covers a worker without
+outbound access and the WebAssembly demo in a browser tab, `server/hackernews/edge.go` answers with
+a built-in list instead, so the page still renders. That is the intended behaviour, not a failure.
 
 ---
 

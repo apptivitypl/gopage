@@ -1,7 +1,7 @@
 # Markdown posts, a feed, and no JavaScript
 
 This is what `rill new my-site --template blog` writes: posts written in markdown, a page for each
-one, and an RSS feed. Nothing runs in the browser — there is no interactive component here, so the
+one, and an RSS feed. Nothing runs in the browser: there is no interactive component here, so the
 pages arrive as HTML and not a byte of JavaScript is sent.
 
 <p>
@@ -25,12 +25,12 @@ That tag is how a single post is dropped from the cache when it changes, without
 
 | file | what it shows |
 | --- | --- |
-| `app/page.rill` | the index — frontmatter is Go, `Load` returns what the markup renders |
+| `app/page.rill` | the index; frontmatter is Go, and `Load` returns what the markup renders |
 | `app/posts/[slug]/page.rill` | a dynamic route; `params["slug"]` picks the post, and the loader sets a cache tag |
 | `app/feed.xml/route.go` | a route that answers with something other than a page |
 | `components/PostCard/` | a component big enough to want its own directory: `props.go` beside `template.rill` |
 | `content/` | markdown, and the Go that reads it |
-| `rill.jsonc` | plain css here, not Tailwind — the engine is a setting, not a rewrite |
+| `rill.jsonc` | plain css here, not Tailwind: the engine is a setting, not a rewrite |
 
 ## Adding a post
 

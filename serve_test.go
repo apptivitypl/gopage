@@ -408,8 +408,12 @@ func TestAnEmptyAddressFallsBackToTheHttpPort(t *testing.T) {
 		}
 		return
 	}
-	if !strings.Contains(err.Error(), "permission denied") && !strings.Contains(err.Error(), "in use") {
-		t.Errorf("err = %v, want the http port attempted", err)
+	var attempt *net.OpError
+	if !errors.As(err, &attempt) || attempt.Addr == nil {
+		t.Fatalf("err = %v, want a listen error carrying the address it tried", err)
+	}
+	if _, port, _ := net.SplitHostPort(attempt.Addr.String()); port != "80" {
+		t.Errorf("port = %q, want the http port", port)
 	}
 }
 

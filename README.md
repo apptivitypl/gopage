@@ -20,9 +20,9 @@
 
 rill compiles `.rill` templates into a flat render plan and, in production, executes the smallest
 part of it that answers the request: a prebuilt artifact before a render, a fragment before a page,
-a page before a whole document. The same project builds two ways — a Cloudflare Worker with static
-assets, and a single static binary — and CI builds the reference application both ways and
-fails if the two return different documents.
+a page before a whole document. The same project builds two ways: a Cloudflare Worker with static
+assets, and a single static binary. CI builds the reference application both ways and fails if the
+two return different documents.
 
 JavaScript ships only for the components you mark. The client runtime is about 2 KB after brotli,
 and a project with no interactive component ships none of it. The bundler and the Tailwind
@@ -30,9 +30,9 @@ compiler are native binaries, so no Node process runs at build time and none at 
 template that uses React still needs npm, pnpm, yarn or bun once, to fetch React itself.
 
 > [!WARNING]
-> rill is in development. Nothing is released yet, the config format has changed once already, and
-> it will change again before 1.0. Read it, run it, tell us where it is wrong — but do not put it
-> under something that has to keep working.
+> **Expect breaking changes.** rill is before 1.0, so a version may break the one before it and the
+> config format will keep moving; it has already changed once. Pin the version you build against,
+> and read the release notes before you raise it.
 
 ## Try it online
 
@@ -47,8 +47,8 @@ button opens one.
 
 CodeSandbox and Codespaces boot a machine with Go on it and leave `rill dev` running, so editing a
 template rebuilds and reloads; the first boot takes a minute or two. StackBlitz has no Go toolchain,
-so it serves the page prebuilt to WebAssembly instead — up in seconds, still answered by this Go
-code, but a template edit will not rebuild.
+so it serves the page prebuilt to WebAssembly instead. That one is up in seconds and still
+answered by this Go code, but a template edit will not rebuild.
 
 ## Install
 
@@ -72,7 +72,7 @@ update: it stops when what you have is already what the release holds. Both take
 `--dir` (an absolute path), `--force` and `--require-signature`.
 
 If piping a script into a shell is not something you do, read
-[install.sh](install.sh) first, or skip it — every release publishes an archive for Linux, macOS
+[install.sh](install.sh) first, or skip it. Every release publishes an archive for Linux, macOS
 and Windows on both amd64 and arm64 on the
 [releases page](https://github.com/apptivitypl/rill/releases/latest). Unpack one and put `rill` on your
 PATH.
@@ -94,7 +94,7 @@ pnpm add -D @apptivitypl/rill
 ```
 
 Nothing compiles and no install script runs: the binary for your platform arrives as an optional
-dependency. None of it removes the need for Go, though — rill writes Go and then calls `go build`.
+dependency. None of it removes the need for Go, though: rill writes Go and then calls `go build`.
 
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
@@ -118,7 +118,7 @@ mode, css engine and theme.
 
 Three templates ship. [`hello-world`](examples/hello-world) is one page with a live component, a
 fetched list and a JSON route; [`blog`](examples/blog) is markdown posts with a feed; `catalog`
-carries the wider surface — filters, differential navigation, a form without javascript,
+carries the wider surface: filters, differential navigation, a form without javascript,
 server-sent events, and both a cached and a deferred fragment. The first two are committed under
 [examples/](examples), so you can read what `rill new` writes without running it.
 
@@ -154,7 +154,7 @@ A build has three steps that are worth knowing about.
 
 **Compile.** Every `.rill` file is parsed against a real grammar, not a regular expression. Types
 declared in a template's Go block become the props of the component, and a mismatch is a build
-error with a code — `RILL-C318` and the other 37 have a page under [docs/errors](docs/errors).
+error with a code. `RILL-C318` and the other 37 have a page under [docs/errors](docs/errors).
 
 **Lower.** The result is a flat instruction plan, not a tree walked at request time. Static runs of
 markup collapse into single byte ranges, so rendering a page is mostly copying.
@@ -165,7 +165,7 @@ one the browser already has can answer with just the fragment that changed.
 
 ## Configuration
 
-`rill.jsonc` — JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`. What
+`rill.jsonc` is JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`. What
 `rill new` writes is about this long; every key not named has a default.
 
 ```jsonc
@@ -188,7 +188,7 @@ The four that decide something worth knowing about:
 | `nav.mode` | `partial` sends only the part of the document that changed |
 | `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead |
 
-Unknown keys are an error, not a shrug — a misspelled setting names itself and the line it is on.
+Unknown keys are an error, not a shrug: a misspelled setting names itself and the line it is on.
 The [schema](schema/rill.schema.json) drives editor completion, and CI fails if it and the Go
 struct ever disagree.
 
@@ -215,8 +215,8 @@ rill build --target demo && node dist/demo/server.mjs
 ```
 
 `dist/demo` is a self-contained folder that serves the site anywhere node runs, and from a browser
-tab too — no wrangler, no `workerd`, no bindings, no Go. It is how the StackBlitz button above works,
-and it is a reasonable way to hand someone a preview without deploying anything.
+tab too, with no wrangler, no `workerd`, no bindings and no Go. It is how the StackBlitz button
+above works, and a reasonable way to hand someone a preview without deploying anything.
 
 ## Tooling
 
@@ -229,15 +229,13 @@ would.
 
 ## What is not there yet
 
-- No release yet, so the install scripts and the npm packages have nothing to fetch. Build from
-  source until there is one.
 - Windows is built and tested on every change, but a handful of tests skip there because they rely
   on Unix file semantics, so it gets less coverage than Linux and macOS.
 - Streaming a page in more than one flush is limited to the deferred-fragment modes.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) first — it lists the rules CI actually enforces, and
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It lists the rules CI actually enforces, and
 `go run ./cmd/rilltool ci` runs every one of them locally before you push.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) explains how a request becomes bytes, and which package owns
