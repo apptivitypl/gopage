@@ -123,7 +123,14 @@ func (t Tailwind) path() (string, error) {
 		}
 		root = filepath.Join(cache, "rill")
 	}
-	return filepath.Join(root, "tailwind", Version, "tailwindcss"), nil
+	return filepath.Join(root, "tailwind", Version, binaryName(runtime.GOOS)), nil
+}
+
+func binaryName(goos string) string {
+	if goos == "windows" {
+		return "tailwindcss.exe"
+	}
+	return "tailwindcss"
 }
 
 type Build struct {

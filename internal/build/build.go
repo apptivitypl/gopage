@@ -493,7 +493,7 @@ func buildNative(opts Options) error {
 	return opts.Runner.Run(Command{
 		Dir:  opts.Dir,
 		Name: "go",
-		Args: []string{"build", "-o", paths.NativeBinary, paths.ServerMain},
+		Args: []string{"build", "-o", paths.Server(), paths.ServerMain},
 	})
 }
 

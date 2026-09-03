@@ -34,8 +34,8 @@ will change again before 1.0.
 
 ## Try it online
 
-The starter is committed at [examples/hello-world](examples/hello-world), and there is a
-[blog](examples/blog) beside it. All three buttons open the same folder.
+Nothing to install. The starter is committed at [examples/hello-world](examples/hello-world), with a
+[blog](examples/blog) beside it, and all three buttons open that folder.
 
 <p align="center">
   <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="32"></a>
@@ -43,16 +43,12 @@ The starter is committed at [examples/hello-world](examples/hello-world), and th
   <a href="https://codespaces.new/apptivitypl/rill?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
 </p>
 
-One folder, three ways in, because the three differ in what they can run. CodeSandbox and
-Codespaces boot a machine that has Go on it and start `rill dev`, so editing a `.rill` file rebuilds
-and reloads; the first boot compiles the framework and takes a minute or two. Their setup lives in
-the example's `.devcontainer` and `.codesandbox`.
+CodeSandbox and Codespaces hand you the real thing: a machine with Go on it and `rill dev` already
+running, so editing a template rebuilds and reloads. The first boot compiles the framework, which
+takes a minute or two.
 
-StackBlitz has no Go toolchain and never will, so `.stackblitzrc` sends it somewhere else: it starts
-the published `@apptivitypl/rill-demo-hello-world` instead of building. That package is `rill build --target
-demo` output — the same worker module the Cloudflare build produces, compiled to WebAssembly and
-served by node — so it is not a screenshot. Pages, loaders and api routes are answered by the Go code
-in this folder. It just cannot recompile a template, because that needs `go build`.
+StackBlitz starts in seconds instead, because it runs the page prebuilt to WebAssembly. The same Go
+code answers every request there; it only cannot recompile a template, which needs a Go toolchain.
 
 ## Install
 
@@ -90,17 +86,15 @@ go install github.com/apptivitypl/rill/cmd/rill@latest
 The same binaries are on npm, which is the shortest route on a machine that already has node:
 
 ```bash
-pnpm add -D @apptivitypl/rill
-```
-
-```bash
 pnpm create rill my-site
 ```
 
-`@apptivitypl/rill` is a launcher plus one package per platform, pulled in as optional dependencies, so
-nothing compiles and no install script runs. `pnpm dlx @apptivitypl/rill new my-site` is the same thing
-without adding a dependency. None of it removes the need for Go: rill writes Go and then calls
-`go build`.
+```bash
+pnpm add -D @apptivitypl/rill
+```
+
+Nothing compiles and no install script runs: the binary for your platform arrives as an optional
+dependency. None of it removes the need for Go, though — rill writes Go and then calls `go build`.
 
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
@@ -215,17 +209,15 @@ The worker build writes `wrangler.jsonc` beside the project and puts the assets 
 expects them. The native build produces one binary with everything embedded; it needs no files
 beside it.
 
-There is a third target, for showing the project rather than deploying it:
+A third target exists for showing a project rather than deploying it:
 
 ```bash
 rill build --target demo && node dist/demo/server.mjs
 ```
 
-It compiles the same worker to WebAssembly, but against the browser runtime, so the module needs no
-`workerd`, no wrangler and no bindings — `dist/demo` is a folder that answers requests wherever node
-runs, and the same `worker.mjs` runs in a browser tab. That is what makes the project openable in an
-online editor that has no Go toolchain. Templates are not recompiled there, because that step does
-need Go.
+`dist/demo` is a self-contained folder that serves the site anywhere node runs, and from a browser
+tab too — no wrangler, no `workerd`, no bindings, no Go. It is how the StackBlitz button above works,
+and it is a reasonable way to hand someone a preview without deploying anything.
 
 ## Tooling
 
@@ -240,8 +232,9 @@ would.
 
 - No release yet, so the install scripts and the npm packages have nothing to fetch. Build from
   source until there is one.
-- Windows is built and tested, but ten tests that rely on a read-only directory skip there,
-  because Windows lets the owner write into one anyway.
+- Windows is built and tested, but a handful of tests skip there: ten rely on a read-only
+  directory, which Windows lets the owner write into anyway, and four execute a shell-script stub,
+  which it cannot run at all.
 - The committed examples require a published rill, so until the first release they only build
   against a workspace, which `go run ./cmd/rilltool example --workspace` writes.
 - Streaming a page in more than one flush is limited to the deferred-fragment modes.

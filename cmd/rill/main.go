@@ -384,7 +384,7 @@ func devBuild(dir string, out *printer, about *summary) (devserver.Build, func()
 		about.islands = report.Islands
 		next, err := devserver.Start(devserver.Launch{
 			Dir:    report.Dir,
-			Binary: filepath.Join(report.Dir, filepath.FromSlash(paths.NativeBinary)),
+			Binary: filepath.Join(report.Dir, filepath.FromSlash(paths.Server())),
 			Output: out.child(),
 		})
 		if err != nil {

@@ -75,6 +75,9 @@ func TestStopOnNothingIsSafe(t *testing.T) {
 }
 
 func TestStartReportsABinaryThatNeverListens(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stub is a shell script, and windows has no shebang")
+	}
 	binary := filepath.Join(t.TempDir(), "silent")
 	if err := os.WriteFile(binary, []byte("#!/bin/sh\nsleep 5\n"), 0o755); err != nil {
 		t.Fatalf("write: %v", err)

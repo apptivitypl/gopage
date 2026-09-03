@@ -132,7 +132,7 @@ func probeNative(project string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(filepath.Join(project, filepath.FromSlash(paths.NativeBinary)))
+	cmd := exec.Command(filepath.Join(project, filepath.FromSlash(paths.Server())))
 	cmd.Dir = project
 	cmd.Env = append(os.Environ(), fmt.Sprintf("ADDR=:%d", port))
 	cmd.Stdout = os.Stderr
@@ -326,7 +326,7 @@ func runReference(project string, keep bool) error {
 	if err != nil {
 		return err
 	}
-	native := exec.Command(filepath.Join(project, filepath.FromSlash(paths.NativeBinary)))
+	native := exec.Command(filepath.Join(project, filepath.FromSlash(paths.Server())))
 	native.Dir = project
 	native.Env = append(os.Environ(), fmt.Sprintf("ADDR=:%d", nativePort))
 	native.Stdout = os.Stderr
@@ -444,7 +444,7 @@ func runSubdomain(root, project string) error {
 	if err != nil {
 		return err
 	}
-	server := exec.Command(filepath.Join(project, filepath.FromSlash(paths.NativeBinary)))
+	server := exec.Command(filepath.Join(project, filepath.FromSlash(paths.Server())))
 	server.Dir = project
 	server.Env = append(os.Environ(), fmt.Sprintf("ADDR=:%d", port))
 	server.Stdout = os.Stderr

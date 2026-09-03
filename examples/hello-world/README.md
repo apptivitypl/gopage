@@ -1,45 +1,75 @@
-# hello-world
+# Rendered in Go, interactive in React
 
-What `rill new my-site` writes with the defaults, committed so you can read it without running
-anything. One page with a live component, a fetched list and a JSON route.
-
-**Generated, not hand-written.** `rilltool example` regenerates it from
-[internal/scaffold/templates/hello-world](../../internal/scaffold/templates/hello-world) and CI fails
-on any difference, so a change belongs in the template. Then:
-
-```bash
-go run ./cmd/rilltool example --update
-```
-
-## Running it
-
-```bash
-pnpm install && rill dev
-```
-
-`go.mod` requires a published rill rather than replacing it with a path, so the folder stands on its
-own and an online editor can open it directly. Working on rill itself instead? Point the examples at
-your checkout with a workspace, which is what the devcontainer does:
-
-```bash
-go run ./cmd/rilltool example --workspace
-```
-
-## Try it online
+This is what `rill new my-site` writes: one page, served as HTML the server rendered, with four small
+components that hydrate on their own, a loader that fetches a list before the response is sent, and a
+JSON route beside the page.
 
 <p>
   <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="30"></a>
   <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
 </p>
 
-Both buttons open this folder. CodeSandbox reads `.devcontainer` and `.codesandbox`, boots a machine
-with Go on it and runs `rill dev`, so editing a `.rill` file rebuilds and reloads. StackBlitz has no
-Go toolchain, so `.stackblitzrc` starts the published [@apptivitypl/rill-demo-hello-world](https://www.npmjs.com/package/@apptivitypl/rill-demo-hello-world)
-instead — this same code compiled to WebAssembly, answering every request, but not recompiling a
-template.
+## What is on the page
 
-## One thing to know about the story list
+The hero, the copy and the source panel are HTML the server wrote. No JavaScript is involved in
+them, and none is sent for them. Four things are interactive, and each one ships only itself:
 
-The loader fetches Hacker News. Where the network is not reachable — a worker without outbound
-access, or a WebContainer — `server/hackernews/edge.go` answers with the built-in list instead, so
-the page still renders. That is by design, not a failure.
+- **Ticker** — a counter, the smallest thing that has to run in the browser.
+- **Stars** — asks GitHub for the star count once the page is already readable, and remembers the
+  answer for an hour.
+- **Response** — calls `/api/stories` and shows the status, the content type and how long it took.
+- **Theme toggle** — writes the choice to `localStorage`. The document reads it in a blocking script
+  in `app/layout.rill`, before first paint, so the page never flashes the wrong theme.
+
+The Hacker News list is the opposite case: `HackerNews` in `app/page.rill` fetches it while the
+request is being handled, so it arrives as HTML with everything else.
+
+## Where to look
+
+| file | what it shows |
+| --- | --- |
+| `app/page.rill` | frontmatter is Go — `Props`, `Meta`, and a loader that returns the stories |
+| `app/layout.rill` | the document every page renders into |
+| `app/api/stories/route.go` | a route is a `GET` function returning `rill.JSON` |
+| `app/not-found.rill`, `app/error.rill` | the two pages you do not write until you need them |
+| `components/Ticker.rill` | markup, then `<script client>`: that attribute is the whole opt-in |
+| `components/Response.rill` | a React island, typed against `rill:props/Response` |
+| `server/hackernews/` | ordinary Go the loader calls, split by build tag for the worker |
+| `rill.jsonc` | languages, reserved prefixes, css engine, navigation mode |
+
+## Running it
+
+```bash
+pnpm install
+```
+
+```bash
+rill dev
+```
+
+It watches the project, rebuilds what changed and reloads the browser. `pnpm install` is only for
+React; a template without an interactive component needs nothing from npm.
+
+## Deploying it
+
+```bash
+rill build --target workers && wrangler deploy
+```
+
+```bash
+rill build --target native && ./dist/server
+```
+
+The worker build writes `wrangler.jsonc` beside the project and puts the assets where Static Assets
+expects them. The native build is one binary with everything inside it.
+
+## When the story list looks canned
+
+The loader calls the Hacker News API. Where nothing can reach it — a worker without outbound access,
+or the WebAssembly demo in a browser tab — `server/hackernews/edge.go` answers with a built-in list
+instead, so the page still renders. That is the intended behaviour, not a failure.
+
+---
+
+Generated from the `hello-world` template. Change the template rather than this folder; see
+[CONTRIBUTING](../../CONTRIBUTING.md).

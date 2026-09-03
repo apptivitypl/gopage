@@ -124,7 +124,7 @@ func TestNativeTargetBuildsTheServerBinary(t *testing.T) {
 	if _, err := Run(Options{Dir: dir, Target: TargetNative, Runner: runner}); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	want := "go build -o " + paths.NativeBinary + " ./cmd/server"
+	want := "go build -o " + paths.Server() + " ./cmd/server"
 	if got := runner.names(); len(got) != 1 || got[0] != want {
 		t.Errorf("commands = %v, want %q", got, want)
 	}

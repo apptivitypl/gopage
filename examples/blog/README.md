@@ -1,15 +1,40 @@
-# blog
+# Markdown posts, a feed, and no JavaScript
 
-What `rill new my-site --template blog` writes, committed so you can read it without running
-anything. Markdown posts, a post page under a dynamic route, and a feed.
+This is what `rill new my-site --template blog` writes: posts written in markdown, a page for each
+one, and an RSS feed. Nothing runs in the browser — there is no interactive component here, so the
+pages arrive as HTML and not a byte of JavaScript is sent.
 
-**Generated, not hand-written.** `rilltool example` regenerates it from
-[internal/scaffold/templates/blog](../../internal/scaffold/templates/blog) and CI fails on any
-difference, so a change belongs in the template. Then:
+<p>
+  <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="30"></a>
+  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
+</p>
 
-```bash
-go run ./cmd/rilltool example --update
+## What it does
+
+The posts are markdown files under `content/posts`, embedded into the binary with `go:embed`, so
+there is no database and no build step that reads the disk at run time. The index lists them newest
+first. Each post has its own page under a dynamic route, and the loader tags the result:
+
+```go
+ctx.Cache().TTL(time.Hour).Tag("posts", "post:" + post.Slug)
 ```
+
+That tag is how a single post is dropped from the cache when it changes, without clearing the rest.
+
+## Where to look
+
+| file | what it shows |
+| --- | --- |
+| `app/page.rill` | the index — frontmatter is Go, `Load` returns what the markup renders |
+| `app/posts/[slug]/page.rill` | a dynamic route; `params["slug"]` picks the post, and the loader sets a cache tag |
+| `app/feed.xml/route.go` | a route that answers with something other than a page |
+| `components/PostCard/` | a component big enough to want its own directory: `props.go` beside `template.rill` |
+| `content/` | markdown, and the Go that reads it |
+| `rill.jsonc` | plain css here, not Tailwind — the engine is a setting, not a rewrite |
+
+## Adding a post
+
+Drop a markdown file into `content/posts`. The front matter it expects is in `hello.md`.
 
 ## Running it
 
@@ -17,23 +42,19 @@ go run ./cmd/rilltool example --update
 rill dev
 ```
 
-There are no browser packages here: the template ships no interactive component, so nothing from npm
-is needed. `go.mod` requires a published rill rather than replacing it with a path, so the folder
-stands on its own. Working on rill itself instead:
+No `pnpm install`: there is nothing from npm to fetch.
+
+## Deploying it
 
 ```bash
-go run ./cmd/rilltool example --workspace
+rill build --target workers && wrangler deploy
 ```
 
-## Try it online
+```bash
+rill build --target native && ./dist/server
+```
 
-<p>
-  <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="30"></a>
-  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
-</p>
+---
 
-Both buttons open this folder. CodeSandbox reads `.devcontainer` and `.codesandbox`, boots a machine
-with Go on it and runs `rill dev`, so editing a `.rill` file rebuilds and reloads. StackBlitz has no
-Go toolchain, so `.stackblitzrc` starts the published [@apptivitypl/rill-demo-blog](https://www.npmjs.com/package/@apptivitypl/rill-demo-blog)
-instead — this same code compiled to WebAssembly, answering every request, but not recompiling a
-template.
+Generated from the `blog` template. Change the template rather than this folder; see
+[CONTRIBUTING](../../CONTRIBUTING.md).

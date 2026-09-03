@@ -2,6 +2,7 @@ package paths
 
 import (
 	"path"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -83,4 +84,18 @@ func contains(list []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestTheServerBinaryCarriesAnExtensionWhereWindowsNeedsOne(t *testing.T) {
+	if got := ServerBinary("windows"); got != NativeBinary+".exe" {
+		t.Errorf("ServerBinary(windows) = %q", got)
+	}
+	for _, goos := range []string{"linux", "darwin"} {
+		if got := ServerBinary(goos); got != NativeBinary {
+			t.Errorf("ServerBinary(%s) = %q", goos, got)
+		}
+	}
+	if Server() != ServerBinary(runtime.GOOS) {
+		t.Errorf("Server = %q, want the name for this platform", Server())
+	}
 }

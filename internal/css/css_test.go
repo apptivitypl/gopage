@@ -40,6 +40,9 @@ func TestPassthroughReportsAMissingInput(t *testing.T) {
 
 func fakeTailwind(t *testing.T, script string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("the stub is a shell script, and windows has no shebang")
+	}
 	binary := filepath.Join(t.TempDir(), "tailwindcss")
 	if err := os.WriteFile(binary, []byte("#!/bin/sh\n"+script), 0o755); err != nil {
 		t.Fatalf("write: %v", err)
@@ -86,7 +89,7 @@ func TestTailwindReportsWhatTheBinarySaid(t *testing.T) {
 
 func TestTailwindUsesTheCachedBinary(t *testing.T) {
 	cache := t.TempDir()
-	target := filepath.Join(cache, "tailwind", Version, "tailwindcss")
+	target := filepath.Join(cache, "tailwind", Version, binaryName(runtime.GOOS))
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -208,7 +211,7 @@ func TestDownloadWritesTheFileAndChecksTheStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stat: %v", err)
 	}
-	if info.Mode().Perm()&0o100 == 0 {
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o100 == 0 {
 		t.Errorf("mode = %v, want the binary executable", info.Mode())
 	}
 	if err := Download(server.URL+"/missing", target, ""); err == nil {
@@ -335,11 +338,25 @@ func TestTheCacheDirectoryIsHonoured(t *testing.T) {
 }
 
 func TestCommonRootWalksUpUntilItContains(t *testing.T) {
-	if got := commonRoot("/a/b/c", "/a/b/c/d"); got != "/a/b/c" {
-		t.Errorf("commonRoot = %q", got)
+	root := t.TempDir()
+	deep := filepath.Join(root, "a", "b", "c")
+	if got := commonRoot(deep, filepath.Join(deep, "d")); got != deep {
+		t.Errorf("commonRoot = %q, want %q", got, deep)
 	}
-	if got := commonRoot("/a/b/c", "/a/x"); got != "/a" {
-		t.Errorf("commonRoot = %q", got)
+	want := filepath.Join(root, "a")
+	if got := commonRoot(deep, filepath.Join(want, "x")); got != want {
+		t.Errorf("commonRoot = %q, want %q", got, want)
+	}
+}
+
+func TestTheCachedBinaryCarriesAnExtensionWhereWindowsNeedsOne(t *testing.T) {
+	if got := binaryName("windows"); got != "tailwindcss.exe" {
+		t.Errorf("binaryName(windows) = %q", got)
+	}
+	for _, goos := range []string{"linux", "darwin"} {
+		if got := binaryName(goos); got != "tailwindcss" {
+			t.Errorf("binaryName(%s) = %q", goos, got)
+		}
 	}
 }
 

@@ -1,5 +1,7 @@
 package paths
 
+import "runtime"
+
 const (
 	Config   = "rill.jsonc"
 	Wrangler = "wrangler.jsonc"
@@ -47,6 +49,17 @@ const (
 	ServerMain = "./cmd/server"
 	WorkerMain = "./cmd/worker"
 )
+
+func ServerBinary(goos string) string {
+	if goos == "windows" {
+		return NativeBinary + ".exe"
+	}
+	return NativeBinary
+}
+
+func Server() string {
+	return ServerBinary(runtime.GOOS)
+}
 
 func Generated() []string {
 	return []string{GenRoot, DistRoot, CacheRoot}
