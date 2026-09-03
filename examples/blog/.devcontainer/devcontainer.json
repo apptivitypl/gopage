@@ -13,7 +13,7 @@
   "portsAttributes": {
     "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && rill css install",
+  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && go mod download && rill css install",
   "postAttachCommand": "rill dev --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}
