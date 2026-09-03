@@ -1,0 +1,8 @@
+{
+  "nav": {
+    "home": "posts"
+  },
+  "posts": {
+    "empty": "nothing here yet"
+  }
+}

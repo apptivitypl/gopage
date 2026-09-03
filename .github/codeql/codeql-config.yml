@@ -1,0 +1,8 @@
+name: rill
+
+queries:
+  - uses: security-and-quality
+
+paths-ignore:
+  - internal/scaffold/templates
+  - docs

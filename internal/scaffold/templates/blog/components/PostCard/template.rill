@@ -1,0 +1,5 @@
+<a class="post-card" href="/posts/{{ Post.Slug }}">
+    <span class="post-title">{{ Post.Title }}</span>
+    <span class="post-date">{{ Post.Date }}</span>
+    <span class="post-summary">{{ Post.Summary }}</span>
+</a>

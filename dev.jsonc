@@ -1,0 +1,39 @@
+{
+  // Gates that `go run ./cmd/rilltool ci` enforces, and that CI runs unchanged.
+  "coverage": {
+    // Every package must reach this, measured in statements.
+    "globalStatements": 90.0,
+
+    // "ratchet" lets a package sit above its locked figure and refuses a drop
+    // below it; "fixed" only compares against the thresholds here.
+    "mode": "ratchet",
+    "lock": "dev.lock.json",
+    "ratchetTolerance": 0.1,
+
+    // Lines a pull request touches are held to their own floor.
+    "diffStatements": 90.0,
+
+    // Packages smaller than this are too small for a percentage to mean much.
+    "stubMinStatements": 10,
+
+    "exclude": [
+      "cmd/**",
+      "internal/tool/**",
+      "internal/scaffold/templates/**",
+      "**/shell.go",
+      "**/*_adapter.go",
+      "**/generated/**",
+    ],
+
+    // A package may sit below the global gate only with a signed reason.
+    "packages": {
+      "internal/syntax": {"statements": 95.0},
+      "internal/runtime": {"statements": 95.0},
+      "internal/ir": {"statements": 92.0},
+      "internal/css": {
+        "statements": 88.0,
+        "justification": "the tailwind adapter drives an external binary and the network; the download and platform branches are exercised through stubs, the rest is thin process plumbing",
+      },
+    },
+  },
+}

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/sonquer/rill/discussions
+    about: For anything that is not a specific bug or a specific request.
+  - name: Security report
+    url: https://github.com/sonquer/rill/security/advisories/new
+    about: Report a vulnerability privately, never in a public issue.

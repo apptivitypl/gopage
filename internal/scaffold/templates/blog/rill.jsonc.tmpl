@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sonquer/rill/main/schema/rill.schema.json",
+
+  "app": {"name": "{{.Name}}"},
+
+  "i18n": {
+    "mode": "path",
+    "defaultLocale": "{{.DefaultLocale}}",
+    "locales": {{.Locales}},
+    "prefixDefault": false
+  },
+
+  "routing": {
+    "reserved": ["/api", "/_rill", "/feed.xml", "/robots.txt", "/sitemap.xml", "/favicon.ico"]
+  },
+
+  "css": {"engine": "plain"},
+  "nav": {"mode": "{{.Nav}}"}
+}

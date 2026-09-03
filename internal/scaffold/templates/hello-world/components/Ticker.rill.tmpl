@@ -1,0 +1,47 @@
+---
+type Props struct {
+	Label string
+	Start int
+}
+---
+<span class="inline-flex items-center gap-3">
+    <button class="action" type="button">&minus;1</button>
+    <output class="mono text-2xl tabular-nums" :aria-label="Label">{{ Start }}</output>
+    <button class="action" type="button">+1</button>
+</span>
+
+<< if .React >><script client lang="tsx">
+import { useState } from "react";
+import type { Props } from "rill:props/Ticker";
+
+export default function Ticker({ Label, Start }: Props) {
+	const [value, set] = useState(Start);
+	return (
+		<span className="inline-flex items-center gap-3">
+			<button className="action" type="button" onClick={() => set(value - 1)}>&minus;1</button>
+			<output className="mono text-2xl tabular-nums" aria-label={Label}>{value}</output>
+			<button className="action" type="button" onClick={() => set(value + 1)}>+1</button>
+		</span>
+	);
+}
+</script>
+<< else >><script client>
+import type { Props } from "rill:props/Ticker";
+
+export function mount(element: HTMLElement, props: Props): () => void {
+	const output = element.querySelector("output");
+	const buttons = element.querySelectorAll<HTMLButtonElement>("button");
+	if (!output) {
+		return () => {};
+	}
+	let value = props.Start;
+	const step = (delta: number) => () => {
+		value += delta;
+		output.textContent = String(value);
+	};
+	const handlers = [step(-1), step(1)];
+	buttons.forEach((button, index) => button.addEventListener("click", handlers[index]));
+	return () => buttons.forEach((button, index) => button.removeEventListener("click", handlers[index]));
+}
+</script>
+<< end >>

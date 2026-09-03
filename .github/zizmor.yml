@@ -1,0 +1,9 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": hash-pin
+
+  artipacked:
+    ignore:
+      - tag.yml

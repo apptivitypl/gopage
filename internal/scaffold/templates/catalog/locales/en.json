@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "home": "catalog"
+  },
+  "status": {
+    "active": "active",
+    "paused": "paused",
+    "archived": "archived"
+  },
+  "items": {
+    "empty": "nothing matches",
+    "per_m2": "per m2",
+    "count": {
+      "one": "{count} listing",
+      "other": "{count} listings"
+    },
+    "cheapest": "cheapest first"
+  },
+  "enquiry": {
+    "title": "ask about this listing",
+    "name": "your name",
+    "email": "your email",
+    "message": "message",
+    "consent": "you may reply",
+    "send": "send",
+    "sent": "enquiry received, and the flash survived one read"
+  }
+}

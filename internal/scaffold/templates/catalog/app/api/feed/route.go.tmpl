@@ -1,0 +1,27 @@
+package route
+
+import (
+	"github.com/sonquer/rill"
+
+	"{{.Module}}/catalog"
+)
+
+type Entry struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	City  string `json:"city"`
+	Price int64  `json:"price"`
+}
+
+func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
+	request := ctx.Request()
+	return rill.Events(request, func(out *rill.Stream) error {
+		for _, item := range catalog.All("") {
+			entry := Entry{ID: item.ID, Name: item.Name, City: item.City, Price: item.Price}
+			if err := out.Send("item", entry); err != nil {
+				return err
+			}
+		}
+		return out.Send("done", nil)
+	}), nil
+}

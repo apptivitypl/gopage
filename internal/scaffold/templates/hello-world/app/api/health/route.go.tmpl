@@ -1,0 +1,12 @@
+package route
+
+import "github.com/sonquer/rill"
+
+type Status struct {
+	Status  string `json:"status"`
+	Runtime string `json:"runtime"`
+}
+
+func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
+	return rill.JSON(Status{Status: "ok", Runtime: "go"}), nil
+}
