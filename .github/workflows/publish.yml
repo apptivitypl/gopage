@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "41 2 * * *"
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: Build the nightly prerelease instead of the release the manifest asks for
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -19,7 +24,7 @@ env:
 jobs:
   plan:
     name: plan
-    if: github.event_name != 'schedule'
+    if: github.event_name != 'schedule' && !inputs.nightly
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -156,7 +161,8 @@ jobs:
     name: npm
     needs: [plan, tag, release]
     if: >-
-      always() && github.event_name != 'schedule' && needs.plan.outputs.npm == 'true' &&
+      always() && github.event_name != 'schedule' && !inputs.nightly &&
+      needs.plan.outputs.npm == 'true' &&
       needs.tag.result == 'success' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
@@ -204,7 +210,7 @@ jobs:
   tags:
     name: tags
     needs: [plan, npm]
-    if: always() && github.event_name != 'schedule' && needs.npm.result == 'success'
+    if: always() && github.event_name != 'schedule' && !inputs.nightly && needs.npm.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -228,7 +234,7 @@ jobs:
 
   moved:
     name: moved
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || inputs.nightly
     runs-on: ubuntu-latest
     permissions:
       contents: read
