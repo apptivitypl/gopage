@@ -19,7 +19,7 @@ func Published(pkg Package) (bool, error) {
 	case KindGo:
 		return Tagged(pkg.TagName())
 	case KindNPM:
-		return onRegistry(pkg.Name, pkg.Version)
+		return OnRegistry(pkg.Name, pkg.Version)
 	default:
 		return false, fmt.Errorf("%s: package %q has kind %q, which nothing knows how to publish yet", FileName, pkg.Name, pkg.Kind)
 	}
@@ -61,7 +61,7 @@ func Tagged(tag string) (bool, error) {
 	return strings.TrimSpace(remote) != "", nil
 }
 
-func onRegistry(name, version string) (bool, error) {
+func OnRegistry(name, version string) (bool, error) {
 	address := fmt.Sprintf("%s/%s/%s", registryHost, url.PathEscape(name), url.PathEscape(version))
 	response, err := client.Get(address)
 	if err != nil {

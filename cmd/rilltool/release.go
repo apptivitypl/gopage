@@ -163,6 +163,16 @@ func runOne(root string, pkg release.Package, from, out string, publish bool) er
 		return fmt.Errorf("nothing here knows how to publish a %s package", pkg.Kind)
 	}
 	for _, member := range npmMembers(pkg.Name) {
+		if publish {
+			done, err := release.OnRegistry(member, pkg.Version)
+			if err != nil {
+				return err
+			}
+			if done {
+				fmt.Printf("%s %s is already on the registry\n", member, pkg.Version)
+				continue
+			}
+		}
 		dir, err := assembleNPM(root, member, pkg.Version, from, resolveOut(root, out))
 		if err != nil {
 			return err
