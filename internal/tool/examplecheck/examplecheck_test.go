@@ -159,3 +159,37 @@ func keys(sums map[string][32]byte) []string {
 	}
 	return names
 }
+
+func TestGoModComparesOnlyWhatTheTemplateWrites(t *testing.T) {
+	template := []byte(`module example.com/site
+
+go 1.26.0
+
+require (
+	github.com/apptivitypl/rill v0.1.1
+	github.com/syumai/workers v0.33.0
+)
+`)
+	tidied := []byte(`module example.com/site
+
+go 1.26.0
+
+require (
+	github.com/apptivitypl/rill v0.1.1
+	github.com/syumai/workers v0.33.0
+)
+
+require (
+	github.com/andybalholm/brotli v1.2.3 // indirect
+	golang.org/x/net v0.58.0 // indirect
+)
+`)
+	if string(direct(tidied)) != string(direct(template)) {
+		t.Errorf("tidy's indirect block changed the comparison:\n%s", direct(tidied))
+	}
+
+	bumped := []byte(strings.Replace(string(template), "v0.33.0", "v0.34.0", 1))
+	if string(direct(bumped)) == string(direct(template)) {
+		t.Error("a changed direct requirement must still be a difference")
+	}
+}

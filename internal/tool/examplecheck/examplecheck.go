@@ -103,10 +103,41 @@ func Fingerprint(fsys fs.FS) (map[string][sha256.Size]byte, error) {
 		if err != nil {
 			return err
 		}
+		if name == "go.mod" {
+			data = direct(data)
+		}
 		sums[name] = sha256.Sum256(data)
 		return nil
 	})
 	return sums, err
+}
+
+func direct(module []byte) []byte {
+	var kept []string
+	var block []string
+	inside := false
+	for _, line := range strings.Split(string(module), "\n") {
+		switch {
+		case strings.HasPrefix(line, "require ("):
+			inside, block = true, nil
+		case inside && strings.HasPrefix(line, ")"):
+			inside = false
+			if len(block) > 0 {
+				kept = append(kept, "require (")
+				kept = append(kept, block...)
+				kept = append(kept, ")")
+			}
+		case inside:
+			if !strings.HasSuffix(strings.TrimSpace(line), "// indirect") {
+				block = append(block, line)
+			}
+		default:
+			if !strings.HasSuffix(strings.TrimSpace(line), "// indirect") {
+				kept = append(kept, line)
+			}
+		}
+	}
+	return []byte(strings.TrimRight(strings.Join(kept, "\n"), "\n") + "\n")
 }
 
 func skipped(name string) bool {
