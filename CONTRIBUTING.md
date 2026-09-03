@@ -26,10 +26,8 @@ These are not style preferences. Every one of them fails a build.
    `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
    template and running `rilltool example --update`, never by editing the example. They require a
    published rill, so to build one against your checkout write a workspace first:
-   `rilltool example --workspace`. That workspace names the version the manifest asks for, so a
-   version bump leaves it stale and every go command in the repo starts failing with `unknown
-   revision`. `rilltool example --update` rewrites it; when the workspace is already stale enough
-   that the tool will not start, reach for `GOWORK=off go run ./cmd/rilltool example --workspace`.
+   `rilltool example --workspace`. It names the version the manifest asks for, so a bump makes it
+   stale; `--update` rewrites it, and `GOWORK=off` runs the tool while it is broken.
 8. **Every publishable artifact carries its own version.** See Releases below.
 9. **A regression is a bug until it is explained.** `rilltool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
@@ -107,28 +105,18 @@ The npm packages are assembled from those archives, never built separately:
 everything the plan says is missing. Without `--publish` it stops at the folder and prints the
 `npm publish` line it would have run.
 
-Separately from all of that, `publish.yml` runs on a nightly schedule and moves the `nightly`
-prerelease onto the tip of `main`, but only when `main` has actually moved. It runs the same gates
-first, builds with `goreleaser release --snapshot`, and signs `checksums.txt` in its own step, because
-snapshot mode skips the signing pipe. Nothing nightly reaches npm: the OIDC credential trusted
-publishing issues covers `npm publish` and nothing else, so a preview version could never be taken
-back once published.
+`publish.yml` also runs nightly, moving the `nightly` prerelease onto the tip of `main` when `main`
+has moved. Snapshot builds skip goreleaser's signing pipe, so the workflow signs `checksums.txt`
+itself. Nothing nightly reaches npm, because a published version can never be taken back.
 
-Nothing in CI holds an npm token, and the workflow reads no npm secret at all. Every package is
-configured on npmjs.com with a trusted publisher pointing at `publish.yml`, so the workflow
-authenticates over OIDC and npm attaches provenance by itself.
+Nothing in CI holds an npm token. Every package is configured on npmjs.com with a trusted publisher
+pointing at `publish.yml`, so the workflow authenticates over OIDC. The publish job calls
+`actions/setup-node` without `registry-url`: with it the action writes an empty `_authToken` that npm
+reads as authentication, and the OIDC exchange never happens.
 
-The publish job deliberately calls `actions/setup-node` without `registry-url`. With it, the action
-writes `_authToken=${NODE_AUTH_TOKEN}` into an npmrc; with no token in the environment that expands
-to nothing, npm reads it as auth already being configured, never asks for an OIDC credential and
-fails with a 401. Adding `registry-url` back breaks publishing.
-
-Adding a package to that set is the one thing OIDC cannot do for you, because npm refuses to
-configure a trusted publisher for a name it has never seen, and `npm trust` itself is not covered by
-OIDC. Onboarding one means publishing its first version from a maintainer's own machine and then
-running `rilltool release trust`, which needs two-factor authentication enabled on the npm account
-and a browser login; a granular token that bypasses 2FA is rejected. Weigh that against what the
-package buys before adding one.
+npm refuses to configure a trusted publisher for a name it has never seen, so a new package has to be
+published once by hand and then passed to `rilltool release trust`, which needs 2FA on the account
+and a browser login. Weigh that before adding one.
 
 ## Licence
 
