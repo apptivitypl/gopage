@@ -1,0 +1,67 @@
+name: review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: review
+    if: >-
+      vars.REVIEW_BOT != 'off' && (
+        (github.event_name == 'pull_request' &&
+         github.event.pull_request.draft == false &&
+         github.event.pull_request.head.repo.full_name == github.repository) ||
+        (github.event_name == 'issue_comment' &&
+         github.event.issue.pull_request &&
+         github.event.comment.user.type == 'User' &&
+         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+                  github.event.comment.author_association) &&
+         startsWith(github.event.comment.body, '/oc review'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: The reviewer reads the default branch, never the branch under review
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Load the prompt from its own file rather than from this workflow
+        id: prompt
+        run: |
+          {
+            echo 'text<<REVIEW_PROMPT_EOF'
+            cat .github/review/prompt.md
+            echo 'REVIEW_PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # This action installs opencode from an installer it fetches at run time, which no pin of
+      # ours covers. SECURITY.md says why that was accepted and what the bot can reach.
+      - name: Review
+        uses: anomalyco/opencode/github@4b7e19e315cca414121ba1d61523fef74bb3ae8b
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          OPENCODE_DISABLE_PROJECT_CONFIG: "1"
+          OPENCODE_DISABLE_DEFAULT_PLUGINS: "1"
+          OPENCODE_DISABLE_AUTOUPDATE: "1"
+          OPENCODE_PURE: "1"
+        with:
+          model: opencode/big-pickle
+          use_github_token: true
+          share: "false"
+          mentions: /oc review
+          prompt: ${{ steps.prompt.outputs.text }}
