@@ -17,6 +17,8 @@ jobs:
       contents: read
     outputs:
       packages: ${{ steps.plan.outputs.packages }}
+      go: ${{ steps.plan.outputs.go }}
+      npm: ${{ steps.plan.outputs.npm }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -37,11 +39,17 @@ jobs:
             cat plan.json
             echo "PLAN"
           } >> "$GITHUB_OUTPUT"
+          python3 - <<'KINDS' >> "$GITHUB_OUTPUT"
+          import json
+          kinds = {p["kind"] for p in json.load(open("plan.json"))}
+          print("go=" + str("go" in kinds).lower())
+          print("npm=" + str("npm" in kinds).lower())
+          KINDS
 
   tag:
     name: tag the go module
     needs: plan
-    if: contains(needs.plan.outputs.packages, '"kind": "go"')
+    if: needs.plan.outputs.go == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -65,7 +73,7 @@ jobs:
   npm:
     name: publish the npm packages
     needs: plan
-    if: contains(needs.plan.outputs.packages, '"kind": "npm"')
+    if: needs.plan.outputs.npm == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
