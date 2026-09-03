@@ -30,9 +30,9 @@ compiler are native binaries, so no Node process runs at build time and none at 
 template that uses React still needs npm, pnpm, yarn or bun once, to fetch React itself.
 
 > [!WARNING]
-> **Expect breaking changes.** rill is before 1.0, so a version may break the one before it and the
-> config format will keep moving; it has already changed once. Pin the version you build against,
-> and read the release notes before you raise it.
+> **The API is not stable.** Templates, configuration and the Go API can change between releases,
+> sometimes in ways that need edits in your project. Pin a version, and read the release notes
+> before you raise it.
 
 ## Try it online
 
