@@ -1,9 +1,9 @@
-# create-rill
+# @apptivitypl/create-rill
 
 Scaffolds a [rill](https://github.com/apptivitypl/rill) project.
 
 ```bash
-pnpm create rill my-site
+pnpm create @apptivitypl/rill my-site
 ```
 
 Everything after the name is passed to `rill new`, so `--template blog`, `--locales en,pl` and the

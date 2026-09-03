@@ -92,7 +92,7 @@ func TestTheScaffolderDependsOnTheLauncher(t *testing.T) {
 	if entry["dependencies"].(map[string]any)[CLI] != "0.1.0" {
 		t.Errorf("dependencies = %v", entry["dependencies"])
 	}
-	if entry["bin"].(map[string]any)[Create] != "bin/create-rill.js" {
+	if entry["bin"].(map[string]any)[CreateBin] != "bin/create-rill.js" {
 		t.Errorf("bin = %v", entry["bin"])
 	}
 }

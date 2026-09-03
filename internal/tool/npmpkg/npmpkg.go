@@ -13,7 +13,8 @@ const (
 	Scope      = "@apptivitypl"
 	CLI        = Scope + "/rill"
 	Demos      = CLI + "-demo"
-	Create     = "create-rill"
+	Create     = Scope + "/create-rill"
+	CreateBin  = "create-rill"
 	Repository = "https://github.com/apptivitypl/rill"
 	License    = "MIT OR Apache-2.0"
 	Engine     = ">=20"
@@ -140,7 +141,7 @@ func Demo(version, example string) ([]byte, error) {
 func Scaffolder(version string) ([]byte, error) {
 	entry := base(Create, version, "Scaffolds a rill project.")
 	entry.Keywords = []string{"rill", "create", "scaffold"}
-	entry.Bin = map[string]string{Create: "bin/create-rill.js"}
+	entry.Bin = map[string]string{CreateBin: "bin/create-rill.js"}
 	entry.Files = []string{"bin", "README.md"}
 	entry.Dependencies = map[string]string{CLI: version}
 	return encode(entry)

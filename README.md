@@ -86,7 +86,7 @@ go install github.com/apptivitypl/rill/cmd/rill@latest
 The same binaries are on npm, which is the shortest route on a machine that already has node:
 
 ```bash
-pnpm create rill my-site
+pnpm create @apptivitypl/rill my-site
 ```
 
 ```bash

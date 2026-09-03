@@ -34,7 +34,7 @@
       ]
     },
 
-    "create-rill": {
+    "@apptivitypl/create-rill": {
       "kind": "npm",
       "version": "0.1.2",
       "dir": "npm/create-rill",
