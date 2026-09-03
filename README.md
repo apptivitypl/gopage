@@ -93,14 +93,14 @@ go install github.com/apptivitypl/rill/cmd/rill@latest
 The same binaries are on npm, which is the shortest route on a machine that already has node:
 
 ```bash
-pnpm create @apptivitypl/rill my-site
+pnpm dlx @apptivitypl/rill new my-site
 ```
 
 ```bash
 pnpm dlx @apptivitypl/rill dev
 ```
 
-The first scaffolds a project, the second runs rill without installing anything. A project that
+The first scaffolds a project, the second runs it, neither installs anything. A project that
 already has a `package.json` can pin the version for everyone with `pnpm add -D @apptivitypl/rill`.
 
 Nothing compiles and no install script runs: the binary for your platform arrives as an optional

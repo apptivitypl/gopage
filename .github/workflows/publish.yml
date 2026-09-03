@@ -170,7 +170,6 @@ jobs:
       id-token: write
     env:
       TAG: ${{ needs.plan.outputs.tag }}
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -202,10 +201,6 @@ jobs:
             go run ./cmd/rilltool release run "$name" --from archives --publish
             echo "published $name" >> "$GITHUB_STEP_SUMMARY"
           done
-
-      - name: Configure trusted publishers
-        if: env.NODE_AUTH_TOKEN != ''
-        run: go run ./cmd/rilltool release trust
 
   tags:
     name: tags

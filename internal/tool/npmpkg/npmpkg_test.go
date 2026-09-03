@@ -85,16 +85,6 @@ func TestABinaryPackageIsPinnedToItsPlatform(t *testing.T) {
 	}
 }
 
-func TestTheScaffolderDependsOnTheLauncher(t *testing.T) {
-	entry := decode(t, func() ([]byte, error) { return Scaffolder("0.1.0") })
-	if entry["dependencies"].(map[string]any)[CLI] != "0.1.0" {
-		t.Errorf("dependencies = %v", entry["dependencies"])
-	}
-	if entry["bin"].(map[string]any)[CreateBin] != "bin/create-rill.js" {
-		t.Errorf("bin = %v", entry["bin"])
-	}
-}
-
 func TestManifestPicksTheRightShape(t *testing.T) {
 	for _, name := range Names() {
 		entry := decode(t, func() ([]byte, error) { return Manifest(name, "0.1.0") })
@@ -112,7 +102,7 @@ func TestManifestPicksTheRightShape(t *testing.T) {
 
 func TestNamesListsEveryPublishedPackage(t *testing.T) {
 	names := Names()
-	if len(names) != len(Platforms())+2 {
+	if len(names) != len(Platforms())+1 {
 		t.Fatalf("names = %v", names)
 	}
 	if !slices.IsSorted(names) {

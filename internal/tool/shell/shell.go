@@ -10,6 +10,7 @@ import (
 func Run(name string, args ...string) error {
 	fmt.Fprintf(os.Stderr, "$ %s %s\n", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

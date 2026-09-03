@@ -10,8 +10,6 @@ import (
 const (
 	Scope      = "@apptivitypl"
 	CLI        = Scope + "/rill"
-	Create     = Scope + "/create-rill"
-	CreateBin  = "create-rill"
 	Repository = "https://github.com/apptivitypl/rill"
 	License    = "MIT OR Apache-2.0"
 	Engine     = ">=20"
@@ -112,21 +110,9 @@ func Binary(version string, platform Platform) ([]byte, error) {
 	return encode(entry)
 }
 
-func Scaffolder(version string) ([]byte, error) {
-	entry := base(Create, version, "Scaffolds a rill project.")
-	entry.Keywords = []string{"rill", "create", "scaffold"}
-	entry.Bin = map[string]string{CreateBin: "bin/create-rill.js"}
-	entry.Files = []string{"bin", "README.md"}
-	entry.Dependencies = map[string]string{CLI: version}
-	return encode(entry)
-}
-
 func Manifest(name, version string) ([]byte, error) {
-	switch name {
-	case CLI:
+	if name == CLI {
 		return Launcher(version)
-	case Create:
-		return Scaffolder(version)
 	}
 	for _, platform := range Platforms() {
 		if platform.Package() == name {
@@ -137,7 +123,7 @@ func Manifest(name, version string) ([]byte, error) {
 }
 
 func Names() []string {
-	names := []string{CLI, Create}
+	names := []string{CLI}
 	for _, platform := range Platforms() {
 		names = append(names, platform.Package())
 	}

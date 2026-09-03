@@ -30,11 +30,8 @@ func assembleNPM(root, name, version, from, out string) (string, error) {
 }
 
 func fillNPM(root, name, version, from, dir string) error {
-	switch name {
-	case npmpkg.CLI:
+	if name == npmpkg.CLI {
 		return copyDir(filepath.Join(root, "npm", "rill"), dir)
-	case npmpkg.Create:
-		return copyDir(filepath.Join(root, "npm", "create-rill"), dir)
 	}
 	for _, platform := range npmpkg.Platforms() {
 		if platform.Package() != name {

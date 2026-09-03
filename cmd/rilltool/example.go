@@ -44,6 +44,9 @@ func exampleCmd(args []string) error {
 		differences = append(differences, found...)
 	}
 	if update {
+		if err := refreshWorkspace(root, version); err != nil {
+			return err
+		}
 		fmt.Println("example: written")
 		return nil
 	}
@@ -151,6 +154,13 @@ func resolve(dir string) error {
 		}
 	}
 	return nil
+}
+
+func refreshWorkspace(root, version string) error {
+	if _, err := os.Stat(filepath.Join(root, "go.work")); err != nil {
+		return nil
+	}
+	return writeWorkspace(root, version)
 }
 
 func writeWorkspace(root, version string) error {

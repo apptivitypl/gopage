@@ -216,8 +216,9 @@ func releaseTrust() error {
 }
 
 func trustOne(name string) error {
-	if held, err := shell.Capture("npm", "trust", "list", name); err == nil && strings.Contains(held, npmpkg.Repository) {
-		fmt.Printf("%s already trusts this repository\n", name)
+	held, err := shell.Capture("npm", "trust", "list", name)
+	if err == nil && strings.Contains(held, trustRepository) && strings.Contains(held, trustWorkflow) {
+		fmt.Printf("%s already trusts %s through %s\n", name, trustRepository, trustWorkflow)
 		return nil
 	}
 	return shell.Run("npm", "trust", "github", name,

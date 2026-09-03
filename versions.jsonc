@@ -32,14 +32,6 @@
         "npm/rill/**",
         "internal/tool/npmpkg/**"
       ]
-    },
-
-    "@apptivitypl/create-rill": {
-      "kind": "npm",
-      "version": "0.1.3",
-      "dir": "npm/create-rill",
-      "needs": ["@apptivitypl/rill"],
-      "paths": ["npm/create-rill/**"]
     }
   }
 }

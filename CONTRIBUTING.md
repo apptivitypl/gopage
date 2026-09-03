@@ -26,7 +26,10 @@ These are not style preferences. Every one of them fails a build.
    `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
    template and running `rilltool example --update`, never by editing the example. They require a
    published rill, so to build one against your checkout write a workspace first:
-   `rilltool example --workspace`.
+   `rilltool example --workspace`. That workspace names the version the manifest asks for, so a
+   version bump leaves it stale and every go command in the repo starts failing with `unknown
+   revision`. `rilltool example --update` rewrites it; when the workspace is already stale enough
+   that the tool will not start, reach for `GOWORK=off go run ./cmd/rilltool example --workspace`.
 8. **Every publishable artifact carries its own version.** See Releases below.
 9. **A regression is a bug until it is explained.** `rilltool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
@@ -111,11 +114,16 @@ snapshot mode skips the signing pipe. Nothing nightly reaches npm: the OIDC cred
 publishing issues covers `npm publish` and nothing else, so a preview version could never be taken
 back once published.
 
-Nothing in CI holds an npm token. Every package is configured on npmjs.com with a trusted publisher
-pointing at `publish.yml`, so the workflow authenticates over OIDC and npm attaches provenance by
-itself. A package npm has never seen cannot be configured that way, so its first version is
-published by hand from a maintainer's own logged-in machine; every version after that comes from the
-workflow.
+Nothing in CI holds an npm token, and the workflow reads no npm secret at all. Every package is
+configured on npmjs.com with a trusted publisher pointing at `publish.yml`, so the workflow
+authenticates over OIDC and npm attaches provenance by itself.
+
+Adding a package to that set is the one thing OIDC cannot do for you, because npm refuses to
+configure a trusted publisher for a name it has never seen, and `npm trust` itself is not covered by
+OIDC. Onboarding one means publishing its first version from a maintainer's own machine and then
+running `rilltool release trust`, which needs two-factor authentication enabled on the npm account
+and a browser login; a granular token that bypasses 2FA is rejected. Weigh that against what the
+package buys before adding one.
 
 ## Licence
 
