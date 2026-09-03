@@ -4,6 +4,10 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag to build the release from
+        required: true
 
 permissions: {}
 
@@ -24,9 +28,13 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Build the tag's tree, but with this workflow as it is on the default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -35,8 +43,8 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: The tag has to match VERSION
-        run: go run ./cmd/rilltool version --check "$GITHUB_REF_NAME"
+      - name: The tag has to match the manifest
+        run: go run ./cmd/rilltool version --check "$TAG"
 
       - name: Install the pinned linter
         run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
@@ -61,7 +69,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          GORELEASER_CURRENT_TAG: ${{ inputs.tag || github.ref_name }}
 
       - name: Attest everything the release publishes
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
