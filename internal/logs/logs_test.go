@@ -359,3 +359,24 @@ func TestARequestLineRoundsItsDuration(t *testing.T) {
 		t.Errorf("elapsed = %q, want a plain value passed through", got)
 	}
 }
+
+func TestAControlCharacterCannotForgeALogLine(t *testing.T) {
+	var out strings.Builder
+	logger := slog.New(Handler(Options{Writer: &out, Format: FormatPretty}))
+	logger.Info(RequestMessage,
+		"method", "GET",
+		"path", "/x\n12:00:00 INFO  forged",
+		"status", 200,
+		"bytes", 0,
+		"took", time.Duration(0),
+	)
+	logger.Warn("rewrite refused", "path", "/y\nanother forged line")
+
+	text := out.String()
+	if lines := strings.Count(strings.TrimRight(text, "\n"), "\n"); lines != 1 {
+		t.Errorf("wrote %d lines, want one per record:\n%s", lines+1, text)
+	}
+	if !strings.Contains(text, `\n`) {
+		t.Errorf("the newline was not escaped:\n%s", text)
+	}
+}

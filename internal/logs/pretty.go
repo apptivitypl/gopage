@@ -101,7 +101,7 @@ func (p *pretty) request(b *strings.Builder, record slog.Record) {
 		}
 		return true
 	})
-	b.WriteString(fields["method"] + " " + fields["path"])
+	b.WriteString(safe(fields["method"]) + " " + safe(fields["path"]))
 	b.WriteString("  ")
 	p.paint(b, statusTint(fields["status"]), fields["status"])
 	b.WriteString("  ")
@@ -154,9 +154,14 @@ func (p *pretty) field(b *strings.Builder, attr slog.Attr) {
 }
 
 func value(v slog.Value) string {
-	text := v.Resolve().String()
-	if strings.ContainsAny(text, " \t\"") {
-		return strconv.Quote(text)
+	return safe(v.Resolve().String())
+}
+
+func safe(text string) string {
+	for _, r := range text {
+		if r == ' ' || r == '"' || !strconv.IsPrint(r) {
+			return strconv.Quote(text)
+		}
 	}
 	return text
 }
