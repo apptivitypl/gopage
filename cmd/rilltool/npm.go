@@ -10,10 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/apptivitypl/rill/internal/build"
 	"github.com/apptivitypl/rill/internal/paths"
 	"github.com/apptivitypl/rill/internal/tool/examplecheck"
 	"github.com/apptivitypl/rill/internal/tool/npmpkg"
-	"github.com/apptivitypl/rill/internal/tool/shell"
 )
 
 const npmOut = "dist/npm"
@@ -56,13 +56,20 @@ func fillNPM(root, name, version, from, dir string) error {
 		if npmpkg.DemoPackage(example.Name) != name {
 			continue
 		}
-		return buildDemo(root, example, dir)
+		return buildDemo(root, example, version, dir)
 	}
 	return fmt.Errorf("nothing knows how to assemble %q", name)
 }
 
-func buildDemo(root string, example examplecheck.Example, dir string) error {
-	if err := shell.Run("go", "run", "./cmd/rill", "build", "--dir", example.Dir(), "--target", "demo"); err != nil {
+func buildDemo(root string, example examplecheck.Example, version, dir string) error {
+	if err := writeWorkspace(root, "v"+version); err != nil {
+		return err
+	}
+	runner := build.ExecRunner{Verbose: true}
+	command := build.Command{Dir: root, Env: workspaceEnv, Name: "go", Args: []string{
+		"run", "./cmd/rill", "build", "--dir", example.Dir(), "--target", "demo",
+	}}
+	if err := runner.Run(command); err != nil {
 		return err
 	}
 	built := filepath.Join(root, filepath.FromSlash(example.Dir()), filepath.FromSlash(paths.DemoDir))

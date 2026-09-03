@@ -16,7 +16,7 @@ env:
 
 jobs:
   plan:
-    name: what versions.jsonc says is missing
+    name: plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,7 +36,8 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - id: plan
+      - name: Read the manifest and ask the registries
+        id: plan
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -61,7 +62,7 @@ jobs:
           KINDS
 
   tag:
-    name: tag the go module
+    name: tag
     needs: plan
     runs-on: ubuntu-latest
     permissions:
@@ -71,20 +72,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create the tag the manifest asks for, if it is not there
+      - name: Tag every go package
         env:
-          TAG: ${{ needs.plan.outputs.tag }}
+          PLAN: ${{ needs.plan.outputs.packages }}
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "$TAG is already tagged" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          git tag "$TAG"
-          git push origin "$TAG"
-          echo "pushed $TAG" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s' "$PLAN" |
+            python3 -c 'import json,sys; [print(p["tag"]) for p in json.load(sys.stdin) if p["kind"] == "go"]' |
+            while read -r tag; do
+              if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+                echo "$tag is already tagged" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              git tag "$tag"
+              git push origin "$tag"
+              echo "pushed $tag" >> "$GITHUB_STEP_SUMMARY"
+            done
 
   release:
-    name: build and sign the release
+    name: release
     needs: [plan, tag]
     if: needs.plan.outputs.released != 'true'
     runs-on: ubuntu-latest
@@ -95,7 +100,7 @@ jobs:
     env:
       TAG: ${{ needs.plan.outputs.tag }}
     steps:
-      - name: Build the tag's tree, with this workflow as it is on the default branch
+      - name: Check out the tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ needs.plan.outputs.tag }}
@@ -145,9 +150,11 @@ jobs:
             dist/checksums.txt
 
   npm:
-    name: publish the npm packages
-    needs: [plan, release]
-    if: always() && needs.plan.outputs.npm == 'true' && needs.release.result != 'failure'
+    name: npm
+    needs: [plan, tag, release]
+    if: >-
+      always() && needs.plan.outputs.npm == 'true' &&
+      needs.tag.result == 'success' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -173,18 +180,18 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Trusted publishing needs npm 11.15.1 or later
+      - name: Update npm
         run: npm install --global npm@latest
 
-      - name: The demo packages are built from the examples
+      - name: Install the browser packages
         run: pnpm --dir examples/hello-world install --no-frozen-lockfile
 
-      - name: Fetch the archives the binaries come from
+      - name: Download the release archives
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download "$TAG" --dir archives --pattern 'rill_*'
 
-      - name: Publish what the registry does not have
+      - name: Publish
         env:
           PLAN: ${{ needs.plan.outputs.packages }}
         run: |
@@ -195,6 +202,31 @@ jobs:
             echo "published $name" >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Hand the packages over to OIDC, so the next release needs no token
+      - name: Configure trusted publishers
         if: env.NODE_AUTH_TOKEN != ''
         run: go run ./cmd/rilltool release trust
+
+  tags:
+    name: tags
+    needs: [plan, npm]
+    if: always() && needs.npm.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Tag every published package
+        run: |
+          go run ./cmd/rilltool release tags | while read -r tag; do
+            git tag "$tag"
+            git push origin "$tag"
+            echo "pushed $tag" >> "$GITHUB_STEP_SUMMARY"
+          done

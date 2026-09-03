@@ -32,13 +32,15 @@ func releaseCmd(args []string) error {
 		return releaseRun(args[1:])
 	case "trust":
 		return releaseTrust()
+	case "tags":
+		return releaseTags()
 	default:
 		return fmt.Errorf("unknown release subcommand %q\n\n%s", args[0], releaseList())
 	}
 }
 
 func releaseList() string {
-	return "release subcommands:\n  plan [--json]\n  check\n  run [package] [--from DIR] [--out DIR] [--publish]\n  trust"
+	return "release subcommands:\n  plan [--json]\n  check\n  run [package] [--from DIR] [--out DIR] [--publish]\n  trust\n  tags"
 }
 
 func loadManifest() (*release.Manifest, error) {
@@ -223,4 +225,31 @@ func trustOne(name string) error {
 		"--file", trustWorkflow,
 		"--allow-publish",
 		"--yes")
+}
+
+func releaseTags() error {
+	manifest, err := loadManifest()
+	if err != nil {
+		return err
+	}
+	for _, pkg := range manifest.Packages() {
+		if pkg.Kind == release.KindGo {
+			continue
+		}
+		published, err := release.Published(pkg)
+		if err != nil {
+			return err
+		}
+		if !published {
+			continue
+		}
+		tagged, err := release.Tagged(pkg.TagName())
+		if err != nil {
+			return err
+		}
+		if !tagged {
+			fmt.Println(pkg.TagName())
+		}
+	}
+	return nil
 }

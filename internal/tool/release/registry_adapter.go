@@ -32,7 +32,7 @@ func Changed(pkg Package) (bool, error) {
 		return false, err
 	}
 	if !tagged {
-		return true, nil
+		return false, nil
 	}
 	out, err := shell.Capture("git", "diff", "--name-only", tag+"..HEAD")
 	if err != nil {
