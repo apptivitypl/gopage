@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func parseSchema(t *testing.T, code string) *Schema {

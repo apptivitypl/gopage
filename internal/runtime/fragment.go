@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 const (

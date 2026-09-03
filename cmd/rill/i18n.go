@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/i18n"
 )
 
 func i18nCommand(args []string) error {

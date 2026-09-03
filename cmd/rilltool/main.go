@@ -11,16 +11,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	appconfig "github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/tool/benchlog"
-	"github.com/sonquer/rill/internal/tool/config"
-	"github.com/sonquer/rill/internal/tool/covprofile"
-	"github.com/sonquer/rill/internal/tool/diagcheck"
-	"github.com/sonquer/rill/internal/tool/gate"
-	"github.com/sonquer/rill/internal/tool/gitdiff"
-	"github.com/sonquer/rill/internal/tool/render"
-	"github.com/sonquer/rill/internal/tool/schemacheck"
-	"github.com/sonquer/rill/internal/tool/shell"
+	appconfig "github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/tool/benchlog"
+	"github.com/apptivitypl/rill/internal/tool/config"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/diagcheck"
+	"github.com/apptivitypl/rill/internal/tool/gate"
+	"github.com/apptivitypl/rill/internal/tool/gitdiff"
+	"github.com/apptivitypl/rill/internal/tool/render"
+	"github.com/apptivitypl/rill/internal/tool/schemacheck"
+	"github.com/apptivitypl/rill/internal/tool/shell"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/logs"
 )
 
 type Response interface {

@@ -5,10 +5,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/form"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 func renderForm(t *testing.T, source string, result form.Result, token string) string {

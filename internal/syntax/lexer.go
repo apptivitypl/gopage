@@ -3,7 +3,7 @@ package syntax
 import (
 	"strings"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 const fence = "---"

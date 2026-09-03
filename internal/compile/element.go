@@ -3,8 +3,8 @@ package compile
 import (
 	"strings"
 
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 func (b *builder) element(node *syntax.Element) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func elementOf(t *testing.T, source string) *Element {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/tool/config"
-	"github.com/sonquer/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/config"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
 )
 
 func cfg(t *testing.T, extra string) *config.Config {

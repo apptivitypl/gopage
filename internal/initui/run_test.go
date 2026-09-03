@@ -13,7 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
 
-	"github.com/sonquer/rill/internal/scaffold"
+	"github.com/apptivitypl/rill/internal/scaffold"
 )
 
 func TestTheConfiguratorRunsOnATerminal(t *testing.T) {

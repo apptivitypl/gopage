@@ -9,9 +9,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 func build(t *testing.T, files fstest.MapFS) []byte {

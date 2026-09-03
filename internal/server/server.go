@@ -11,13 +11,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/cache"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/i18n"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/runtime"
-	"github.com/sonquer/rill/internal/seo"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/cache"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/seo"
 )
 
 type PropsProvider func(*http.Request, Params) (runtime.Accessible, error)

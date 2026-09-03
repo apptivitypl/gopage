@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/net/netutil"
 
-	"github.com/sonquer/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/logs"
 )
 
 const (

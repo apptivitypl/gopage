@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/css"
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 type styles struct {

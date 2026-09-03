@@ -26,7 +26,7 @@ import (
 
 	"golang.org/x/net/http2"
 
-	"github.com/sonquer/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/logs"
 )
 
 func listenApp(t *testing.T) (*App, string) {

@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/sonquer/rill/internal/cookie"
+	"github.com/apptivitypl/rill/internal/cookie"
 )
 
 const (

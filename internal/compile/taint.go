@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sonquer/rill/internal/action"
-	"github.com/sonquer/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/action"
+	"github.com/apptivitypl/rill/internal/form"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/schema"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 func CheckFragments(doc *syntax.Document, file string, model *schema.Schema, bag *diag.Bag) {

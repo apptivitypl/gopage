@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 const Debounce = 120 * time.Millisecond

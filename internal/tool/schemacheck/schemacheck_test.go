@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/config"
 )
 
 type inner struct {

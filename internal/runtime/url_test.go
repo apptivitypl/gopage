@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 func TestSafeURLAcceptsWhatALinkNeeds(t *testing.T) {

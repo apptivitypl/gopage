@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 func TestErrorMessageCountsDiagnostics(t *testing.T) {

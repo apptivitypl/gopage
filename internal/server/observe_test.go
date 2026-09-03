@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/logs"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 func watched(t *testing.T, opts Options) (*App, *strings.Builder) {

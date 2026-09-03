@@ -10,12 +10,12 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/codegen"
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/paths"
-	"github.com/sonquer/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/codegen"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/schema"
 )
 
 const (

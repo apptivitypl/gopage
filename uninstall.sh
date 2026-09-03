@@ -1,7 +1,7 @@
 #!/bin/sh
 # Remove rill and, if you ask, everything it has cached.
 #
-#   curl -fsSL https://raw.githubusercontent.com/sonquer/rill/main/uninstall.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.sh | sh
 #   ... | sh -s -- --purge
 set -eu
 
@@ -50,7 +50,7 @@ say "found $version at $target"
 if [ "${target#"$(go env GOPATH 2>/dev/null || echo /nonexistent)/bin"}" != "$target" ]; then
   say ""
   say "that copy came from 'go install'. Removing the file is enough, but"
-  say "'go install github.com/sonquer/rill/cmd/rill@latest' would bring it back."
+  say "'go install github.com/apptivitypl/rill/cmd/rill@latest' would bring it back."
 fi
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/rill"

@@ -3,11 +3,11 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/sonquer/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/i18n"
 	"math"
 	"strings"
 
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 type scope struct {

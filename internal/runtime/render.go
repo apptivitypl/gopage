@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sonquer/rill/internal/i18n"
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 var escapes = buildEscapes()

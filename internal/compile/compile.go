@@ -4,13 +4,13 @@ import (
 	"io/fs"
 	"slices"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/i18n"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/schema"
-	"github.com/sonquer/rill/internal/seo"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/seo"
 )
 
 type Phase struct {

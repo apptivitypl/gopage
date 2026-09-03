@@ -4,11 +4,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/runtime"
-	"github.com/sonquer/rill/internal/schema"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 const Source = "rill"

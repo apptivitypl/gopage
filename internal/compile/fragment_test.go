@@ -5,9 +5,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 const fragmentPage = `---

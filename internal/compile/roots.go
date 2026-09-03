@@ -3,9 +3,9 @@ package compile
 import (
 	"slices"
 
-	"github.com/sonquer/rill/internal/action"
-	"github.com/sonquer/rill/internal/form"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/action"
+	"github.com/apptivitypl/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 var metaFields = []string{"Title", "Description", "Canonical", "Image", "Robots", runtime.AlternatesField}

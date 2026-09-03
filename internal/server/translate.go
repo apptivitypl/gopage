@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/i18n"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 type translatorKey struct{}

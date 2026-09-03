@@ -7,17 +7,17 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/sonquer/rill/internal/action"
-	"github.com/sonquer/rill/internal/api"
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/cache"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/form"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/logs"
-	"github.com/sonquer/rill/internal/redirect"
-	"github.com/sonquer/rill/internal/runtime"
-	"github.com/sonquer/rill/internal/server"
+	"github.com/apptivitypl/rill/internal/action"
+	"github.com/apptivitypl/rill/internal/api"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/cache"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/redirect"
+	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/server"
 )
 
 type (

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 type apply struct {

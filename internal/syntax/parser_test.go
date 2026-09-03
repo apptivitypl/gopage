@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func parse(t *testing.T, src string) (*Document, *diag.Bag) {

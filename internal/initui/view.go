@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/sonquer/rill/internal/scaffold"
+	"github.com/apptivitypl/rill/internal/scaffold"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 type stubDeferred struct {

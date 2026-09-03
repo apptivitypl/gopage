@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
 )
 
 type ChangedLines map[string]map[int]bool

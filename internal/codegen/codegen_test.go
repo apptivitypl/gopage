@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/schema"
 )
 
 func build(t *testing.T, code string) *schema.Schema {

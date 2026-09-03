@@ -1,12 +1,12 @@
 package initui
 
 import (
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/sonquer/rill/internal/scaffold"
+	"github.com/apptivitypl/rill/internal/scaffold"
 )
 
 type Step uint8

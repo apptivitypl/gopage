@@ -1,6 +1,6 @@
 package syntax
 
-import "github.com/sonquer/rill/internal/diag"
+import "github.com/apptivitypl/rill/internal/diag"
 
 type Node interface {
 	NodeSpan() diag.Span

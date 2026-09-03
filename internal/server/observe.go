@@ -8,8 +8,8 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/logs"
 )
 
 type Recorder struct {

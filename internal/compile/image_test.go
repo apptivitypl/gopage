@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/form"
 )
 
 func TestImageReservesItsBox(t *testing.T) {

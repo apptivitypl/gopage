@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 const (

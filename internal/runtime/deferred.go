@@ -3,7 +3,7 @@ package runtime
 import (
 	"time"
 
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 const (

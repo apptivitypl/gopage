@@ -3,10 +3,10 @@
   Install rill. Run it again to update; it stops when what you have is current.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/sonquer/rill/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1 | iex
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/sonquer/rill/main/install.ps1))) -Version v0.1.0
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1))) -Version v0.1.0
 #>
 [CmdletBinding()]
 param(
@@ -17,7 +17,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repo = 'sonquer/rill'
+$repo = 'apptivitypl/rill'
 
 function Fail($message) {
   [Console]::Error.WriteLine("install: $message")

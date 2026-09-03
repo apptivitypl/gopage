@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 const loaderPage = `---
@@ -31,7 +31,7 @@ func Load(ctx *rill.Ctx) (Props, error) {
 
 const apiHandler = `package route
 
-import "github.com/sonquer/rill"
+import "github.com/apptivitypl/rill"
 
 func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
 	return rill.JSON(map[string]string{"status": "ok"}), nil

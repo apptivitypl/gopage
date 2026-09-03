@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 type recorder struct {

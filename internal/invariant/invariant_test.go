@@ -9,12 +9,12 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/sonquer/rill/internal/cache"
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/diag"
-	rt "github.com/sonquer/rill/internal/runtime"
-	"github.com/sonquer/rill/internal/server"
+	"github.com/apptivitypl/rill/internal/cache"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/diag"
+	rt "github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/server"
 )
 
 const layout = `<!doctype html>

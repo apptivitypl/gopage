@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"errors"
-	"github.com/sonquer/rill/internal/logs"
+	"github.com/apptivitypl/rill/internal/logs"
 	"net/http"
 	"net/http/httptest"
 	"strings"

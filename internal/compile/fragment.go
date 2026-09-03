@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 const MaxFragments = 64

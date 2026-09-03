@@ -1,7 +1,7 @@
 package smoke
 
 import (
-	"github.com/sonquer/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/config"
 	"net/http"
 	"strings"
 	"testing"

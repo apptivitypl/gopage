@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/schema"
 )
 
 const TypesFile = "props.generated.ts"

@@ -3,7 +3,7 @@ package schema
 import (
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func deferredSchema(t *testing.T, code string) *Schema {

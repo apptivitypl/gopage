@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/validate"
+	"github.com/apptivitypl/rill/internal/validate"
 )
 
 const (

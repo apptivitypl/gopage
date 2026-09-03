@@ -74,7 +74,7 @@
         "allocs_per_op": 1
       }
     },
-    "worker_module_brotli_bytes": 1857750,
+    "worker_module_brotli_bytes": 1856928,
     "client_runtime_brotli_bytes": 2059,
     "client_chunks_brotli_bytes": 54690
   }

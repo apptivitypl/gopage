@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sonquer/rill/internal/action"
-	"github.com/sonquer/rill/internal/cache"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/action"
+	"github.com/apptivitypl/rill/internal/cache"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 const (

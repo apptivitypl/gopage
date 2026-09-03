@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func buildApp(t *testing.T) string {

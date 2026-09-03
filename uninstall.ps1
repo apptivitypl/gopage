@@ -3,10 +3,10 @@
   Remove rill and, if you ask, everything it has cached.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/sonquer/rill/main/uninstall.ps1 | iex
+  irm https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.ps1 | iex
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/sonquer/rill/main/uninstall.ps1))) -Purge
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.ps1))) -Purge
 #>
 [CmdletBinding()]
 param(

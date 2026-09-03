@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/cookie"
+	"github.com/apptivitypl/rill/internal/cookie"
 )
 
 type failingSource struct{}

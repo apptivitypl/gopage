@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/action"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/form"
-	"github.com/sonquer/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/action"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/ir"
 )
 
 func limitedApp(t *testing.T, limit string) *App {

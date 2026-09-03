@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sonquer/rill/internal/jsonc"
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/jsonc"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 const FileName = paths.Config

@@ -1,14 +1,14 @@
 #!/bin/sh
 # Install rill. Run it again to update; it stops when what you have is current.
 #
-#   curl -fsSL https://raw.githubusercontent.com/sonquer/rill/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh
 #   ... | sh -s -- --version v0.1.0
 #   ... | sh -s -- --dir /usr/local/bin
 #   ... | sh -s -- --force
 #   ... | sh -s -- --require-signature
 set -eu
 
-REPO="sonquer/rill"
+REPO="apptivitypl/rill"
 BINARY="rill"
 VERSION="${RILL_VERSION:-}"
 DIR="${RILL_INSTALL_DIR:-}"

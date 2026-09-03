@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sonquer/rill/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/sonquer/rill/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=ci"></a>
-  <a href="https://pkg.go.dev/github.com/sonquer/rill"><img alt="reference" src="https://img.shields.io/badge/go-reference-007d9c?style=flat-square&logo=go&logoColor=white"></a>
-  <a href="https://github.com/sonquer/rill/blob/main/go.mod"><img alt="go" src="https://img.shields.io/github/go-mod/go-version/sonquer/rill?style=flat-square&logo=go&logoColor=white"></a>
+  <a href="https://github.com/apptivitypl/rill/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/apptivitypl/rill/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=ci"></a>
+  <a href="https://pkg.go.dev/github.com/apptivitypl/rill"><img alt="reference" src="https://img.shields.io/badge/go-reference-007d9c?style=flat-square&logo=go&logoColor=white"></a>
+  <a href="https://github.com/apptivitypl/rill/blob/main/go.mod"><img alt="go" src="https://img.shields.io/github/go-mod/go-version/apptivitypl/rill?style=flat-square&logo=go&logoColor=white"></a>
   <img alt="targets" src="https://img.shields.io/badge/targets-cloudflare%20workers%20%7C%20static%20binary-4c566a?style=flat-square">
   <a href="#licence"><img alt="licence" src="https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue?style=flat-square"></a>
   <img alt="status" src="https://img.shields.io/badge/status-in%20development-orange?style=flat-square">
@@ -37,13 +37,13 @@ will change again before 1.0.
 On Linux and macOS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonquer/rill/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh
 ```
 
 On Windows, in PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/sonquer/rill/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1 | iex
 ```
 
 Both work out which build this machine wants, check the archive against the `checksums.txt`
@@ -56,19 +56,19 @@ update: it stops when what you have is already what the release holds. Both take
 If piping a script into a shell is not something you do, read
 [install.sh](install.sh) first, or skip it — every release publishes an archive for Linux, macOS
 and Windows on both amd64 and arm64 on the
-[releases page](https://github.com/sonquer/rill/releases/latest). Unpack one and put `rill` on your
+[releases page](https://github.com/apptivitypl/rill/releases/latest). Unpack one and put `rill` on your
 PATH.
 
 From source, if you have Go:
 
 ```bash
-go install github.com/sonquer/rill/cmd/rill@latest
+go install github.com/apptivitypl/rill/cmd/rill@latest
 ```
 
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sonquer/rill/main/uninstall.sh | sh
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.sh | sh
 ```
 
 ## Quick start
@@ -137,7 +137,7 @@ one the browser already has can answer with just the fragment that changed.
 
 ```jsonc
 {
-  "$schema": "https://raw.githubusercontent.com/sonquer/rill/main/schema/rill.schema.json",
+  "$schema": "https://raw.githubusercontent.com/apptivitypl/rill/main/schema/rill.schema.json",
   "app": {"name": "my-site"},
   "i18n": {
     "mode": "path",
@@ -206,7 +206,7 @@ which part of that.
 ## Security
 
 Report a vulnerability privately through
-[a security advisory](https://github.com/sonquer/rill/security/advisories/new), never a public
+[a security advisory](https://github.com/apptivitypl/rill/security/advisories/new), never a public
 issue. [SECURITY.md](SECURITY.md) describes what counts as a vulnerability in a framework like this
 one.
 

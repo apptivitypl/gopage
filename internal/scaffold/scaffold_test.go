@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/config"
 )
 
 func create(t *testing.T, cfg Config) string {
@@ -100,7 +100,7 @@ func TestNameLandsInTheConfig(t *testing.T) {
 
 func TestReplaceDirectiveIsOptional(t *testing.T) {
 	withReplace := create(t, Config{RillPath: "/src/rill"})
-	if !strings.Contains(read(t, withReplace, "go.mod"), "replace github.com/sonquer/rill => /src/rill") {
+	if !strings.Contains(read(t, withReplace, "go.mod"), "replace github.com/apptivitypl/rill => /src/rill") {
 		t.Error("the replace directive is missing")
 	}
 

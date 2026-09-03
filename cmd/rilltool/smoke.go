@@ -14,12 +14,12 @@ import (
 
 	"github.com/andybalholm/brotli"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/build"
-	"github.com/sonquer/rill/internal/bundle"
-	"github.com/sonquer/rill/internal/paths"
-	"github.com/sonquer/rill/internal/tool/benchlog"
-	"github.com/sonquer/rill/internal/tool/smoke"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/build"
+	"github.com/apptivitypl/rill/internal/bundle"
+	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/tool/benchlog"
+	"github.com/apptivitypl/rill/internal/tool/smoke"
 )
 
 const (

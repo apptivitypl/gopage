@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sonquer/rill/internal/tool/covprofile"
-	"github.com/sonquer/rill/internal/tool/gate"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/gate"
 )
 
 func outcome() gate.Outcome {

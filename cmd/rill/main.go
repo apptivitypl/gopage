@@ -17,15 +17,15 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/sonquer/rill/internal/build"
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/css"
-	"github.com/sonquer/rill/internal/devserver"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/initui"
-	"github.com/sonquer/rill/internal/lsp"
-	"github.com/sonquer/rill/internal/paths"
-	"github.com/sonquer/rill/internal/scaffold"
+	"github.com/apptivitypl/rill/internal/build"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/devserver"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/initui"
+	"github.com/apptivitypl/rill/internal/lsp"
+	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/scaffold"
 )
 
 func main() {

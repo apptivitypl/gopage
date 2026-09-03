@@ -3,7 +3,7 @@
 ## Reporting
 
 Report privately through
-[a security advisory](https://github.com/sonquer/rill/security/advisories/new). Do not open a
+[a security advisory](https://github.com/apptivitypl/rill/security/advisories/new). Do not open a
 public issue for a vulnerability.
 
 Say what you did, what happened, and what you expected. A `.rill` file or a project that shows the

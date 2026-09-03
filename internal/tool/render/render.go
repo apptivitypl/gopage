@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sonquer/rill/internal/tool/covprofile"
-	"github.com/sonquer/rill/internal/tool/gate"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/gate"
 )
 
 const worstFiles = 10

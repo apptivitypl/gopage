@@ -9,7 +9,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 var Watched = []string{paths.AppDir, paths.ComponentsDir, paths.LocalesDir, paths.StylesDir}

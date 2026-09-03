@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sonquer/rill/internal/csrf"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/form"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/csrf"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/form"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 const (

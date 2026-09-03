@@ -6,9 +6,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/i18n"
-	"github.com/sonquer/rill/internal/runtime"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/i18n"
+	"github.com/apptivitypl/rill/internal/runtime"
 )
 
 func localised(page string, catalogs map[string]string) fstest.MapFS {

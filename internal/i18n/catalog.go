@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 )
 
 const (

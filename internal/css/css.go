@@ -2,7 +2,7 @@ package css
 
 import (
 	"fmt"
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/paths"
 	"os"
 	"os/exec"
 	"path/filepath"

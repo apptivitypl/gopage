@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/cookie"
-	"github.com/sonquer/rill/internal/redirect"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/cookie"
+	"github.com/apptivitypl/rill/internal/redirect"
 )
 
 const (

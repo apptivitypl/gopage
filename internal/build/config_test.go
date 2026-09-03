@@ -11,10 +11,10 @@ import (
 	"runtime"
 	"testing/fstest"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/bundle"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/bundle"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/paths"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -1077,7 +1077,7 @@ func TestGeneratedGoIsFormatted(t *testing.T) {
 	files := withModule(map[string]string{
 		"app/layout.rill":    "<html><body>{% outlet %}</body></html>",
 		"app/page.rill":      loaderPage,
-		"app/api/x/route.go": "package route\n\nimport \"github.com/sonquer/rill\"\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {\n\treturn rill.Text(\"ok\"), nil\n}\n",
+		"app/api/x/route.go": "package route\n\nimport \"github.com/apptivitypl/rill\"\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {\n\treturn rill.Text(\"ok\"), nil\n}\n",
 	})
 	dir := project(t, files)
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {

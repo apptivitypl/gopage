@@ -1,6 +1,6 @@
 package form
 
-import "github.com/sonquer/rill/internal/runtime"
+import "github.com/apptivitypl/rill/internal/runtime"
 
 const (
 	valuesField = "Values"

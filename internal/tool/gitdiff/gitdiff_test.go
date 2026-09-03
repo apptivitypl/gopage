@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/sonquer/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/rill/internal/tool/covprofile"
 )
 
 func TestParseUnifiedReadsHunkRanges(t *testing.T) {

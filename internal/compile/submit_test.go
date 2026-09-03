@@ -3,7 +3,7 @@ package compile
 import (
 	"testing"
 
-	"github.com/sonquer/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/diag"
 )
 
 func formType(t *testing.T, frontmatter string) (string, *diag.Bag) {

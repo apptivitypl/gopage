@@ -12,17 +12,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/assets"
-	"github.com/sonquer/rill/internal/bundle"
-	"github.com/sonquer/rill/internal/codegen"
-	"github.com/sonquer/rill/internal/compile"
-	"github.com/sonquer/rill/internal/compress"
-	"github.com/sonquer/rill/internal/config"
-	"github.com/sonquer/rill/internal/css"
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/ir"
-	"github.com/sonquer/rill/internal/paths"
-	"github.com/sonquer/rill/internal/server"
+	"github.com/apptivitypl/rill/internal/assets"
+	"github.com/apptivitypl/rill/internal/bundle"
+	"github.com/apptivitypl/rill/internal/codegen"
+	"github.com/apptivitypl/rill/internal/compile"
+	"github.com/apptivitypl/rill/internal/compress"
+	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/rill/internal/server"
 )
 
 type Target string

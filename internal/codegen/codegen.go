@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sonquer/rill/internal/schema"
+	"github.com/apptivitypl/rill/internal/schema"
 )
 
-const RillImport = "github.com/sonquer/rill"
+const RillImport = "github.com/apptivitypl/rill"
 
 type File struct {
 	Package    string

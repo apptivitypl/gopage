@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sonquer/rill/internal/diag"
-	"github.com/sonquer/rill/internal/syntax"
+	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/syntax"
 )
 
 const ClassAttribute = "class"
