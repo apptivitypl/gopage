@@ -17,6 +17,7 @@ builds:
     ldflags:
       - -s -w
       - -X main.version={{ .Version }}
+      - -X main.module={{ envOrDefault "RILL_MODULE" (printf "v%s" .Version) }}
       - -X main.commit={{ .FullCommit }}
       - -X main.date={{ .CommitDate }}
     mod_timestamp: "{{ .CommitTimestamp }}"
@@ -55,7 +56,7 @@ signs:
     output: true
 
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  version_template: "nightly"
 
 changelog:
   use: github

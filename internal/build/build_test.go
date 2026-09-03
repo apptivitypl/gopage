@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/apptivitypl/rill/internal/demo"
+	"github.com/apptivitypl/rill/internal/gotoolchain"
 	"github.com/apptivitypl/rill/internal/paths"
 )
 
@@ -338,7 +339,7 @@ func watchedTimes(t *testing.T, dir string) map[string]time.Time {
 
 func TestTidyResolvesTheDependenciesOfANewProject(t *testing.T) {
 	runner := &recorder{}
-	if err := Tidy("/tmp/demo", runner); err != nil {
+	if err := Tidy("/tmp/demo", gotoolchain.Resolved{}, runner); err != nil {
 		t.Fatalf("Tidy: %v", err)
 	}
 	if len(runner.commands) != 1 {
@@ -351,7 +352,7 @@ func TestTidyResolvesTheDependenciesOfANewProject(t *testing.T) {
 }
 
 func TestTidyReportsAFailingToolchain(t *testing.T) {
-	if err := Tidy("/tmp/demo", &recorder{fail: errors.New("no network")}); err == nil {
+	if err := Tidy("/tmp/demo", gotoolchain.Resolved{}, &recorder{fail: errors.New("no network")}); err == nil {
 		t.Error("Tidy should report a toolchain failure")
 	}
 }

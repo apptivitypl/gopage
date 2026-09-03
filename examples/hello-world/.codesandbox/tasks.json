@@ -2,7 +2,7 @@
   "$schema": "https://codesandbox.io/schemas/tasks.json",
   "setupTasks": [
     {"name": "Install rill", "command": "go install github.com/apptivitypl/rill/cmd/rill@latest"},
-    {"name": "Install the browser packages", "command": "corepack enable && pnpm install"},
+    {"name": "Install the browser packages", "command": "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install"},
     {"name": "Install tailwind", "command": "rill css install"}
   ],
   "tasks": {

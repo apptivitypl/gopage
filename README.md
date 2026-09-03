@@ -40,15 +40,12 @@ No install, no account, no clone. Both starters are committed under [examples/](
 button opens one.
 
 <p align="center">
-  <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="32"></a>
   <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="32"></a>
   <a href="https://codespaces.new/apptivitypl/rill?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
 </p>
 
-CodeSandbox and Codespaces boot a machine with Go on it and leave `rill dev` running, so editing a
-template rebuilds and reloads; the first boot takes a minute or two. StackBlitz has no Go toolchain,
-so it serves the page prebuilt to WebAssembly instead. That one is up in seconds and still
-answered by this Go code, but a template edit will not rebuild.
+Both boot a machine and leave `rill dev` running, so editing a template rebuilds it and reloads the
+page. The first boot takes a minute or two.
 
 ## Install
 
@@ -77,6 +74,16 @@ and Windows on both amd64 and arm64 on the
 [releases page](https://github.com/apptivitypl/rill/releases/latest). Unpack one and put `rill` on your
 PATH.
 
+A build from the tip of `main` is published every night under the `nightly` tag, signed the same way a
+release is:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh -s -- --version nightly
+```
+
+That tag moves with every build and carries no compatibility promise. It is not published to npm, so
+`@apptivitypl/rill` always resolves to a real release.
+
 From source, if you have Go:
 
 ```bash
@@ -97,7 +104,13 @@ The first scaffolds a project, the second runs rill without installing anything.
 already has a `package.json` can pin the version for everyone with `pnpm add -D @apptivitypl/rill`.
 
 Nothing compiles and no install script runs: the binary for your platform arrives as an optional
-dependency. None of it removes the need for Go, though: rill writes Go and then calls `go build`.
+dependency.
+
+rill writes Go and then calls `go build`, so a build needs a Go toolchain. It uses the one on your
+PATH. When there is none it says so and fetches a pinned Go once into the same cache Tailwind uses,
+checking it against a published sha256 before unpacking it; `RILL_GO` points at a toolchain you would
+rather it used. The cache is `~/.cache/rill` on Linux, `~/Library/Caches/rill` on macOS and
+`%LocalAppData%\rill` on Windows.
 
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
@@ -217,9 +230,9 @@ A third target exists for showing a project rather than deploying it:
 rill build --target demo && node dist/demo/server.mjs
 ```
 
-`dist/demo` is a self-contained folder that serves the site anywhere node runs, and from a browser
-tab too, with no wrangler, no `workerd`, no bindings and no Go. It is how the StackBlitz button
-above works, and a reasonable way to hand someone a preview without deploying anything.
+`dist/demo` is a self-contained folder that serves the site anywhere node runs, with no wrangler, no
+`workerd`, no bindings and no Go. It is a reasonable way to hand someone a preview without deploying
+anything.
 
 ## Tooling
 

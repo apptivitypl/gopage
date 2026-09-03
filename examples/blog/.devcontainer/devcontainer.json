@@ -6,7 +6,8 @@
   },
   "containerEnv": {
     "GOTOOLCHAIN": "auto",
-    "CGO_ENABLED": "0"
+    "CGO_ENABLED": "0",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
   },
   "forwardPorts": [3000],
   "portsAttributes": {

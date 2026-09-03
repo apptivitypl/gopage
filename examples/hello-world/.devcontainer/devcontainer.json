@@ -6,13 +6,14 @@
   },
   "containerEnv": {
     "GOTOOLCHAIN": "auto",
-    "CGO_ENABLED": "0"
+    "CGO_ENABLED": "0",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
   },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && corepack enable && pnpm install && rill css install",
+  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install && rill css install",
   "postAttachCommand": "rill dev --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}

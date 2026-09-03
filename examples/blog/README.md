@@ -5,7 +5,6 @@ one, and an RSS feed. Nothing runs in the browser: there is no interactive compo
 pages arrive as HTML and not a byte of JavaScript is sent.
 
 <p>
-  <a href="https://stackblitz.com/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in stackblitz" src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" height="30"></a>
   <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/blog"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
 </p>
 

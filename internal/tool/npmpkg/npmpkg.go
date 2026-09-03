@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-
-	"github.com/apptivitypl/rill/internal/tool/examplecheck"
 )
 
 const (
 	Scope      = "@apptivitypl"
 	CLI        = Scope + "/rill"
-	Demos      = CLI + "-demo"
 	Create     = Scope + "/create-rill"
 	CreateBin  = "create-rill"
 	Repository = "https://github.com/apptivitypl/rill"
@@ -115,29 +112,6 @@ func Binary(version string, platform Platform) ([]byte, error) {
 	return encode(entry)
 }
 
-func DemoPackage(example string) string {
-	return fmt.Sprintf("%s-%s", Demos, example)
-}
-
-func DemoCommand(example string) string {
-	return fmt.Sprintf("rill-demo-%s", example)
-}
-
-func Demo(version, example string) ([]byte, error) {
-	entry := base(
-		DemoPackage(example),
-		version,
-		fmt.Sprintf("The rill %s example, prebuilt to WebAssembly so node can serve it.", example),
-	)
-	entry.Keywords = []string{"rill", "demo", "webassembly"}
-	entry.Bin = map[string]string{DemoCommand(example): "server.mjs"}
-	entry.Files = []string{
-		"server.mjs", "serve.mjs", "runtime.mjs", "worker.mjs",
-		"wasm_exec.js", "app.wasm", "demo.json", "assets", "README.md",
-	}
-	return encode(entry)
-}
-
 func Scaffolder(version string) ([]byte, error) {
 	entry := base(Create, version, "Scaffolds a rill project.")
 	entry.Keywords = []string{"rill", "create", "scaffold"}
@@ -159,11 +133,6 @@ func Manifest(name, version string) ([]byte, error) {
 			return Binary(version, platform)
 		}
 	}
-	for _, example := range examplecheck.Examples() {
-		if DemoPackage(example.Name) == name {
-			return Demo(version, example.Name)
-		}
-	}
 	return nil, fmt.Errorf("nothing knows how to package %q", name)
 }
 
@@ -171,9 +140,6 @@ func Names() []string {
 	names := []string{CLI, Create}
 	for _, platform := range Platforms() {
 		names = append(names, platform.Package())
-	}
-	for _, example := range examplecheck.Examples() {
-		names = append(names, DemoPackage(example.Name))
 	}
 	sort.Strings(names)
 	return names

@@ -1,0 +1,51 @@
+name: fuzz
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CGO_ENABLED: "0"
+  GOTOOLCHAIN: auto
+
+jobs:
+  fuzz:
+    name: fuzz
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: ./internal/syntax
+            target: FuzzParse
+          - package: ./internal/ir
+            target: FuzzDecode
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Fuzz ${{ matrix.target }}
+        run: go test ${{ matrix.package }} -run=NONE -fuzz=${{ matrix.target }} -fuzztime=10m
+
+      - name: Keep whatever crashed it
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.target }}-corpus
+          path: ${{ matrix.package }}/testdata/fuzz
+          if-no-files-found: ignore

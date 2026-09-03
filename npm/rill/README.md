@@ -22,7 +22,8 @@ so nothing is compiled and no install script runs. Six platforms are published a
 carries its own command, so `pnpm dlx @apptivitypl/rill-linux-x64` works where optional dependencies are
 turned off.
 
-**rill still needs Go.** It compiles your templates into Go and then calls `go build`, so a Go
-toolchain has to be on PATH. This package only saves you from installing rill itself.
+rill compiles your templates into Go and then calls `go build`. It uses the Go toolchain on your
+PATH; when there is none, the first build fetches a pinned one into the rill cache, checks it against
+a published sha256 and keeps it there. `RILL_GO` points at a toolchain you would rather it used.
 
 Licensed MIT OR Apache-2.0.

@@ -11,6 +11,7 @@ var (
 	version = ""
 	commit  = ""
 	date    = ""
+	module  = ""
 )
 
 func release() string {
@@ -67,8 +68,17 @@ func short(revision string) string {
 
 func ownVersion() string {
 	name, _, _ := stamped()
-	if !strings.HasPrefix(name, "v") || strings.ContainsAny(name, "+ ") {
-		return ""
+	for _, candidate := range []string{module, name} {
+		if pinnable(candidate) {
+			return candidate
+		}
 	}
-	return name
+	return ""
+}
+
+func pinnable(name string) bool {
+	if len(name) < 2 || name[0] != 'v' || name[1] < '0' || name[1] > '9' {
+		return false
+	}
+	return !strings.ContainsAny(name, "+ ")
 }

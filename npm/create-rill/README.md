@@ -12,6 +12,7 @@ mode, css engine and theme.
 
 It installs [@apptivitypl/rill](https://www.npmjs.com/package/@apptivitypl/rill) to do the work.
 
-**rill still needs Go**: it compiles your templates into Go and then calls `go build`.
+rill compiles your templates into Go and then calls `go build`. It uses the Go toolchain on your
+PATH, and fetches a pinned one into its own cache when there is none.
 
 Licensed MIT OR Apache-2.0.

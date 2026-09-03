@@ -8,6 +8,7 @@ import (
 	"github.com/apptivitypl/rill/internal/assets"
 	"github.com/apptivitypl/rill/internal/config"
 	"github.com/apptivitypl/rill/internal/css"
+	"github.com/apptivitypl/rill/internal/fetch"
 	"github.com/apptivitypl/rill/internal/paths"
 )
 
@@ -23,7 +24,7 @@ func stylesheet(opts Options, settings config.Config) styles {
 	}
 	processor := opts.Styles
 	if processor == nil {
-		processor = css.Tailwind{Fetch: css.Download, Minify: true}
+		processor = css.Tailwind{Fetch: fetch.Download, Minify: true}
 	}
 	return styles{processor: processor, dir: opts.Dir, done: map[string][]byte{}}
 }

@@ -5,8 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/apptivitypl/rill/internal/tool/examplecheck"
 )
 
 func decode(t *testing.T, composed func() ([]byte, error)) map[string]any {
@@ -112,22 +110,9 @@ func TestManifestPicksTheRightShape(t *testing.T) {
 	}
 }
 
-func TestADemoPackageCarriesItsOwnServer(t *testing.T) {
-	entry := decode(t, func() ([]byte, error) { return Demo("0.1.0", "hello-world") })
-	if entry["name"] != "@apptivitypl/rill-demo-hello-world" {
-		t.Errorf("name = %v", entry["name"])
-	}
-	if entry["bin"].(map[string]any)["rill-demo-hello-world"] != "server.mjs" {
-		t.Errorf("bin = %v", entry["bin"])
-	}
-	if !slices.Contains(entry["files"].([]any), any("app.wasm")) {
-		t.Errorf("files = %v, want the wasm module", entry["files"])
-	}
-}
-
 func TestNamesListsEveryPublishedPackage(t *testing.T) {
 	names := Names()
-	if len(names) != len(Platforms())+len(examplecheck.Examples())+2 {
+	if len(names) != len(Platforms())+2 {
 		t.Fatalf("names = %v", names)
 	}
 	if !slices.IsSorted(names) {

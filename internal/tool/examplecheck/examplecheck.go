@@ -55,7 +55,7 @@ func Skipped() []string {
 func Extras() []string {
 	return []string{
 		"README.md", "go.sum", "wrangler.jsonc", "pnpm-lock.yaml",
-		".devcontainer", ".codesandbox", ".stackblitzrc",
+		".devcontainer", ".codesandbox",
 	}
 }
 

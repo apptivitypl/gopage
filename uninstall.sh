@@ -19,7 +19,7 @@ usage() {
 usage: uninstall.sh [--dir PATH] [--purge] [--yes]
 
   --dir PATH   remove the binary from here instead of searching PATH
-  --purge      also remove the cache rill downloads tailwind into
+  --purge      also remove the cache rill downloads its toolchains into
   --yes        do not ask
 
   Projects you created are never touched.
@@ -53,7 +53,10 @@ if [ "${target#"$(go env GOPATH 2>/dev/null || echo /nonexistent)/bin"}" != "$ta
   say "'go install github.com/apptivitypl/rill/cmd/rill@latest' would bring it back."
 fi
 
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/rill"
+case "$(uname -s)" in
+  Darwin) cache="$HOME/Library/Caches/rill" ;;
+  *) cache="${XDG_CACHE_HOME:-$HOME/.cache}/rill" ;;
+esac
 
 if [ -z "$YES" ]; then
   say ""

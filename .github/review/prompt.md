@@ -7,9 +7,9 @@ about anything else.
 ## What CI already proves. Never mention these.
 
 Every pull request runs gofmt, `go vet`, golangci-lint, the test suite on Linux, macOS and Windows,
-the race detector, cross compilation for seven targets, fuzzing, 90% statement coverage with a
-ratchet and a per-diff floor, the diagnostic registry, the config schema against the Go struct, the
-committed examples against their templates, and the release-version check.
+the race detector, cross compilation for seven targets, 90% statement coverage with a ratchet and a
+per-diff floor, the diagnostic registry, the config schema against the Go struct, the committed
+examples against their templates, and the release-version check. Fuzzing runs nightly on its own.
 
 So never report that a test is missing, that formatting is off, that coverage may drop, that a
 diagnostic lacks a page, that the schema may be out of step, that an example may be stale, or that a

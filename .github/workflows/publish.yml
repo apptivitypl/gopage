@@ -1,6 +1,8 @@
 name: publish
 
 on:
+  schedule:
+    - cron: "41 2 * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -17,6 +19,7 @@ env:
 jobs:
   plan:
     name: plan
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -153,7 +156,7 @@ jobs:
     name: npm
     needs: [plan, tag, release]
     if: >-
-      always() && needs.plan.outputs.npm == 'true' &&
+      always() && github.event_name != 'schedule' && needs.plan.outputs.npm == 'true' &&
       needs.tag.result == 'success' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
@@ -173,18 +176,10 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
-
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-
-      - name: Update npm
-        run: npm install --global npm@latest
-
-      - name: Install the browser packages
-        run: pnpm --dir examples/hello-world install --no-frozen-lockfile
 
       - name: Download the release archives
         env:
@@ -209,7 +204,7 @@ jobs:
   tags:
     name: tags
     needs: [plan, npm]
-    if: always() && needs.npm.result == 'success'
+    if: always() && github.event_name != 'schedule' && needs.npm.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -230,3 +225,106 @@ jobs:
             git push origin "$tag"
             echo "pushed $tag" >> "$GITHUB_STEP_SUMMARY"
           done
+
+  moved:
+    name: moved
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      build: ${{ steps.compare.outputs.build }}
+      module: ${{ steps.compare.outputs.module }}
+    steps:
+      - name: Compare main with the last nightly
+        id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          built=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/nightly" -q .object.sha 2>/dev/null || true)
+          module=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" -q .tag_name 2>/dev/null || true)
+          echo "module=$module" >> "$GITHUB_OUTPUT"
+          if [ "$built" = "$GITHUB_SHA" ]; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "main has not moved since the last nightly" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  nightly:
+    name: nightly
+    needs: moved
+    if: needs.moved.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RILL_MODULE: ${{ needs.moved.outputs.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install the pinned linter
+        run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+
+      - name: Run every gate
+        run: go run ./cmd/rilltool ci
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+        with:
+          cosign-release: v2.6.5
+
+      - name: Install the SBOM generator goreleaser expects
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          syft-version: v1.51.0
+
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94
+        with:
+          distribution: goreleaser
+          version: v2.18.0
+          args: release --snapshot --clean
+
+      - name: Sign the checksums, which snapshot mode skips
+        run: |
+          cosign sign-blob dist/checksums.txt \
+            --output-certificate dist/checksums.txt.pem \
+            --output-signature dist/checksums.txt.sig \
+            --yes
+
+      - name: Attest everything the nightly publishes
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sbom.json
+            dist/checksums.txt
+
+      - name: Move the rolling prerelease onto this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nightly --cleanup-tag --yes 2>/dev/null || true
+          gh release create nightly \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title nightly \
+            --notes "Built from main at ${GITHUB_SHA}. This tag moves with every nightly and promises nothing; \`rill new\` from it pins ${RILL_MODULE}." \
+            dist/rill_nightly_*.tar.gz \
+            dist/rill_nightly_*.zip \
+            dist/*.sbom.json \
+            dist/checksums.txt \
+            dist/checksums.txt.pem \
+            dist/checksums.txt.sig
+          echo "published nightly from $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

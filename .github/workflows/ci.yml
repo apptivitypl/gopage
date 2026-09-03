@@ -185,24 +185,6 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: go build ${{ matrix.packages }}
 
-  fuzz:
-    name: fuzz
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
-        with:
-          go-version-file: go.mod
-          cache: false
-
-      - run: go test ./internal/syntax -run=NONE -fuzz=FuzzParse -fuzztime=60s
-      - run: go test ./internal/ir -run=NONE -fuzz=FuzzDecode -fuzztime=60s
-
   client:
     name: client runtime
     runs-on: ubuntu-latest

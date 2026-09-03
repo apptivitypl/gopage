@@ -24,6 +24,8 @@ import (
 	"github.com/apptivitypl/rill/internal/demo"
 	"github.com/apptivitypl/rill/internal/devserver"
 	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/fetch"
+	"github.com/apptivitypl/rill/internal/gotoolchain"
 	"github.com/apptivitypl/rill/internal/initui"
 	"github.com/apptivitypl/rill/internal/lsp"
 	"github.com/apptivitypl/rill/internal/paths"
@@ -137,11 +139,11 @@ func cssCommand(args []string) error {
 		return fail("css has one subcommand, and it is install").
 			try("rill css install")
 	}
-	path, err := css.Tailwind{Fetch: css.Download}.Install()
+	path, err := css.Tailwind{Fetch: fetch.Download}.Install()
 	if err != nil {
 		return err
 	}
-	sum, err := css.Checksum(path)
+	sum, err := fetch.Checksum(path)
 	if err != nil {
 		return err
 	}
@@ -196,6 +198,10 @@ func newProject(args []string) error {
 		cfg = answered
 	}
 	out := console(os.Stderr)
+	if cfg.RillVersion == "" && cfg.RillPath == "" {
+		out.note("this build carries no released version, so the project will require " +
+			scaffold.DefaultRillVersion + ", which no proxy serves; pass --rill-version or --rill-path")
+	}
 	if err := scaffold.Create(cfg); err != nil {
 		if errors.Is(err, scaffold.ErrNotEmpty) {
 			return fail("%s already holds files", cfg.Dir).
@@ -209,7 +215,11 @@ func newProject(args []string) error {
 		return err
 	}
 	if !skipTidy {
-		if err := build.Tidy(cfg.Dir, build.ExecRunner{Out: out.tagged("go")}); err != nil {
+		tool, err := gotool(out)
+		if err != nil {
+			return err
+		}
+		if err := build.Tidy(cfg.Dir, tool, build.ExecRunner{Out: out.tagged("go")}); err != nil {
 			return fmt.Errorf("go mod tidy in %s: %w", cfg.Dir, err)
 		}
 		out.step("resolved", "the go module dependencies")
@@ -271,12 +281,17 @@ func buildProject(args []string) error {
 			because("A build targets one of: %s.", strings.Join(build.Targets(), ", ")).
 			try("rill build --target native", "rill build --target workers", "rill build --target demo")
 	}
+	tool, err := gotool(console(os.Stderr))
+	if err != nil {
+		return err
+	}
 	report, err := build.Run(build.Options{
 		Dir:        flags.dir,
 		Target:     target,
 		Name:       flags.name,
 		CompatDate: flags.compatDate,
 		Runner:     build.ExecRunner{Verbose: flags.verbose},
+		Go:         tool,
 	})
 	if err != nil {
 		return err
@@ -367,11 +382,16 @@ func dev(args []string) error {
 
 func devBuild(dir string, out *printer, about *summary) (devserver.Build, func()) {
 	var running *devserver.App
+	tool, resolving := gotool(out)
 	build := func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
+		if resolving != nil {
+			return nil, nil, nil, resolving
+		}
 		report, err := build.Run(build.Options{
 			Dir:    dir,
 			Target: build.TargetNative,
 			Runner: build.ExecRunner{},
+			Go:     tool,
 		})
 		var failed *build.Error
 		if errors.As(err, &failed) {
@@ -585,4 +605,12 @@ func sorted(text string) string {
 	letters := strings.Split(text, "")
 	sort.Strings(letters)
 	return strings.Join(letters, "")
+}
+
+func gotool(out *printer) (gotoolchain.Resolved, error) {
+	return gotoolchain.Toolchain{
+		Fetch:    fetch.Download,
+		Unpack:   fetch.Unpack,
+		Announce: out.note,
+	}.Resolve()
 }

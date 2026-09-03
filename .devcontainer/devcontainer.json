@@ -6,13 +6,14 @@
   },
   "containerEnv": {
     "GOTOOLCHAIN": "auto",
-    "CGO_ENABLED": "0"
+    "CGO_ENABLED": "0",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
   },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go work init . examples/hello-world examples/blog && go mod download && corepack enable && pnpm install && (cd examples/hello-world && pnpm install) && go run ./cmd/rill css install",
+  "postCreateCommand": "go work init . examples/hello-world examples/blog && go mod download && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install && (cd examples/hello-world && pnpm install) && go run ./cmd/rill css install",
   "postAttachCommand": "go run ./cmd/rill dev --dir examples/hello-world --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}

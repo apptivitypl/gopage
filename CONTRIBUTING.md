@@ -104,6 +104,13 @@ The npm packages are assembled from those archives, never built separately:
 everything the plan says is missing. Without `--publish` it stops at the folder and prints the
 `npm publish` line it would have run.
 
+Separately from all of that, `publish.yml` runs on a nightly schedule and moves the `nightly`
+prerelease onto the tip of `main`, but only when `main` has actually moved. It runs the same gates
+first, builds with `goreleaser release --snapshot`, and signs `checksums.txt` in its own step, because
+snapshot mode skips the signing pipe. Nothing nightly reaches npm: the OIDC credential trusted
+publishing issues covers `npm publish` and nothing else, so a preview version could never be taken
+back once published.
+
 Nothing in CI holds an npm token. Every package is configured on npmjs.com with a trusted publisher
 pointing at `publish.yml`, so the workflow authenticates over OIDC and npm attaches provenance by
 itself. A package npm has never seen cannot be configured that way, so its first version is

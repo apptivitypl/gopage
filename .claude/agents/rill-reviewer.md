@@ -27,8 +27,8 @@ rather than guessing.
 ## What `rilltool ci` already proves
 
 gofmt, `go vet`, golangci-lint, the tests on three systems, the race detector, cross compilation,
-fuzzing, the coverage ratchet, the diagnostic registry, the config schema against the Go struct, the
-committed examples against their templates, the release-version check.
+the coverage ratchet, the diagnostic registry, the config schema against the Go struct, the committed
+examples against their templates, the release-version check. Fuzzing runs nightly on its own.
 
 Never report that a test is missing, that formatting is off, that coverage may drop, or that a
 schema may be out of step. If those were wrong the build would be red. Saying it anyway is noise.

@@ -21,6 +21,7 @@ import (
 	"github.com/apptivitypl/rill/internal/css"
 	"github.com/apptivitypl/rill/internal/demo"
 	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/rill/internal/gotoolchain"
 	"github.com/apptivitypl/rill/internal/ir"
 	"github.com/apptivitypl/rill/internal/paths"
 	"github.com/apptivitypl/rill/internal/server"
@@ -59,6 +60,7 @@ type Options struct {
 	Module     string
 	CompatDate string
 	Runner     Runner
+	Go         gotoolchain.Resolved
 }
 
 type Report struct {
@@ -458,8 +460,8 @@ func assetPath(pattern string) string {
 	return filepath.Join(filepath.FromSlash(trimmed), "index.html")
 }
 
-func Tidy(dir string, runner Runner) error {
-	return runner.Run(Command{Dir: dir, Name: "go", Args: []string{"mod", "tidy"}})
+func Tidy(dir string, tool gotoolchain.Resolved, runner Runner) error {
+	return runner.Run(Command{Dir: dir, Env: tool.Env, Name: tool.Command(), Args: []string{"mod", "tidy"}})
 }
 
 var packageManagers = []struct {
@@ -492,7 +494,8 @@ func Install(dir, manager string, runner Runner) error {
 func buildNative(opts Options) error {
 	return opts.Runner.Run(Command{
 		Dir:  opts.Dir,
-		Name: "go",
+		Env:  opts.Go.Env,
+		Name: opts.Go.Command(),
 		Args: []string{"build", "-o", paths.Server(), paths.ServerMain},
 	})
 }
@@ -528,13 +531,14 @@ func buildWorker(opts Options, patterns []string) error {
 	steps := []Command{
 		{
 			Dir:  opts.Dir,
-			Name: "go",
+			Env:  opts.Go.Env,
+			Name: opts.Go.Command(),
 			Args: []string{"run", AssetsGen, "-mode=go", "-o", paths.WorkerDir},
 		},
 		{
 			Dir:  opts.Dir,
-			Env:  []string{"GOOS=js", "GOARCH=wasm"},
-			Name: "go",
+			Env:  append([]string{"GOOS=js", "GOARCH=wasm"}, opts.Go.Env...),
+			Name: opts.Go.Command(),
 			Args: []string{"build", "-o", paths.WorkerBinary, "-ldflags=-s -w", paths.WorkerMain},
 		},
 	}
@@ -550,13 +554,14 @@ func buildDemo(opts Options, patterns []string) error {
 	steps := []Command{
 		{
 			Dir:  opts.Dir,
-			Name: "go",
+			Env:  opts.Go.Env,
+			Name: opts.Go.Command(),
 			Args: []string{"run", AssetsGen, "-mode=go", "-runtime=browser", "-o", paths.DemoDir},
 		},
 		{
 			Dir:  opts.Dir,
-			Env:  []string{"GOOS=js", "GOARCH=wasm"},
-			Name: "go",
+			Env:  append([]string{"GOOS=js", "GOARCH=wasm"}, opts.Go.Env...),
+			Name: opts.Go.Command(),
 			Args: []string{"build", "-o", paths.DemoBinary, "-ldflags=-s -w", paths.WorkerMain},
 		},
 	}

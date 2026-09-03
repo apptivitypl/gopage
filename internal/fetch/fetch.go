@@ -1,4 +1,4 @@
-package css
+package fetch
 
 import (
 	"crypto/sha256"
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const downloadTimeout = 2 * time.Minute
+const downloadTimeout = 10 * time.Minute
 
 func Download(url, target, digest string) error {
 	client := &http.Client{Timeout: downloadTimeout}
