@@ -5,22 +5,27 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/apptivitypl/gopage/internal/build"
 	"github.com/apptivitypl/gopage/internal/scaffold"
 	"github.com/apptivitypl/gopage/internal/tool/examplecheck"
 	"github.com/apptivitypl/gopage/internal/tool/release"
+	"github.com/apptivitypl/gopage/internal/tool/shell"
 )
 
 const exampleModule = "github.com/apptivitypl/gopage"
 
 var workspaceEnv = []string{"GOWORK="}
 
+var outsideEnv = []string{"GOWORK=off"}
+
 func exampleCmd(args []string) error {
-	var update, workspace bool
+	var update, workspace, verify bool
 	fs := flag.NewFlagSet("example", flag.ContinueOnError)
 	fs.BoolVar(&update, "update", false, "rewrite the committed examples from the templates")
 	fs.BoolVar(&workspace, "workspace", false, "write go.work so the examples build against this checkout")
+	fs.BoolVar(&verify, "verify", false, "build the committed examples the way someone outside this repo does")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -28,15 +33,22 @@ func exampleCmd(args []string) error {
 	if err != nil {
 		return err
 	}
-	version, err := requiredVersion()
-	if err != nil {
-		return err
+	if verify {
+		return verifyExamples(root)
 	}
 	if workspace {
+		version, err := pinnedVersion(root, examplecheck.Examples()[0])
+		if err != nil {
+			return err
+		}
 		return writeWorkspace(root, version)
 	}
 	var differences []examplecheck.Difference
 	for _, example := range examplecheck.Examples() {
+		version, err := exampleVersion(root, example, update)
+		if err != nil {
+			return err
+		}
 		found, err := oneExample(root, example, version, update)
 		if err != nil {
 			return err
@@ -44,6 +56,10 @@ func exampleCmd(args []string) error {
 		differences = append(differences, found...)
 	}
 	if update {
+		version, err := pinnedVersion(root, examplecheck.Examples()[0])
+		if err != nil {
+			return err
+		}
 		if err := refreshWorkspace(root, version); err != nil {
 			return err
 		}
@@ -57,6 +73,40 @@ func exampleCmd(args []string) error {
 	return nil
 }
 
+func exampleVersion(root string, example examplecheck.Example, update bool) (string, error) {
+	if update {
+		return releasedVersion()
+	}
+	return pinnedVersion(root, example)
+}
+
+func releasedVersion() (string, error) {
+	out, err := shell.Capture("git", "tag", "--list", "v*", "--sort=-v:refname")
+	if err == nil {
+		for _, line := range strings.Split(out, "\n") {
+			if tag := strings.TrimSpace(line); tag != "" {
+				return tag, nil
+			}
+		}
+	}
+	return requiredVersion()
+}
+
+func pinnedVersion(root string, example examplecheck.Example) (string, error) {
+	path := filepath.Join(root, filepath.FromSlash(example.Dir()), "go.mod")
+	text, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	for _, line := range strings.Split(string(text), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[0] == exampleModule {
+			return fields[1], nil
+		}
+	}
+	return "", fmt.Errorf("%s does not require %s", path, exampleModule)
+}
+
 func requiredVersion() (string, error) {
 	manifest, err := loadManifest()
 	if err != nil {
@@ -67,6 +117,27 @@ func requiredVersion() (string, error) {
 		return "", fmt.Errorf("%s has no package %q", release.FileName, versionPackage)
 	}
 	return pkg.TagName(), nil
+}
+
+func verifyExamples(root string) error {
+	runner := build.ExecRunner{Verbose: true}
+	for _, example := range examplecheck.Examples() {
+		dir := filepath.Join(root, filepath.FromSlash(example.Dir()))
+		if _, err := os.Stat(filepath.Join(dir, "go.sum")); err != nil {
+			return fmt.Errorf("example: %s has no go.sum, so nobody outside this repo can build it: %w", example.Dir(), err)
+		}
+		command := build.Command{
+			Dir:  root,
+			Env:  outsideEnv,
+			Name: "go",
+			Args: []string{"run", "./cmd/gopage", "build", "--dir", example.Dir()},
+		}
+		if err := runner.Run(command); err != nil {
+			return fmt.Errorf("example: %s does not build without the workspace: %w", example.Dir(), err)
+		}
+	}
+	fmt.Println("example: both build from the registry, without the workspace")
+	return nil
 }
 
 func oneExample(root string, example examplecheck.Example, version string, update bool) ([]examplecheck.Difference, error) {
@@ -142,16 +213,13 @@ func resolve(dir string) error {
 	}
 	tidy := build.Command{
 		Dir:  dir,
-		Env:  []string{"GOWORK=off"},
+		Env:  outsideEnv,
 		Name: "go",
 		Args: []string{"mod", "tidy"},
 	}
 	if err := (build.ExecRunner{}).Run(tidy); err != nil {
-		fmt.Fprintf(os.Stderr, "example: %s has no go.sum yet, because %s is not published: %v\n",
-			dir, versionPackage, err)
-		if err := os.Remove(filepath.Join(dir, "go.sum")); err != nil && !os.IsNotExist(err) {
-			return err
-		}
+		return fmt.Errorf("example: %s cannot resolve its modules, so it would ship without a go.sum "+
+			"and nobody outside this repo could build it; the version it pins must be published first: %w", dir, err)
 	}
 	return nil
 }

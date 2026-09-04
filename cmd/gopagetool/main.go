@@ -251,6 +251,9 @@ func ci() error {
 	if err := exampleCmd(nil); err != nil {
 		return err
 	}
+	if err := exampleCmd([]string{"--verify"}); err != nil {
+		return err
+	}
 	return runCoverage(coverageOptions{enforce: true})
 }
 

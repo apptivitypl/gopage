@@ -111,7 +111,7 @@ if have cosign; then
     cosign verify-blob "$tmp/checksums.txt" \
       --certificate "$tmp/checksums.txt.pem" \
       --signature "$tmp/checksums.txt.sig" \
-      --certificate-identity-regexp "https://github\.com/$REPO/\.github/workflows/publish\.yml@.*" \
+      --certificate-identity-regexp "https://github\.com/$REPO/\.github/workflows/publish\.yml@refs/heads/main" \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null 2>&1 &&
       say "signature ok" || die "the signature on checksums.txt did not verify"
   elif [ -n "$REQUIRE_SIGNATURE" ]; then

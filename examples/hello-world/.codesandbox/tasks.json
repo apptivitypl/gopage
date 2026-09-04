@@ -1,7 +1,7 @@
 {
   "$schema": "https://codesandbox.io/schemas/tasks.json",
   "setupTasks": [
-    {"name": "Install gopage", "command": "go install github.com/apptivitypl/gopage/cmd/gopage@latest"},
+    {"name": "Install gopage", "command": "go install github.com/apptivitypl/gopage/cmd/gopage@$(go list -m -f '{{.Version}}' github.com/apptivitypl/gopage)"},
     {"name": "Download the go modules", "command": "go mod download"},
     {"name": "Install the browser packages", "command": "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install"},
     {"name": "Install tailwind", "command": "gopage css install"}

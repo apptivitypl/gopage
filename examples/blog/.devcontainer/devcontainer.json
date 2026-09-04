@@ -13,7 +13,7 @@
   "portsAttributes": {
     "3000": {"label": "gopage dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go install github.com/apptivitypl/gopage/cmd/gopage@latest && go mod download && gopage css install",
+  "postCreateCommand": "go install github.com/apptivitypl/gopage/cmd/gopage@$(go list -m -f '{{.Version}}' github.com/apptivitypl/gopage) && go mod download && gopage css install",
   "postAttachCommand": "gopage dev --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}

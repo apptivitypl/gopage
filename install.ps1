@@ -90,7 +90,7 @@ try {
       & cosign verify-blob (Join-Path $tmp 'checksums.txt') `
         --certificate (Join-Path $tmp 'checksums.txt.pem') `
         --signature (Join-Path $tmp 'checksums.txt.sig') `
-        --certificate-identity-regexp "https://github\.com/$repo/\.github/workflows/publish\.yml@.*" `
+        --certificate-identity-regexp "https://github\.com/$repo/\.github/workflows/publish\.yml@refs/heads/main" `
         --certificate-oidc-issuer https://token.actions.githubusercontent.com 2>$null | Out-Null
       if ($LASTEXITCODE -ne 0) { Fail 'the signature on checksums.txt did not verify' }
       Write-Host 'signature ok'
