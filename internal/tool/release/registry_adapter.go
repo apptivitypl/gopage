@@ -14,38 +14,6 @@ const registryHost = "https://registry.npmjs.org"
 
 var client = &http.Client{Timeout: 20 * time.Second}
 
-func Published(pkg Package) (bool, error) {
-	switch pkg.Kind {
-	case KindGo:
-		return Tagged(pkg.TagName())
-	case KindNPM:
-		return OnRegistry(pkg.Name, pkg.Version)
-	default:
-		return false, fmt.Errorf("%s: package %q has kind %q, which nothing knows how to publish yet", FileName, pkg.Name, pkg.Kind)
-	}
-}
-
-func Changed(pkg Package) (bool, error) {
-	tag := pkg.TagName()
-	tagged, err := Tagged(tag)
-	if err != nil {
-		return false, err
-	}
-	if !tagged {
-		return false, nil
-	}
-	out, err := shell.Capture("git", "diff", "--name-only", tag+"..HEAD")
-	if err != nil {
-		return false, err
-	}
-	for _, path := range strings.Fields(out) {
-		if pkg.Owns(path) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func Tagged(tag string) (bool, error) {
 	local, err := shell.Capture("git", "tag", "--list", tag)
 	if err != nil {

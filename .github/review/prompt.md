@@ -36,7 +36,7 @@ is noise, and it teaches the maintainer to ignore you.
    on-disk shape.
 
 5. **A gate loosened rather than met.** A lowered number in `dev.jsonc`, a new exclude glob, a new
-   package exemption, `"unreleased": true` in `versions.jsonc`. Say what it buys. An exemption needs
+   package exemption. Say what it buys. An exemption needs
    a written justification, and one that restates the rule is not a justification.
 
 6. **A hand edit under `examples/`.** Those files are the templates' output; the change belongs in

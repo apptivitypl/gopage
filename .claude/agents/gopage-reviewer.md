@@ -49,7 +49,7 @@ schema may be out of step. If those were wrong the build would be red. Saying it
    on-disk shape. Judge which literals are that shape and which are incidental.
 
 4. **A gate loosened rather than met.** A lowered number in `dev.jsonc`, a new `exclude` glob, a new
-   package exemption, `"unreleased": true` in `versions.jsonc`. Say what it buys. An exemption needs
+   package exemption. Say what it buys. An exemption needs
    a written justification, and a justification that restates the rule is not one.
 
 5. **An assumption that only holds on one system.** Delegate to `portability-auditor` when the

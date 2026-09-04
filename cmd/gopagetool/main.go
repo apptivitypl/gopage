@@ -18,7 +18,6 @@ import (
 	"github.com/apptivitypl/gopage/internal/tool/diagcheck"
 	"github.com/apptivitypl/gopage/internal/tool/gate"
 	"github.com/apptivitypl/gopage/internal/tool/gitdiff"
-	"github.com/apptivitypl/gopage/internal/tool/release"
 	"github.com/apptivitypl/gopage/internal/tool/render"
 	"github.com/apptivitypl/gopage/internal/tool/schemacheck"
 	"github.com/apptivitypl/gopage/internal/tool/shell"
@@ -57,8 +56,6 @@ func run(args []string) error {
 		return diag()
 	case "schema":
 		return schemaCmd()
-	case "version":
-		return versionCmd(args[1:])
 	case "bench":
 		return bench(args[1:])
 	case "smoke":
@@ -83,10 +80,9 @@ func commandList() string {
 		"  ci",
 		"  diag",
 		"  schema",
-		"  version [--check TAG]",
 		"  bench [--check] [--record] [--accept]",
 		"  smoke [--keep]",
-		"  release plan [--json] | check | run [PACKAGE] [--from DIR] [--publish] | trust | tags",
+		"  release plan --version V [--json] | run --version V [PACKAGE] [--from DIR] [--publish] | trust | tags --version V",
 		"  example [--update] [--workspace] [--verify]",
 	}, "\n")
 }
@@ -243,9 +239,6 @@ func ci() error {
 		return err
 	}
 	if err := schemaCmd(); err != nil {
-		return err
-	}
-	if err := releaseCheck(); err != nil {
 		return err
 	}
 	if err := exampleCmd(nil); err != nil {
@@ -461,33 +454,5 @@ func schemaCmd() error {
 		return fmt.Errorf("%s and internal/config have drifted apart in %d places", schemacheck.Path, len(issues))
 	}
 	fmt.Println("schema: ok")
-	return nil
-}
-
-const versionPackage = "gopage"
-
-func versionCmd(args []string) error {
-	fs := flag.NewFlagSet("version", flag.ContinueOnError)
-	var check string
-	fs.StringVar(&check, "check", "", "fail unless this tag matches the manifest")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	manifest, err := loadManifest()
-	if err != nil {
-		return err
-	}
-	pkg, ok := manifest.Package(versionPackage)
-	if !ok {
-		return fmt.Errorf("%s has no package %q", release.FileName, versionPackage)
-	}
-	if check == "" {
-		fmt.Println(pkg.Version)
-		return nil
-	}
-	if check != pkg.TagName() {
-		return fmt.Errorf("tag %s does not match %s, which says %s", check, release.FileName, pkg.TagName())
-	}
-	fmt.Printf("%s matches %s\n", check, release.FileName)
 	return nil
 }

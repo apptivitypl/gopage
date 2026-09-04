@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -10,7 +11,6 @@ import (
 	"github.com/apptivitypl/gopage/internal/build"
 	"github.com/apptivitypl/gopage/internal/scaffold"
 	"github.com/apptivitypl/gopage/internal/tool/examplecheck"
-	"github.com/apptivitypl/gopage/internal/tool/release"
 	"github.com/apptivitypl/gopage/internal/tool/shell"
 )
 
@@ -24,6 +24,8 @@ func exampleCmd(args []string) error {
 	fs.BoolVar(&update, "update", false, "rewrite the committed examples from the templates")
 	fs.BoolVar(&workspace, "workspace", false, "write go.work so the examples build against this checkout")
 	fs.BoolVar(&verify, "verify", false, "build the committed examples the way someone outside this repo does")
+	var pin string
+	fs.StringVar(&pin, "version", "", "tag to pin the examples to, defaults to the highest released tag")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -43,7 +45,7 @@ func exampleCmd(args []string) error {
 	}
 	var differences []examplecheck.Difference
 	for _, example := range examplecheck.Examples() {
-		version, err := exampleVersion(root, example, update)
+		version, err := exampleVersion(root, example, update, pin)
 		if err != nil {
 			return err
 		}
@@ -71,8 +73,11 @@ func exampleCmd(args []string) error {
 	return nil
 }
 
-func exampleVersion(root string, example examplecheck.Example, update bool) (string, error) {
+func exampleVersion(root string, example examplecheck.Example, update bool, pin string) (string, error) {
 	if update {
+		if pin != "" {
+			return pin, nil
+		}
 		return releasedVersion()
 	}
 	return example.PinnedVersion(root)
@@ -80,26 +85,17 @@ func exampleVersion(root string, example examplecheck.Example, update bool) (str
 
 func releasedVersion() (string, error) {
 	out, err := shell.Capture("git", "tag", "--list", "v*", "--sort=-v:refname")
-	if err == nil {
-		for _, line := range strings.Split(out, "\n") {
-			if tag := strings.TrimSpace(line); tag != "" {
-				return tag, nil
-			}
-		}
-	}
-	return requiredVersion()
-}
-
-func requiredVersion() (string, error) {
-	manifest, err := loadManifest()
 	if err != nil {
 		return "", err
 	}
-	pkg, ok := manifest.Package(versionPackage)
-	if !ok {
-		return "", fmt.Errorf("%s has no package %q", release.FileName, versionPackage)
+	for _, line := range strings.Split(out, "\n") {
+		tag := strings.TrimSpace(line)
+		if tag == "" || strings.Contains(tag, "-") {
+			continue
+		}
+		return tag, nil
 	}
-	return pkg.TagName(), nil
+	return "", errors.New("no released version to pin the examples to; this repository has no v* tag yet")
 }
 
 func verifyExamples(root string) error {

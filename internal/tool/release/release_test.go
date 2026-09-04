@@ -6,259 +6,79 @@ import (
 	"testing"
 )
 
-const oneGoPackage = `{
-  "packages": {
-    "gopage": {
-      "kind": "go",
-      "version": "0.1.0",
-      "tag": "v{version}",
-      "paths": ["*.go", "internal/**"],
-      "exclude": ["internal/tool/**"]
-    }
-  }
-}`
-
-func parse(t *testing.T, text string) *Manifest {
-	t.Helper()
-	manifest, err := Parse(text)
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
+func TestEveryPublishableArtifactIsNamed(t *testing.T) {
+	artifacts := Artifacts()
+	if len(artifacts) != 2 {
+		t.Fatalf("artifacts = %+v, want the go module and the npm command line", artifacts)
 	}
-	return manifest
-}
-
-func parseErr(t *testing.T, text string) error {
-	t.Helper()
-	if _, err := Parse(text); err != nil {
-		return err
-	}
-	t.Fatal("expected an error, got none")
-	return nil
-}
-
-func packaged(t *testing.T, manifest *Manifest, name string) Package {
-	t.Helper()
-	pkg, ok := manifest.Package(name)
-	if !ok {
-		t.Fatalf("no package %q", name)
-	}
-	return pkg
-}
-
-func always(value bool) Lookup {
-	return func(Package) (bool, error) { return value, nil }
-}
-
-func changing(value bool) Changes {
-	return func(Package) (bool, error) { return value, nil }
-}
-
-func TestAGoPackageParses(t *testing.T) {
-	pkg := packaged(t, parse(t, oneGoPackage), "gopage")
-	if pkg.Kind != KindGo {
-		t.Errorf("Kind = %q, want %q", pkg.Kind, KindGo)
-	}
-	if pkg.Version != "0.1.0" {
-		t.Errorf("Version = %q", pkg.Version)
-	}
-	if pkg.TagName() != "v0.1.0" {
-		t.Errorf("TagName = %q, want v0.1.0", pkg.TagName())
+	if artifacts[0].Kind != KindGo || artifacts[1].Kind != KindNPM {
+		t.Errorf("artifacts = %+v, want the go module first so it is tagged before npm resolves it", artifacts)
 	}
 }
 
-func TestATagTemplateDefaultsToNameAndVersion(t *testing.T) {
-	manifest := parse(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "1.2.3", "dir": "npm/gopage", "paths": ["npm/gopage/**"]}}}`)
-	if got := packaged(t, manifest, "@apptivitypl/gopage").TagName(); got != "@apptivitypl/gopage@1.2.3" {
-		t.Errorf("TagName = %q", got)
+func TestTheTagSaysWhichRegistryItBelongsTo(t *testing.T) {
+	artifacts := Artifacts()
+	if got := artifacts[0].Tag("0.2.2"); got != "v0.2.2" {
+		t.Errorf("go tag = %q, want the form go modules resolve through", got)
+	}
+	if got := artifacts[1].Tag("0.2.2"); got != artifacts[1].Name+"@0.2.2" {
+		t.Errorf("npm tag = %q", got)
 	}
 }
 
-func TestPrereleaseVersionsAreAllowed(t *testing.T) {
-	parse(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0-rc.1", "paths": ["*.go"]}}}`)
-}
-
-func TestAnUnknownKindIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"gopage": {"kind": "deb", "version": "0.1.0", "paths": ["*.go"]}}}`)
-	if !strings.Contains(err.Error(), "unknown kind") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestAVersionThatIsNotSemanticIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "v0.1", "paths": ["*.go"]}}}`)
-	if !strings.Contains(err.Error(), "semantic version") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestAPackageWithoutPathsIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": []}}}`)
-	if !strings.Contains(err.Error(), "owns no paths") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestAnInvalidPatternIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": ["["]}}}`)
-	if !strings.Contains(err.Error(), "invalid pattern") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestAPackageThatIsNotGoNeedsADir(t *testing.T) {
-	err := parseErr(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "paths": ["npm/**"]}}}`)
-	if !strings.Contains(err.Error(), "needs a dir") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestAnEmptyManifestIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {}}`)
-	if !strings.Contains(err.Error(), "no packages") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestBrokenJsonIsRefused(t *testing.T) {
-	if _, err := Parse("/* never closed"); err == nil {
-		t.Error("expected an error from an unterminated comment")
-	}
-	if _, err := Parse("{"); err == nil {
-		t.Error("expected an error from truncated json")
-	}
-	if _, err := Parse(`{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": ["*.go"], "what": 1}}}`); err == nil {
-		t.Error("expected an error from an unknown field")
-	}
-	if _, err := Parse(`{"packages": []}`); err == nil {
-		t.Error("expected an error from the wrong shape")
-	}
-}
-
-func TestANeedThatIsNotInTheManifestIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/gopage", "needs": ["gopage"], "paths": ["npm/gopage/**"]}}}`)
-	if !strings.Contains(err.Error(), "not in the manifest") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestACycleInNeedsIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {
-    "a": {"kind": "npm", "version": "0.1.0", "dir": "npm/a", "needs": ["b"], "paths": ["npm/a/**"]},
-    "b": {"kind": "npm", "version": "0.1.0", "dir": "npm/b", "needs": ["a"], "paths": ["npm/b/**"]}
-  }}`)
-	if !strings.Contains(err.Error(), "needs itself") {
-		t.Errorf("error = %q", err)
-	}
-}
-
-func TestPackagesComeOutInDependencyOrder(t *testing.T) {
-	manifest := parse(t, `{"packages": {
-    "create-gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/create-gopage", "needs": ["@apptivitypl/gopage"], "paths": ["npm/create-gopage/**"]},
-    "@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/gopage", "needs": ["gopage"], "paths": ["npm/gopage/**"]},
-    "gopage": {"kind": "go", "version": "0.1.0", "paths": ["*.go"]}
-  }}`)
-	var names []string
-	for _, pkg := range manifest.Packages() {
-		names = append(names, pkg.Name)
-	}
-	want := []string{"gopage", "@apptivitypl/gopage", "create-gopage"}
-	if strings.Join(names, ",") != strings.Join(want, ",") {
-		t.Errorf("order = %v, want %v", names, want)
-	}
-}
-
-func TestAMissingPackageIsReported(t *testing.T) {
-	if _, ok := parse(t, oneGoPackage).Package("nothing"); ok {
-		t.Error("Package should not invent entries")
-	}
-}
-
-func TestOwnershipFollowsPathsAndExcludes(t *testing.T) {
-	pkg := packaged(t, parse(t, oneGoPackage), "gopage")
-	for _, path := range []string{"gopage.go", "./serve.go", "internal/build/build.go"} {
-		if !pkg.Owns(path) {
-			t.Errorf("Owns(%q) = false, want true", path)
+func TestOnlySemanticVersionsAreAccepted(t *testing.T) {
+	for _, version := range []string{"0.2.2", "1.0.0", "0.3.0-rc.1"} {
+		if err := Valid(version); err != nil {
+			t.Errorf("Valid(%q) = %v, want it accepted", version, err)
 		}
 	}
-	for _, path := range []string{"internal/tool/release/release.go", "README.md", "cmd/gopage/main.go"} {
-		if pkg.Owns(path) {
-			t.Errorf("Owns(%q) = true, want false", path)
+	for _, version := range []string{"", "v0.2.2", "0.2", "latest", "0.2.2+dirty"} {
+		if err := Valid(version); err == nil {
+			t.Errorf("Valid(%q) accepted something that is not a version", version)
 		}
 	}
 }
 
-func TestAnUnpublishedVersionIsPlannedForPublication(t *testing.T) {
-	statuses, err := Plan(parse(t, oneGoPackage), always(false), changing(false))
+func TestPlanAsksAboutEveryArtifact(t *testing.T) {
+	var asked []string
+	statuses, err := Plan("0.2.2", func(a Artifact) (bool, error) {
+		asked = append(asked, a.Name)
+		return a.Kind == KindGo, nil
+	})
 	if err != nil {
 		t.Fatalf("Plan: %v", err)
 	}
-	if statuses[0].State != Publish {
-		t.Errorf("State = %q, want %q", statuses[0].State, Publish)
+	if len(asked) != 2 {
+		t.Errorf("asked = %v, want every artifact", asked)
 	}
-	if len(Pending(statuses)) != 1 {
-		t.Errorf("Pending = %d, want 1", len(Pending(statuses)))
-	}
-	if len(Problems(statuses)) != 0 {
-		t.Errorf("Problems = %v, want none", Problems(statuses))
+	pending := Pending(statuses)
+	if len(pending) != 1 || pending[0].Kind != KindNPM {
+		t.Errorf("pending = %+v, want only what is not out yet", pending)
 	}
 }
 
-func TestAPublishedVersionWithoutChangesIsCurrent(t *testing.T) {
-	statuses, err := Plan(parse(t, oneGoPackage), always(true), changing(false))
-	if err != nil {
-		t.Fatalf("Plan: %v", err)
-	}
-	if statuses[0].State != Current {
-		t.Errorf("State = %q, want %q", statuses[0].State, Current)
-	}
-	if len(Pending(statuses)) != 0 {
-		t.Errorf("Pending = %d, want 0", len(Pending(statuses)))
-	}
-}
-
-func TestChangesOnTopOfAPublishedVersionAreAProblem(t *testing.T) {
-	statuses, err := Plan(parse(t, oneGoPackage), always(true), changing(true))
-	if err != nil {
-		t.Fatalf("Plan: %v", err)
-	}
-	if statuses[0].State != Unreleased {
-		t.Errorf("State = %q, want %q", statuses[0].State, Unreleased)
-	}
-	problems := Problems(statuses)
-	if len(problems) != 1 || !strings.Contains(problems[0], "v0.1.0") {
-		t.Errorf("Problems = %v", problems)
-	}
-}
-
-func TestAPackageHeldBackIsNotAProblem(t *testing.T) {
-	manifest := parse(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "tag": "v{version}", "paths": ["*.go"], "unreleased": true}}}`)
-	statuses, err := Plan(manifest, always(true), changing(true))
-	if err != nil {
-		t.Fatalf("Plan: %v", err)
-	}
-	if statuses[0].State != Current {
-		t.Errorf("State = %q, want %q", statuses[0].State, Current)
+func TestPlanRefusesAVersionItCannotTrust(t *testing.T) {
+	if _, err := Plan("latest", func(Artifact) (bool, error) { return false, nil }); err == nil {
+		t.Error("a version that is not semantic must not reach the registries")
 	}
 }
 
 func TestPlanReportsWhatItCannotAsk(t *testing.T) {
-	failure := errors.New("registry is down")
-	manifest := parse(t, oneGoPackage)
-	if _, err := Plan(manifest, func(Package) (bool, error) { return false, failure }, changing(false)); !errors.Is(err, failure) {
-		t.Errorf("err = %v, want the lookup failure", err)
-	}
-	if _, err := Plan(manifest, always(true), func(Package) (bool, error) { return false, failure }); !errors.Is(err, failure) {
-		t.Errorf("err = %v, want the history failure", err)
+	_, err := Plan("0.2.2", func(Artifact) (bool, error) { return false, errors.New("the registry is down") })
+	if err == nil {
+		t.Fatal("a registry that will not answer must not read as published")
 	}
 }
 
-func TestRenderNamesEveryPackage(t *testing.T) {
-	statuses, err := Plan(parse(t, oneGoPackage), always(false), changing(false))
+func TestRenderNamesEveryArtifactAndItsState(t *testing.T) {
+	statuses, err := Plan("0.2.2", func(a Artifact) (bool, error) { return a.Kind == KindGo, nil })
 	if err != nil {
 		t.Fatalf("Plan: %v", err)
 	}
-	out := Render(statuses)
-	if !strings.Contains(out, "gopage") || !strings.Contains(out, string(Publish)) {
-		t.Errorf("Render = %q", out)
+	out := Render("0.2.2", statuses)
+	for _, want := range []string{Module, "already out", "publish", "0.2.2"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("Render = %q, want it to mention %q", out, want)
+		}
 	}
 }

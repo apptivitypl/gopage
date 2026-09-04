@@ -26,9 +26,9 @@ These are not style preferences. Every one of them fails a build.
    `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
    template and running `gopagetool example --update`, never by editing the example. They require a
    published gopage, so to build one against your checkout write a workspace first:
-   `gopagetool example --workspace`. It names the version the manifest asks for, so a bump makes it
-   stale; `--update` rewrites it, and `GOWORK=off` runs the tool while it is broken.
-8. **Every publishable artifact carries its own version.** See Releases below.
+   `gopagetool example --workspace`. It names the version the example's own `go.mod` pins, and
+   `GOWORK=off` runs the tool while the workspace is broken.
+8. **The version lives in the tag, not in the tree.** See Releases below.
 9. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
    in the pull request why the cost buys something worth more.
@@ -86,15 +86,20 @@ commit that only says what the diff already shows is a wasted commit message.
 
 ## Releases
 
-Every artifact this repository publishes has its own entry and its own version in
-[versions.jsonc](versions.jsonc). A release is a version bump there, not a tag: `gopagetool release
-plan` asks each registry whether that version already exists and publishes only what is missing, so
-running the workflow twice publishes nothing the second time. Tags are written afterwards, because
-Go modules resolve through them.
+Nothing in this repository records the version of the next release. A release is `publish.yml`
+dispatched with a version, and that number is the only place it exists: the git tag is written from
+it, goreleaser names the archives after that tag, and the npm packages are assembled at the same
+number. Two versions can no longer disagree because there is only one.
 
-`gopagetool release check`, which `gopagetool ci` runs, refuses a change that touches a package whose
-version is already published without raising it. Say `"unreleased": true` on the package when that
-is deliberate.
+`gopagetool release plan --version X.Y.Z` asks git and the npm registry whether that version is
+already out and reports only what is missing, so dispatching the same version twice publishes
+nothing the second time. That makes a half-finished release recoverable: dispatch it again and the
+tool skips what already landed.
+
+Nothing in CI checks whether main has changes waiting for a release, because a repository that
+carries no version has nothing to compare against. The consequence is deliberate — `gopagetool ci`
+neither reaches the network nor reads git history, so it answers the same question offline and on a
+shallow clone as it does on a release runner.
 
 For the Go module, goreleaser builds the archives, cosign signs the checksums against the workflow's
 own identity, and the release carries an SBOM and a provenance attestation for every artifact.

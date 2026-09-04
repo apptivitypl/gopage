@@ -5,8 +5,12 @@ on:
     - cron: "41 2 * * *"
   workflow_dispatch:
     inputs:
+      version:
+        description: The version this release carries, for example 0.3.0
+        type: string
+        default: ""
       nightly:
-        description: Build the nightly prerelease instead of the release the manifest asks for
+        description: Build the nightly prerelease instead of a release
         type: boolean
         default: false
 
@@ -45,14 +49,19 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Read the manifest and ask the registries
+      - name: Ask the registries what this version still needs
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
         run: |
-          go run ./cmd/gopagetool release plan | tee -a "$GITHUB_STEP_SUMMARY"
-          go run ./cmd/gopagetool release plan --json > plan.json
-          tag="v$(go run ./cmd/gopagetool version)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::this workflow needs a version; dispatch it again and fill the version input"
+            exit 1
+          fi
+          go run ./cmd/gopagetool release plan --version "$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
+          go run ./cmd/gopagetool release plan --version "$VERSION" --json > plan.json
+          tag="v$VERSION"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "released=true" >> "$GITHUB_OUTPUT"
@@ -123,9 +132,6 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Check the tag against the manifest
-        run: go run ./cmd/gopagetool version --check "$TAG"
-
       - name: Install the pinned linter
         run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
@@ -174,6 +180,7 @@ jobs:
       id-token: write
     env:
       TAG: ${{ needs.plan.outputs.tag }}
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -201,7 +208,7 @@ jobs:
           names=$(printf '%s' "$PLAN" |
             python3 -c 'import json,sys; [print(p["name"]) for p in json.load(sys.stdin) if p["kind"] == "npm"]')
           for name in $names; do
-            go run ./cmd/gopagetool release run "$name" --from archives --publish
+            go run ./cmd/gopagetool release run "$name" --version "$VERSION" --from archives --publish
             echo "published $name" >> "$GITHUB_STEP_SUMMARY"
           done
 
@@ -213,6 +220,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+    env:
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -225,7 +234,7 @@ jobs:
 
       - name: Tag every published package
         run: |
-          go run ./cmd/gopagetool release tags | while read -r tag; do
+          go run ./cmd/gopagetool release tags --version "$VERSION" | while read -r tag; do
             git tag "$tag"
             git push origin "$tag"
             echo "pushed $tag" >> "$GITHUB_STEP_SUMMARY"
@@ -255,7 +264,7 @@ jobs:
           cache: false
 
       - name: Point the examples at the version that was just published
-        run: go run ./cmd/gopagetool example --update
+        run: go run ./cmd/gopagetool example --update --version "$TAG"
 
       - name: Open a pull request when the examples moved
         run: |
