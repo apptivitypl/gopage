@@ -87,7 +87,7 @@ func commandList() string {
 		"  bench [--check] [--record] [--accept]",
 		"  smoke [--keep]",
 		"  release plan [--json] | check | run [PACKAGE] [--from DIR] [--publish] | trust | tags",
-		"  example [--update] [--workspace]",
+		"  example [--update] [--workspace] [--verify]",
 	}, "\n")
 }
 
@@ -249,9 +249,6 @@ func ci() error {
 		return err
 	}
 	if err := exampleCmd(nil); err != nil {
-		return err
-	}
-	if err := exampleCmd([]string{"--verify"}); err != nil {
 		return err
 	}
 	return runCoverage(coverageOptions{enforce: true})

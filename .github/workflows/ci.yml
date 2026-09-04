@@ -154,7 +154,7 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: The native binary and the worker answer alike
+      - name: Run the invariants that hold both targets to one answer
         run: go test ./internal/invariant/ -race -count=1 -v
 
   cross:
@@ -276,15 +276,18 @@ jobs:
           restore-keys: |
             gopage-tools-${{ runner.os }}-
 
-      - name: They are still what the templates write
+      - name: Compare the examples with the templates
         run: go run ./cmd/gopagetool example
-
-      - name: Point them at this checkout
-        run: go run ./cmd/gopagetool example --workspace
 
       - run: pnpm --dir examples/hello-world install --no-frozen-lockfile
 
-      - name: They build, and the demo target answers from wasm
+      - name: Build the examples the way someone outside this repo does
+        run: go run ./cmd/gopagetool example --verify
+
+      - name: Point the examples at this checkout
+        run: go run ./cmd/gopagetool example --workspace
+
+      - name: Build the examples and probe the wasm demo
         run: |
           go run ./cmd/gopage build --dir examples/blog
           go run ./cmd/gopage build --dir examples/hello-world --target demo
@@ -327,7 +330,7 @@ jobs:
           go run ./cmd/gopage new "$RUNNER_TEMP/starter" --module example.com/demo --gopage-path "$PWD" --css tailwind --yes
           go run ./cmd/gopage build --dir "$RUNNER_TEMP/starter"
 
-      - name: The stylesheet carries the classes the compiler found
+      - name: Check the stylesheet for the classes the compiler found
         run: grep -q 'max-w-3xl' "$RUNNER_TEMP"/starter/dist/assets/assets/app.*.css
 
   workflows:
