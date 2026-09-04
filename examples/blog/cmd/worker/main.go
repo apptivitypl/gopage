@@ -3,15 +3,15 @@ package main
 import (
 	"github.com/syumai/workers"
 
-	"github.com/apptivitypl/rill"
+	"github.com/apptivitypl/gopage"
 
-	"github.com/apptivitypl/rill/examples/blog/internal/gen"
+	"github.com/apptivitypl/gopage/examples/blog/internal/gen"
 )
 
 func main() {
 	options := gen.Options()
 	options.CacheBytes = 8 << 20
-	app, err := rill.New(options)
+	app, err := gopage.New(options)
 	if err != nil {
 		panic(err)
 	}

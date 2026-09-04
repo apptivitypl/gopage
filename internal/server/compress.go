@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/compress"
+	"github.com/apptivitypl/gopage/internal/compress"
 )
 
 const (

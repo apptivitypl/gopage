@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/action"
-	"github.com/apptivitypl/rill/internal/cache"
-	"github.com/apptivitypl/rill/internal/form"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/action"
+	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/form"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func counting(t *testing.T, policy func(*cache.Recorder)) (*App, *atomic.Int64) {
@@ -471,13 +471,13 @@ func TestAForwardedSchemeNobodyTrustsChangesNothing(t *testing.T) {
 
 func TestABackgroundRenderWritesNowhere(t *testing.T) {
 	sink := discarded{header: http.Header{}}
-	sink.Header().Set("Set-Cookie", "rill.csrf=leak")
+	sink.Header().Set("Set-Cookie", "gopage.csrf=leak")
 	n, err := sink.Write([]byte("a body nobody receives"))
 	if err != nil || n != len("a body nobody receives") {
 		t.Errorf("write = %d, %v", n, err)
 	}
 	sink.WriteHeader(http.StatusTeapot)
-	if got := sink.Header().Get("Set-Cookie"); got != "rill.csrf=leak" {
+	if got := sink.Header().Get("Set-Cookie"); got != "gopage.csrf=leak" {
 		t.Errorf("header = %q, want the loader still able to set one harmlessly", got)
 	}
 }

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 type DeferredProvider func(*http.Request, Params) (runtime.Accessible, error)

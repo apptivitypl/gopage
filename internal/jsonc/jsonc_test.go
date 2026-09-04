@@ -49,7 +49,7 @@ func TestBlockCommentsBecomeSpacesAndKeepNewlines(t *testing.T) {
 }
 
 func TestCommentMarkersInsideStringsSurvive(t *testing.T) {
-	text := `{"url": "https://rill.dev/a//b", "block": "/* not a comment */"}`
+	text := `{"url": "https://gopage.dev/a//b", "block": "/* not a comment */"}`
 	got := clean(t, text)
 	if got != text {
 		t.Errorf("got %q", got)

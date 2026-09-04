@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const ClassAttribute = "class"

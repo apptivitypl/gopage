@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/gopage/internal/config"
 )
 
 func create(t *testing.T, cfg Config) string {
@@ -64,8 +64,8 @@ func TestDefaultNameUsesTheDirectory(t *testing.T) {
 func TestCreateWritesTheWholeTree(t *testing.T) {
 	dir := create(t, Config{Name: "demo"})
 	for _, name := range []string{
-		"go.mod", ".gitignore", "rill.jsonc",
-		"app/layout.rill", "app/page.rill", "app/api/health/route.go",
+		"go.mod", ".gitignore", "gopage.jsonc",
+		"app/layout.gopage", "app/page.gopage", "app/api/health/route.go",
 		"cmd/server/main.go", "cmd/worker/main.go", "public/favicon.ico",
 	} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(name))); err != nil {
@@ -93,14 +93,14 @@ func TestModulePathIsSubstituted(t *testing.T) {
 
 func TestNameLandsInTheConfig(t *testing.T) {
 	dir := create(t, Config{Name: "my-site"})
-	if !strings.Contains(read(t, dir, "rill.jsonc"), `"name": "my-site"`) {
-		t.Errorf("rill.toml = %q", read(t, dir, "rill.jsonc"))
+	if !strings.Contains(read(t, dir, "gopage.jsonc"), `"name": "my-site"`) {
+		t.Errorf("gopage.toml = %q", read(t, dir, "gopage.jsonc"))
 	}
 }
 
 func TestReplaceDirectiveIsOptional(t *testing.T) {
-	withReplace := create(t, Config{RillPath: "/src/rill"})
-	if !strings.Contains(read(t, withReplace, "go.mod"), "replace github.com/apptivitypl/rill => /src/rill") {
+	withReplace := create(t, Config{GopagePath: "/src/gopage"})
+	if !strings.Contains(read(t, withReplace, "go.mod"), "replace github.com/apptivitypl/gopage => /src/gopage") {
 		t.Error("the replace directive is missing")
 	}
 
@@ -110,21 +110,21 @@ func TestReplaceDirectiveIsOptional(t *testing.T) {
 	}
 }
 
-func TestTheRequiredRillVersionCanBePinned(t *testing.T) {
-	pinned := create(t, Config{RillVersion: "v0.4.2"})
-	if !strings.Contains(read(t, pinned, "go.mod"), "github.com/apptivitypl/rill v0.4.2") {
+func TestTheRequiredGopageVersionCanBePinned(t *testing.T) {
+	pinned := create(t, Config{GopageVersion: "v0.4.2"})
+	if !strings.Contains(read(t, pinned, "go.mod"), "github.com/apptivitypl/gopage v0.4.2") {
 		t.Errorf("go.mod = %q", read(t, pinned, "go.mod"))
 	}
 
 	unpinned := create(t, Config{})
-	if !strings.Contains(read(t, unpinned, "go.mod"), "github.com/apptivitypl/rill "+DefaultRillVersion) {
+	if !strings.Contains(read(t, unpinned, "go.mod"), "github.com/apptivitypl/gopage "+DefaultGopageVersion) {
 		t.Errorf("go.mod = %q, want the placeholder version", read(t, unpinned, "go.mod"))
 	}
 }
 
-func TestTemplateSyntaxIsNotAppliedToRillFiles(t *testing.T) {
+func TestTemplateSyntaxIsNotAppliedToGopageFiles(t *testing.T) {
 	dir := create(t, Config{})
-	layout := read(t, dir, "app/layout.rill")
+	layout := read(t, dir, "app/layout.gopage")
 	if !strings.Contains(layout, "{% outlet %}") {
 		t.Errorf("layout lost its directive: %q", layout)
 	}
@@ -193,7 +193,7 @@ func TestDefaultsFillTheGaps(t *testing.T) {
 
 func settingsOf(t *testing.T, dir string) config.Config {
 	t.Helper()
-	settings, err := config.Parse(read(t, dir, "rill.jsonc"))
+	settings, err := config.Parse(read(t, dir, "gopage.jsonc"))
 	if err != nil {
 		t.Fatalf("the generated config does not parse: %v", err)
 	}
@@ -234,22 +234,22 @@ func TestAnEmptyTemplateFallsBackToTheDefault(t *testing.T) {
 	if err := Create(Config{Dir: dir, Module: "example.com/demo"}); err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "app", "page.rill")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "app", "page.gopage")); err != nil {
 		t.Errorf("stat = %v, want the default template written", err)
 	}
-	if !strings.Contains(read(t, dir, "rill.jsonc"), `"name": "`+filepath.Base(dir)+`"`) {
-		t.Errorf("rill.toml = %q, want the directory as the name", read(t, dir, "rill.jsonc"))
+	if !strings.Contains(read(t, dir, "gopage.jsonc"), `"name": "`+filepath.Base(dir)+`"`) {
+		t.Errorf("gopage.toml = %q, want the directory as the name", read(t, dir, "gopage.jsonc"))
 	}
 }
 
-func TestRillTemplatesUseTheirOwnDelimiters(t *testing.T) {
+func TestGopageTemplatesUseTheirOwnDelimiters(t *testing.T) {
 	dir := create(t, Config{Module: "example.com/blog", Template: "blog"})
-	page := read(t, dir, "app/page.rill")
+	page := read(t, dir, "app/page.gopage")
 	if !strings.Contains(page, `"example.com/blog/content"`) {
 		t.Errorf("page = %q, want the module substituted", page)
 	}
 	if !strings.Contains(page, "{{ Heading }}") {
-		t.Errorf("page = %q, want the rill interpolation left alone", page)
+		t.Errorf("page = %q, want the gopage interpolation left alone", page)
 	}
 }
 
@@ -268,20 +268,20 @@ func TestEveryTemplateIsListed(t *testing.T) {
 func TestTheBlogTemplateIsComplete(t *testing.T) {
 	dir := create(t, Config{Module: "example.com/blog", Template: "blog"})
 	for _, name := range []string{
-		"app/page.rill",
-		"app/posts/[slug]/page.rill",
+		"app/page.gopage",
+		"app/posts/[slug]/page.gopage",
 		"app/feed.xml/route.go",
 		"content/posts.go",
 		"content/posts/hello.md",
-		"components/PostCard/template.rill",
+		"components/PostCard/template.gopage",
 		"locales/en.json",
-		"rill.jsonc",
+		"gopage.jsonc",
 	} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(name))); err != nil {
 			t.Errorf("%s is missing: %v", name, err)
 		}
 	}
-	if !strings.Contains(read(t, dir, "rill.jsonc"), `"/feed.xml"`) {
+	if !strings.Contains(read(t, dir, "gopage.jsonc"), `"/feed.xml"`) {
 		t.Error("the feed must be a reserved path so it keeps its own url")
 	}
 }
@@ -299,15 +299,15 @@ func TestTheThemeDecidesWhatIsGenerated(t *testing.T) {
 	for theme, want := range cases {
 		t.Run(theme, func(t *testing.T) {
 			dir := create(t, Config{Theme: theme})
-			_, err := os.Stat(filepath.Join(dir, "components", "ThemeToggle.rill"))
+			_, err := os.Stat(filepath.Join(dir, "components", "ThemeToggle.gopage"))
 			if want.toggle && err != nil {
 				t.Errorf("the toggle island is missing: %v", err)
 			}
 			if !want.toggle && err == nil {
 				t.Error("a project without the toggle must not carry its island")
 			}
-			layout := read(t, dir, "app/layout.rill")
-			markup := read(t, dir, "app/page.rill")
+			layout := read(t, dir, "app/layout.gopage")
+			markup := read(t, dir, "app/page.gopage")
 			if want.forced != "" && !strings.Contains(layout, `data-theme="`+want.forced+`"`) {
 				t.Errorf("layout = %q, want the theme forced", layout)
 			}
@@ -329,7 +329,7 @@ func TestThemesAreListed(t *testing.T) {
 
 func TestTheDefaultThemeCarriesTheToggle(t *testing.T) {
 	dir := create(t, Config{})
-	if _, err := os.Stat(filepath.Join(dir, "components", "ThemeToggle.rill")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "components", "ThemeToggle.gopage")); err != nil {
 		t.Errorf("the default project should ship the toggle: %v", err)
 	}
 }
@@ -337,10 +337,10 @@ func TestTheDefaultThemeCarriesTheToggle(t *testing.T) {
 func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	dir := create(t, Config{Module: "example.com/demo", Template: "hello-world"})
 	for _, name := range []string{
-		"app/page.rill",
-		"app/layout.rill",
-		"components/Ticker.rill",
-		"components/HackerNews.rill",
+		"app/page.gopage",
+		"app/layout.gopage",
+		"components/Ticker.gopage",
+		"components/HackerNews.gopage",
 		"locales/en.json",
 		"public/llms.txt",
 	} {
@@ -348,12 +348,12 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 			t.Errorf("%s is missing: %v", name, err)
 		}
 	}
-	for _, name := range []string{"app/about/page.rill", "locales/pl.json", "components/Search.rill"} {
+	for _, name := range []string{"app/about/page.gopage", "locales/pl.json", "components/Search.gopage"} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(name))); err == nil {
 			t.Errorf("%s is still generated", name)
 		}
 	}
-	page := read(t, dir, "app/page.rill")
+	page := read(t, dir, "app/page.gopage")
 	if !strings.Contains(page, `class="ln"`) {
 		t.Error("the source block carries line numbers")
 	}
@@ -372,7 +372,7 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	if !strings.Contains(page, "marked") || !strings.Contains(page, "by-logo") {
 		t.Error("the hero carries the marker and the footer the maker")
 	}
-	hackerNews := read(t, dir, "components/HackerNews.rill")
+	hackerNews := read(t, dir, "components/HackerNews.gopage")
 	if strings.Contains(hackerNews, "<script client") {
 		t.Error("the news list is a server component: it ships no browser code of its own")
 	}
@@ -385,7 +385,7 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	if !strings.Contains(page, `{% fragment "HackerNews" defer="visible" %}`) || !strings.Contains(page, "{% placeholder %}") {
 		t.Error("the list is fetched only once the slot is on screen, behind a server-rendered placeholder")
 	}
-	if !strings.Contains(page, "func HackerNews(ctx *rill.Ctx) ([]Story, error)") {
+	if !strings.Contains(page, "func HackerNews(ctx *gopage.Ctx) ([]Story, error)") {
 		t.Error("the deferred fragment is fed by a loader named after it")
 	}
 	if !strings.Contains(page, "hackernews.Top(ctx.Request())") {
@@ -406,8 +406,8 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	if !strings.Contains(read(t, dir, "package.json"), `"react": "^19`) {
 		t.Error("a react starter declares react in package.json")
 	}
-	if !strings.Contains(read(t, dir, "rill.jsonc"), `"client": {"react": "react"}`) {
-		t.Error("rill.toml names the browser engine")
+	if !strings.Contains(read(t, dir, "gopage.jsonc"), `"client": {"react": "react"}`) {
+		t.Error("gopage.toml names the browser engine")
 	}
 	for _, name := range []string{"client-code", "client-preview", "list-code", "list-preview", "server-code", "server-preview"} {
 		if !strings.Contains(page, `:aria-label="t('pane.`+name+`')"`) {
@@ -429,11 +429,11 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	if !strings.Contains(page, "<footer") || !strings.Contains(page, "foot-row") {
 		t.Error("the page ends with a footer row")
 	}
-	ticker := read(t, dir, "components/Ticker.rill")
+	ticker := read(t, dir, "components/Ticker.gopage")
 	if !strings.Contains(ticker, `<script client lang="tsx">`) || !strings.Contains(ticker, "useState(Start)") {
 		t.Error("the counter is a react component too")
 	}
-	for _, name := range []string{"components/Stars.rill", "components/Response.rill"} {
+	for _, name := range []string{"components/Stars.gopage", "components/Response.gopage"} {
 		if !strings.Contains(read(t, dir, name), "export default function") {
 			t.Errorf("%s is a react component", name)
 		}
@@ -441,7 +441,7 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 	if !strings.Contains(page, `<Stars client="idle"`) || !strings.Contains(page, `<Response client="visible"`) {
 		t.Error("the header badge hydrates on idle and the response preview on sight")
 	}
-	toggle := read(t, dir, "components/ThemeToggle.rill")
+	toggle := read(t, dir, "components/ThemeToggle.gopage")
 	if strings.Contains(toggle, "startViewTransition") || strings.Contains(toggle, "switch-bite") {
 		t.Error("the theme change is a plain fade with a sun and a moon, no reveal and no mask")
 	}
@@ -467,13 +467,13 @@ func TestReactCanBeSwitchedOffOrSwappedForPreact(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(off, "package.json")); err == nil {
 		t.Error("a starter without react has no package.json")
 	}
-	for _, name := range []string{"components/Ticker.rill", "components/Stars.rill", "components/Response.rill"} {
+	for _, name := range []string{"components/Ticker.gopage", "components/Stars.gopage", "components/Response.gopage"} {
 		plain := read(t, off, name)
 		if !strings.Contains(plain, "export function mount") || strings.Contains(plain, "lang=\"tsx\"") {
 			t.Errorf("%s: without react every island is plain typescript", name)
 		}
 	}
-	if strings.Contains(read(t, off, "rill.jsonc"), `"client"`) {
+	if strings.Contains(read(t, off, "gopage.jsonc"), `"client"`) {
 		t.Error("without react there is no browser engine to name")
 	}
 
@@ -481,8 +481,8 @@ func TestReactCanBeSwitchedOffOrSwappedForPreact(t *testing.T) {
 	if !strings.Contains(read(t, preact, "package.json"), `"preact"`) {
 		t.Error("the preact engine installs preact instead of react")
 	}
-	if !strings.Contains(read(t, preact, "rill.jsonc"), `"react": "preact"`) {
-		t.Error("rill.toml names preact")
+	if !strings.Contains(read(t, preact, "gopage.jsonc"), `"react": "preact"`) {
+		t.Error("gopage.toml names preact")
 	}
 	if got := Reacts(); len(got) != 3 || got[0] != ReactOn {
 		t.Errorf("reacts = %v", got)

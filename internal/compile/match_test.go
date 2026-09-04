@@ -5,8 +5,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 const statusBlock = `---
@@ -23,7 +23,7 @@ type Props struct {
 	Title  string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 ---
@@ -32,7 +32,7 @@ func Load(ctx *rill.Ctx) (Props, error) {
 func matched(t *testing.T, body string) *diag.Bag {
 	t.Helper()
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(statusBlock + body)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(statusBlock + body)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	return &bag
@@ -64,7 +64,7 @@ func TestExhaustiveMatchIsAccepted(t *testing.T) {
 
 func TestMatchPicksTheRightArm(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file(statusBlock + "{% match State %}{% when StatusActive %}on{% when StatusPaused %}paused{% when StatusArchived %}gone{% endmatch %}")}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file(statusBlock + "{% match State %}{% when StatusActive %}on{% when StatusPaused %}paused{% when StatusArchived %}gone{% endmatch %}")}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestMatchOnANonEnumIsReported(t *testing.T) {
 func TestTextBetweenMatchAndFirstWhenIsReported(t *testing.T) {
 	var bag diag.Bag
 	body := "{% match State %}stray{% when StatusActive %}a{% when StatusPaused %}p{% when StatusArchived %}g{% endmatch %}"
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(statusBlock + body)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(statusBlock + body)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !bag.HasErrors() {
@@ -157,7 +157,7 @@ func TestWhitespaceBetweenMatchAndFirstWhenIsFine(t *testing.T) {
 func TestUnclosedMatchIsReported(t *testing.T) {
 	var bag diag.Bag
 	body := "{% match State %}{% when StatusActive %}a"
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(statusBlock + body)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(statusBlock + body)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !bag.HasErrors() {
@@ -168,7 +168,7 @@ func TestUnclosedMatchIsReported(t *testing.T) {
 func TestMalformedWhenIsReported(t *testing.T) {
 	var bag diag.Bag
 	body := "{% match State %}{% when %}a{% endmatch %}"
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(statusBlock + body)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(statusBlock + body)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !bag.HasErrors() {
@@ -193,7 +193,7 @@ func TestArmBodiesAreTypeChecked(t *testing.T) {
 func TestEnumWithoutConstantsIsNotAMatchSubject(t *testing.T) {
 	source := "---\ntype Status string\ntype Props struct{ State Status }\n---\n{% match State %}{% when X %}a{% endmatch %}"
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !bag.HasErrors() {

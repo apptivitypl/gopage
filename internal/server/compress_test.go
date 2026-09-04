@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/andybalholm/brotli"
-	"github.com/apptivitypl/rill/internal/compress"
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/compress"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 func bigManifest() *ir.Manifest {

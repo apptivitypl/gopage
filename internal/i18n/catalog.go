@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const (

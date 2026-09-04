@@ -8,7 +8,7 @@ import (
 
 const oneGoPackage = `{
   "packages": {
-    "rill": {
+    "gopage": {
       "kind": "go",
       "version": "0.1.0",
       "tag": "v{version}",
@@ -54,7 +54,7 @@ func changing(value bool) Changes {
 }
 
 func TestAGoPackageParses(t *testing.T) {
-	pkg := packaged(t, parse(t, oneGoPackage), "rill")
+	pkg := packaged(t, parse(t, oneGoPackage), "gopage")
 	if pkg.Kind != KindGo {
 		t.Errorf("Kind = %q, want %q", pkg.Kind, KindGo)
 	}
@@ -67,46 +67,46 @@ func TestAGoPackageParses(t *testing.T) {
 }
 
 func TestATagTemplateDefaultsToNameAndVersion(t *testing.T) {
-	manifest := parse(t, `{"packages": {"@apptivitypl/rill": {"kind": "npm", "version": "1.2.3", "dir": "npm/rill", "paths": ["npm/rill/**"]}}}`)
-	if got := packaged(t, manifest, "@apptivitypl/rill").TagName(); got != "@apptivitypl/rill@1.2.3" {
+	manifest := parse(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "1.2.3", "dir": "npm/gopage", "paths": ["npm/gopage/**"]}}}`)
+	if got := packaged(t, manifest, "@apptivitypl/gopage").TagName(); got != "@apptivitypl/gopage@1.2.3" {
 		t.Errorf("TagName = %q", got)
 	}
 }
 
 func TestPrereleaseVersionsAreAllowed(t *testing.T) {
-	parse(t, `{"packages": {"rill": {"kind": "go", "version": "0.1.0-rc.1", "paths": ["*.go"]}}}`)
+	parse(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0-rc.1", "paths": ["*.go"]}}}`)
 }
 
 func TestAnUnknownKindIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"rill": {"kind": "deb", "version": "0.1.0", "paths": ["*.go"]}}}`)
+	err := parseErr(t, `{"packages": {"gopage": {"kind": "deb", "version": "0.1.0", "paths": ["*.go"]}}}`)
 	if !strings.Contains(err.Error(), "unknown kind") {
 		t.Errorf("error = %q", err)
 	}
 }
 
 func TestAVersionThatIsNotSemanticIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"rill": {"kind": "go", "version": "v0.1", "paths": ["*.go"]}}}`)
+	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "v0.1", "paths": ["*.go"]}}}`)
 	if !strings.Contains(err.Error(), "semantic version") {
 		t.Errorf("error = %q", err)
 	}
 }
 
 func TestAPackageWithoutPathsIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"rill": {"kind": "go", "version": "0.1.0", "paths": []}}}`)
+	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": []}}}`)
 	if !strings.Contains(err.Error(), "owns no paths") {
 		t.Errorf("error = %q", err)
 	}
 }
 
 func TestAnInvalidPatternIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"rill": {"kind": "go", "version": "0.1.0", "paths": ["["]}}}`)
+	err := parseErr(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": ["["]}}}`)
 	if !strings.Contains(err.Error(), "invalid pattern") {
 		t.Errorf("error = %q", err)
 	}
 }
 
 func TestAPackageThatIsNotGoNeedsADir(t *testing.T) {
-	err := parseErr(t, `{"packages": {"@apptivitypl/rill": {"kind": "npm", "version": "0.1.0", "paths": ["npm/**"]}}}`)
+	err := parseErr(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "paths": ["npm/**"]}}}`)
 	if !strings.Contains(err.Error(), "needs a dir") {
 		t.Errorf("error = %q", err)
 	}
@@ -126,7 +126,7 @@ func TestBrokenJsonIsRefused(t *testing.T) {
 	if _, err := Parse("{"); err == nil {
 		t.Error("expected an error from truncated json")
 	}
-	if _, err := Parse(`{"packages": {"rill": {"kind": "go", "version": "0.1.0", "paths": ["*.go"], "what": 1}}}`); err == nil {
+	if _, err := Parse(`{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "paths": ["*.go"], "what": 1}}}`); err == nil {
 		t.Error("expected an error from an unknown field")
 	}
 	if _, err := Parse(`{"packages": []}`); err == nil {
@@ -135,7 +135,7 @@ func TestBrokenJsonIsRefused(t *testing.T) {
 }
 
 func TestANeedThatIsNotInTheManifestIsRefused(t *testing.T) {
-	err := parseErr(t, `{"packages": {"@apptivitypl/rill": {"kind": "npm", "version": "0.1.0", "dir": "npm/rill", "needs": ["rill"], "paths": ["npm/rill/**"]}}}`)
+	err := parseErr(t, `{"packages": {"@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/gopage", "needs": ["gopage"], "paths": ["npm/gopage/**"]}}}`)
 	if !strings.Contains(err.Error(), "not in the manifest") {
 		t.Errorf("error = %q", err)
 	}
@@ -153,15 +153,15 @@ func TestACycleInNeedsIsRefused(t *testing.T) {
 
 func TestPackagesComeOutInDependencyOrder(t *testing.T) {
 	manifest := parse(t, `{"packages": {
-    "create-rill": {"kind": "npm", "version": "0.1.0", "dir": "npm/create-rill", "needs": ["@apptivitypl/rill"], "paths": ["npm/create-rill/**"]},
-    "@apptivitypl/rill": {"kind": "npm", "version": "0.1.0", "dir": "npm/rill", "needs": ["rill"], "paths": ["npm/rill/**"]},
-    "rill": {"kind": "go", "version": "0.1.0", "paths": ["*.go"]}
+    "create-gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/create-gopage", "needs": ["@apptivitypl/gopage"], "paths": ["npm/create-gopage/**"]},
+    "@apptivitypl/gopage": {"kind": "npm", "version": "0.1.0", "dir": "npm/gopage", "needs": ["gopage"], "paths": ["npm/gopage/**"]},
+    "gopage": {"kind": "go", "version": "0.1.0", "paths": ["*.go"]}
   }}`)
 	var names []string
 	for _, pkg := range manifest.Packages() {
 		names = append(names, pkg.Name)
 	}
-	want := []string{"rill", "@apptivitypl/rill", "create-rill"}
+	want := []string{"gopage", "@apptivitypl/gopage", "create-gopage"}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Errorf("order = %v, want %v", names, want)
 	}
@@ -174,13 +174,13 @@ func TestAMissingPackageIsReported(t *testing.T) {
 }
 
 func TestOwnershipFollowsPathsAndExcludes(t *testing.T) {
-	pkg := packaged(t, parse(t, oneGoPackage), "rill")
-	for _, path := range []string{"rill.go", "./serve.go", "internal/build/build.go"} {
+	pkg := packaged(t, parse(t, oneGoPackage), "gopage")
+	for _, path := range []string{"gopage.go", "./serve.go", "internal/build/build.go"} {
 		if !pkg.Owns(path) {
 			t.Errorf("Owns(%q) = false, want true", path)
 		}
 	}
-	for _, path := range []string{"internal/tool/release/release.go", "README.md", "cmd/rill/main.go"} {
+	for _, path := range []string{"internal/tool/release/release.go", "README.md", "cmd/gopage/main.go"} {
 		if pkg.Owns(path) {
 			t.Errorf("Owns(%q) = true, want false", path)
 		}
@@ -231,7 +231,7 @@ func TestChangesOnTopOfAPublishedVersionAreAProblem(t *testing.T) {
 }
 
 func TestAPackageHeldBackIsNotAProblem(t *testing.T) {
-	manifest := parse(t, `{"packages": {"rill": {"kind": "go", "version": "0.1.0", "tag": "v{version}", "paths": ["*.go"], "unreleased": true}}}`)
+	manifest := parse(t, `{"packages": {"gopage": {"kind": "go", "version": "0.1.0", "tag": "v{version}", "paths": ["*.go"], "unreleased": true}}}`)
 	statuses, err := Plan(manifest, always(true), changing(true))
 	if err != nil {
 		t.Fatalf("Plan: %v", err)
@@ -258,7 +258,7 @@ func TestRenderNamesEveryPackage(t *testing.T) {
 		t.Fatalf("Plan: %v", err)
 	}
 	out := Render(statuses)
-	if !strings.Contains(out, "rill") || !strings.Contains(out, string(Publish)) {
+	if !strings.Contains(out, "gopage") || !strings.Contains(out, string(Publish)) {
 		t.Errorf("Render = %q", out)
 	}
 }

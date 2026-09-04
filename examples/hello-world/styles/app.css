@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @source "../app";
 @source "../components";
-@source "../.rill/cache/tailwind-inventory.txt";
+@source "../.gopage/cache/tailwind-inventory.txt";
 
 @font-face {
     font-family: "JetBrains Mono";
@@ -752,7 +752,7 @@
         animation: shimmer 1.4s ease-in-out infinite;
     }
 
-    rill-slot {
+    gopage-slot {
         display: block;
     }
 

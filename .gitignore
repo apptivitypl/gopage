@@ -4,8 +4,8 @@
 *.test
 
 # Compiled binaries of this repository's own commands.
-/rill
-/rilltool
+/gopage
+/gopagetool
 
 # Coverage output, never committed.
 /.coverage
@@ -21,7 +21,7 @@ coverage.html
 
 # What a scaffolded project generates, for when one is created at this root.
 /dist
-/.rill
+/.gopage
 /.wrangler
 
 node_modules/

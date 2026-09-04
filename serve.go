@@ -1,6 +1,6 @@
 //go:build !js
 
-package rill
+package gopage
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/net/netutil"
 
-	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/gopage/internal/logs"
 )
 
 const (

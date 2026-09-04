@@ -141,7 +141,7 @@ func Render(d Diagnostic, source string) string {
 	gutter := len(fmt.Sprint(pos.Line))
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s[RILL-%s]: %s\n", d.Severity, d.Code, d.Message)
+	fmt.Fprintf(&b, "%s[GOPAGE-%s]: %s\n", d.Severity, d.Code, d.Message)
 	fmt.Fprintf(&b, "%s--> %s:%d:%d\n", strings.Repeat(" ", gutter), d.File, pos.Line, pos.Column)
 	fmt.Fprintf(&b, "%s |\n", strings.Repeat(" ", gutter))
 	fmt.Fprintf(&b, "%d | %s\n", pos.Line, text)

@@ -3,12 +3,12 @@ package runtime
 import (
 	"time"
 
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 const (
-	SlotTag       = "rill-slot"
-	SlotAttribute = "data-rill-slot"
+	SlotTag       = "gopage-slot"
+	SlotAttribute = "data-gopage-slot"
 )
 
 type Budget time.Duration

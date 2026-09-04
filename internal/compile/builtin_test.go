@@ -5,16 +5,16 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/form"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/form"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func renderForm(t *testing.T, source string, result form.Result, token string) string {
 	t.Helper()
 	var bag diag.Bag
-	compiled, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(source)}}, &bag)
+	compiled, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(source)}}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestFieldNeedsALiteralName(t *testing.T) {
 	sources := []string{`<Field />`, `<Field :name="Email" />`, `<Field name="" />`}
 	for _, source := range sources {
 		var bag diag.Bag
-		_, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(source)}}, &bag)
+		_, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(source)}}, &bag)
 		if err != nil {
 			t.Fatalf("Compile: %v", err)
 		}
@@ -120,7 +120,7 @@ func TestFieldNeedsALiteralName(t *testing.T) {
 
 func TestBuiltinsAreOfferedAsSuggestions(t *testing.T) {
 	var bag diag.Bag
-	_, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(`<Fied name="x" />`)}}, &bag)
+	_, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(`<Fied name="x" />`)}}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestBuiltinsAreOfferedAsSuggestions(t *testing.T) {
 func TestFieldRejectsAComputedName(t *testing.T) {
 	var bag diag.Bag
 	_, err := Compile(fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte(`<Field name="a{{ 1 }}b" />`)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(`<Field name="a{{ 1 }}b" />`)},
 	}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -152,10 +152,10 @@ func TestFieldRejectsAComputedName(t *testing.T) {
 func TestAPageThatAcceptsASubmissionIsDynamic(t *testing.T) {
 	var bag diag.Bag
 	result, err := Compile(fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte(`---
+		"app/page.gopage": &fstest.MapFile{Data: []byte(`---
 type ContactForm struct{}
 
-func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, error) {
+func Submit(ctx *gopage.Ctx, params gopage.Params, form ContactForm) (gopage.Action, error) {
 	return nil, nil
 }
 ---
@@ -197,7 +197,7 @@ func TestFilterDiagnostics(t *testing.T) {
 	for name, source := range cases {
 		t.Run(name, func(t *testing.T) {
 			var bag diag.Bag
-			if _, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(source)}}, &bag); err != nil {
+			if _, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(source)}}, &bag); err != nil {
 				t.Fatalf("Compile: %v", err)
 			}
 			if !bag.HasErrors() {
@@ -210,7 +210,7 @@ func TestFilterDiagnostics(t *testing.T) {
 func TestAnUnknownFilterSuggestsTheClosestName(t *testing.T) {
 	var bag diag.Bag
 	if _, err := Compile(fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte(`{{ form.Token | uppr }}`)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(`{{ form.Token | uppr }}`)},
 	}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestAnUnknownFilterSuggestsTheClosestName(t *testing.T) {
 func TestAFarOffFilterNameListsTheRegistry(t *testing.T) {
 	var bag diag.Bag
 	if _, err := Compile(fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte(`{{ form.Token | wobblewobble }}`)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(`{{ form.Token | wobblewobble }}`)},
 	}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}

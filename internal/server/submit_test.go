@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/action"
-	"github.com/apptivitypl/rill/internal/cookie"
-	"github.com/apptivitypl/rill/internal/csrf"
-	"github.com/apptivitypl/rill/internal/form"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/action"
+	"github.com/apptivitypl/gopage/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/csrf"
+	"github.com/apptivitypl/gopage/internal/form"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func formManifest() *ir.Manifest {

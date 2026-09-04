@@ -301,15 +301,15 @@ func TestTheDevServerChildPrintsPrettyColouredLines(t *testing.T) {
 	t.Setenv(DevVar, "1")
 	opts := Resolve("", "")
 	if opts.Format != FormatPretty || !opts.Color {
-		t.Errorf("opts = %+v, want pretty and coloured through a pipe under rill dev", opts)
+		t.Errorf("opts = %+v, want pretty and coloured through a pipe under gopage dev", opts)
 	}
 	t.Setenv(ColorVar, "1")
 	if Resolve("", "").Color {
-		t.Error("NO_COLOR still wins under rill dev")
+		t.Error("NO_COLOR still wins under gopage dev")
 	}
 	t.Setenv(DevVar, "")
 	if Resolve("", "").Format != FormatJSON {
-		t.Error("without rill dev a pipe gets json")
+		t.Error("without gopage dev a pipe gets json")
 	}
 }
 

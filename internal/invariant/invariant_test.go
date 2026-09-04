@@ -9,12 +9,12 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/cache"
-	"github.com/apptivitypl/rill/internal/compile"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/diag"
-	rt "github.com/apptivitypl/rill/internal/runtime"
-	"github.com/apptivitypl/rill/internal/server"
+	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/compile"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/diag"
+	rt "github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/server"
 )
 
 const layout = `<!doctype html>
@@ -30,20 +30,20 @@ const docsLayout = `<aside>docs menu</aside><section>{% outlet %}</section>`
 
 func project() fstest.MapFS {
 	return fstest.MapFS{
-		"rill.jsonc":               &fstest.MapFile{Data: []byte("{\"nav\": {\"mode\": \"partial\"}, \"i18n\": {\"locales\": [\"en\", \"pl\"]}}")},
-		"app/layout.rill":          &fstest.MapFile{Data: []byte(layout)},
-		"app/page.rill":            &fstest.MapFile{Data: []byte(`<h1>home</h1>`)},
-		"app/docs/layout.rill":     &fstest.MapFile{Data: []byte(docsLayout)},
-		"app/docs/page.rill":       &fstest.MapFile{Data: []byte(`<h1>docs</h1>`)},
-		"app/docs/guide/page.rill": &fstest.MapFile{Data: []byte(`<h1>guide</h1><p>a page under two layouts</p>`)},
-		"app/private/page.rill":    &fstest.MapFile{Data: []byte(privatePage)},
-		"locales/en.json":          &fstest.MapFile{Data: []byte(`{"hello": "hello"}`)},
-		"locales/pl.json":          &fstest.MapFile{Data: []byte(`{"hello": "czesc"}`)},
+		"gopage.jsonc":               &fstest.MapFile{Data: []byte("{\"nav\": {\"mode\": \"partial\"}, \"i18n\": {\"locales\": [\"en\", \"pl\"]}}")},
+		"app/layout.gopage":          &fstest.MapFile{Data: []byte(layout)},
+		"app/page.gopage":            &fstest.MapFile{Data: []byte(`<h1>home</h1>`)},
+		"app/docs/layout.gopage":     &fstest.MapFile{Data: []byte(docsLayout)},
+		"app/docs/page.gopage":       &fstest.MapFile{Data: []byte(`<h1>docs</h1>`)},
+		"app/docs/guide/page.gopage": &fstest.MapFile{Data: []byte(`<h1>guide</h1><p>a page under two layouts</p>`)},
+		"app/private/page.gopage":    &fstest.MapFile{Data: []byte(privatePage)},
+		"locales/en.json":            &fstest.MapFile{Data: []byte(`{"hello": "hello"}`)},
+		"locales/pl.json":            &fstest.MapFile{Data: []byte(`{"hello": "czesc"}`)},
 	}
 }
 
 const privatePage = "---\n" + `type Props struct {
-	Viewer Viewer ` + "`rill:\"private\"`" + `
+	Viewer Viewer ` + "`gopage:\"private\"`" + `
 }
 
 type Viewer struct {
@@ -181,7 +181,7 @@ func TestI4ABrokenPartialHeaderStillAnswersAWholeChain(t *testing.T) {
 
 func TestI2APrivateValueCannotEnterACachedFragment(t *testing.T) {
 	fsys := project()
-	fsys["app/private/page.rill"] = &fstest.MapFile{Data: []byte(
+	fsys["app/private/page.gopage"] = &fstest.MapFile{Data: []byte(
 		strings.Replace(privatePage, "<p>{{ Viewer.Email }}</p>",
 			`{% fragment "leak" cache="5m" %}<p>{{ Viewer.Email }}</p>{% endfragment %}`, 1))}
 	var bag diag.Bag
@@ -248,7 +248,7 @@ func TestI1AServedAppDoesNotGrowWithoutBound(t *testing.T) {
 func cachedFragment(t *testing.T, body string) *diag.Bag {
 	t.Helper()
 	fsys := project()
-	fsys["app/private/page.rill"] = &fstest.MapFile{Data: []byte(
+	fsys["app/private/page.gopage"] = &fstest.MapFile{Data: []byte(
 		strings.Replace(privatePage, "<p>{{ Viewer.Email }}</p>",
 			`{% fragment "leak" cache="5m" %}`+body+`{% endfragment %}`, 1))}
 	var bag diag.Bag
@@ -285,19 +285,19 @@ type Review struct {
 	Author string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ` + "---\n" + `{% fragment "shell" cache="5m" %}<h1>{{ Heading }}</h1>{% fragment "Reviews" defer %}<b>deferred</b>{% endfragment %}<i>after</i>{% endfragment %}<p>tail</p>`
 
 func TestI1ACachedFragmentSurvivesADeferredFlushInsideIt(t *testing.T) {
 	fsys := fstest.MapFS{
-		"rill.jsonc":    &fstest.MapFile{Data: []byte(`{"fragments": {"deferred": "tail"}}`)},
-		"app/page.rill": &fstest.MapFile{Data: []byte(deferredInsideCache)},
+		"gopage.jsonc":    &fstest.MapFile{Data: []byte(`{"fragments": {"deferred": "tail"}}`)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(deferredInsideCache)},
 	}
 	var bag diag.Bag
 	result, err := compile.Compile(fsys, &bag)

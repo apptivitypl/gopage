@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 type Params map[string]string

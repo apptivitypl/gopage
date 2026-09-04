@@ -1,11 +1,11 @@
 # Rendered in Go, interactive in React
 
-This is what `rill new my-site` writes: one page, served as HTML the server rendered, with four small
+This is what `gopage new my-site` writes: one page, served as HTML the server rendered, with four small
 components that hydrate on their own, a loader that fetches a list before the response is sent, and a
 JSON route beside the page.
 
 <p>
-  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
+  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/gopage/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="30"></a>
 </p>
 
 ## What is on the page
@@ -18,23 +18,23 @@ them, and none is sent for them. Four things are interactive, and each one ships
   answer for an hour.
 - **Response** calls `/api/stories` and shows the status, the content type and how long it took.
 - **Theme toggle** writes the choice to `localStorage`. The document reads it in a blocking script
-  in `app/layout.rill`, before first paint, so the page never flashes the wrong theme.
+  in `app/layout.gopage`, before first paint, so the page never flashes the wrong theme.
 
-The Hacker News list is the opposite case: `HackerNews` in `app/page.rill` fetches it while the
+The Hacker News list is the opposite case: `HackerNews` in `app/page.gopage` fetches it while the
 request is being handled, so it arrives as HTML with everything else.
 
 ## Where to look
 
 | file | what it shows |
 | --- | --- |
-| `app/page.rill` | frontmatter is Go: `Props`, `Meta`, and a loader that returns the stories |
-| `app/layout.rill` | the document every page renders into |
-| `app/api/stories/route.go` | a route is a `GET` function returning `rill.JSON` |
-| `app/not-found.rill`, `app/error.rill` | the two pages you do not write until you need them |
-| `components/Ticker.rill` | markup, then `<script client>`: that attribute is the whole opt-in |
-| `components/Response.rill` | a React island, typed against `rill:props/Response` |
+| `app/page.gopage` | frontmatter is Go: `Props`, `Meta`, and a loader that returns the stories |
+| `app/layout.gopage` | the document every page renders into |
+| `app/api/stories/route.go` | a route is a `GET` function returning `gopage.JSON` |
+| `app/not-found.gopage`, `app/error.gopage` | the two pages you do not write until you need them |
+| `components/Ticker.gopage` | markup, then `<script client>`: that attribute is the whole opt-in |
+| `components/Response.gopage` | a React island, typed against `gopage:props/Response` |
 | `server/hackernews/` | ordinary Go the loader calls, split by build tag for the worker |
-| `rill.jsonc` | languages, reserved prefixes, css engine, navigation mode |
+| `gopage.jsonc` | languages, reserved prefixes, css engine, navigation mode |
 
 ## Running it
 
@@ -43,7 +43,7 @@ pnpm install
 ```
 
 ```bash
-rill dev
+gopage dev
 ```
 
 It watches the project, rebuilds what changed and reloads the browser. `pnpm install` is only for
@@ -52,11 +52,11 @@ React; a template without an interactive component needs nothing from npm.
 ## Deploying it
 
 ```bash
-rill build --target workers && wrangler deploy
+gopage build --target workers && wrangler deploy
 ```
 
 ```bash
-rill build --target native && ./dist/server
+gopage build --target native && ./dist/server
 ```
 
 The worker build writes `wrangler.jsonc` beside the project and puts the assets where Static Assets

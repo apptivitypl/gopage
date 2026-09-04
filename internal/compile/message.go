@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/i18n"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
 type messageUse struct {
@@ -101,7 +101,7 @@ func report(table *messageTable, index uint32, key, locale string, bag *diag.Bag
 		}
 		bag.Add(diag.New(diag.C601, use.file, use.span,
 			fmt.Sprintf("%s has no translation in %s", key, locale)).
-			WithHelp(fmt.Sprintf("add %s to locales/%s.json, or run rill i18n sync", key, locale)))
+			WithHelp(fmt.Sprintf("add %s to locales/%s.json, or run gopage i18n sync", key, locale)))
 		return
 	}
 }

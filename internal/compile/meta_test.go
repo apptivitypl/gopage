@@ -5,16 +5,16 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func renderMeta(t *testing.T, meta runtime.Meta) string {
 	t.Helper()
 	var bag diag.Bag
 	result, err := Compile(fstest.MapFS{
-		"app/layout.rill": file("<head>{% meta %}</head>{% outlet %}"),
-		"app/page.rill":   file("body"),
+		"app/layout.gopage": file("<head>{% meta %}</head>{% outlet %}"),
+		"app/page.gopage":   file("body"),
 	}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -81,7 +81,7 @@ func TestMetaValuesAreEscaped(t *testing.T) {
 
 func TestMetaDirectiveNeedsNoArguments(t *testing.T) {
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file("{% meta x %}")}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file("{% meta x %}")}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !bag.HasErrors() {

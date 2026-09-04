@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/gopage/internal/config"
 )
 
 type inner struct {

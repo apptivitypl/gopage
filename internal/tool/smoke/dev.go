@@ -12,14 +12,14 @@ func DevChecks() []Check {
 	return []Check{
 		{Path: "/", Status: http.StatusOK, Contains: "Rendered in Go.", ContentType: "text/html"},
 		{Path: "/", Status: http.StatusOK, Contains: ReloadPath},
-		{Path: "/", Status: http.StatusOK, Contains: `<rill-island`},
+		{Path: "/", Status: http.StatusOK, Contains: `<gopage-island`},
 		{Path: "/api/health", Status: http.StatusOK, Contains: `"runtime":"go"`, ContentType: "application/json"},
 		{Path: "/nope", Status: http.StatusNotFound, Contains: "<title>no route answers this address</title>"},
 		{Path: "/assets/", Status: http.StatusNotFound},
 	}
 }
 
-const ReloadPath = "/_rill/reload"
+const ReloadPath = "/_gopage/reload"
 
 func RunDev(fetch Fetcher, base string) error {
 	for _, check := range DevChecks() {

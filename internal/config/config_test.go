@@ -366,7 +366,7 @@ func TestCommentsAndTrailingCommasAreAccepted(t *testing.T) {
 }
 
 func TestTheSchemaKeyIsAccepted(t *testing.T) {
-	config := parse(t, `{"$schema": "https://rill.dev/schema.json", "app": {"name": "demo"}}`)
+	config := parse(t, `{"$schema": "https://gopage.dev/schema.json", "app": {"name": "demo"}}`)
 	if config.Schema == "" || config.App.Name != "demo" {
 		t.Errorf("config = %+v", config)
 	}

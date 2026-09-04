@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func page(text string) http.Handler {
@@ -57,8 +57,8 @@ func TestABrokenBuildKeepsTheServerUp(t *testing.T) {
 	logged := 0
 	server := New(func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
 		if broken {
-			items := []diag.Diagnostic{diag.New(diag.C201, "app/page.rill", diag.Span{Start: 3, End: 5}, "expected a value")}
-			return nil, items, map[string]string{"app/page.rill": "{% if %}"}, errors.New("build stopped")
+			items := []diag.Diagnostic{diag.New(diag.C201, "app/page.gopage", diag.Span{Start: 3, End: 5}, "expected a value")}
+			return nil, items, map[string]string{"app/page.gopage": "{% if %}"}, errors.New("build stopped")
 		}
 		return page("hello"), nil, nil, nil
 	}, func(string, ...any) { logged++ })
@@ -78,7 +78,7 @@ func TestABrokenBuildKeepsTheServerUp(t *testing.T) {
 	if got.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d", got.Code)
 	}
-	for _, want := range []string{"RILL-C201", "expected a value", "app/page.rill", "no-store"} {
+	for _, want := range []string{"GOPAGE-C201", "expected a value", "app/page.gopage", "no-store"} {
 		if want == "no-store" {
 			if got.Header().Get("Cache-Control") != want {
 				t.Errorf("cache control = %q", got.Header().Get("Cache-Control"))
@@ -101,7 +101,7 @@ func TestABrokenBuildKeepsTheServerUp(t *testing.T) {
 
 func TestWarningsAloneDoNotBlockThePage(t *testing.T) {
 	server := New(func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
-		return page("hello"), []diag.Diagnostic{diag.Warn(diag.W703, "app/page.rill", diag.Span{}, "careful")}, nil, nil
+		return page("hello"), []diag.Diagnostic{diag.Warn(diag.W703, "app/page.gopage", diag.Span{}, "careful")}, nil, nil
 	}, nil)
 	server.Rebuild()
 	if server.Broken() {
@@ -113,9 +113,9 @@ func TestWarningsAloneDoNotBlockThePage(t *testing.T) {
 }
 
 func TestTheOverlayEscapesTheSource(t *testing.T) {
-	items := []diag.Diagnostic{diag.New(diag.C201, "app/page.rill", diag.Span{Start: 0, End: 5}, "bad <script>")}
+	items := []diag.Diagnostic{diag.New(diag.C201, "app/page.gopage", diag.Span{Start: 0, End: 5}, "bad <script>")}
 	recorder := httptest.NewRecorder()
-	Overlay(recorder, items, map[string]string{"app/page.rill": "<script>alert(1)</script>"})
+	Overlay(recorder, items, map[string]string{"app/page.gopage": "<script>alert(1)</script>"})
 	body := recorder.Body.String()
 	if strings.Contains(body, "<script>alert") {
 		t.Errorf("overlay = %q, want the source escaped", body)
@@ -136,7 +136,7 @@ func TestTheWatcherReportsChanges(t *testing.T) {
 	if err := Watch(dir, changed, done); err != nil {
 		t.Fatalf("Watch: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "app", "page.rill"), []byte("<h1>x</h1>"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "app", "page.gopage"), []byte("<h1>x</h1>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -161,7 +161,7 @@ func TestTheWatcherFollowsNewDirectories(t *testing.T) {
 		t.Fatal(err)
 	}
 	<-changed
-	if err := os.WriteFile(filepath.Join(dir, "app", "docs", "page.rill"), []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "app", "docs", "page.gopage"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -221,8 +221,8 @@ func TestTheOverlayWithoutDiagnostics(t *testing.T) {
 
 func TestTheOverlayListsOnlyErrors(t *testing.T) {
 	items := []diag.Diagnostic{
-		diag.Warn(diag.W703, "app/page.rill", diag.Span{}, "careful"),
-		diag.New(diag.C201, "app/page.rill", diag.Span{}, "broken"),
+		diag.Warn(diag.W703, "app/page.gopage", diag.Span{}, "careful"),
+		diag.New(diag.C201, "app/page.gopage", diag.Span{}, "broken"),
 	}
 	recorder := httptest.NewRecorder()
 	Overlay(recorder, items, nil)
@@ -258,7 +258,7 @@ func TestTheWatcherStopsWhenItIsToldTo(t *testing.T) {
 	}
 	close(done)
 	time.Sleep(50 * time.Millisecond)
-	if err := os.WriteFile(filepath.Join(dir, "app", "page.rill"), []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "app", "page.gopage"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -594,10 +594,10 @@ func TestAddressesNameTheLocalUrl(t *testing.T) {
 }
 
 func TestRelativeTrimsTheProjectRoot(t *testing.T) {
-	if got := Relative("/tmp/app", "/tmp/app/app/page.rill"); got != "app/page.rill" {
+	if got := Relative("/tmp/app", "/tmp/app/app/page.gopage"); got != "app/page.gopage" {
 		t.Errorf("Relative = %q", got)
 	}
-	if got := Relative("/tmp/app", "/other/x.rill"); got != "/other/x.rill" {
+	if got := Relative("/tmp/app", "/other/x.gopage"); got != "/other/x.gopage" {
 		t.Errorf("Relative = %q, want a path outside the project left alone", got)
 	}
 }
@@ -715,7 +715,7 @@ func TestTheChildIsToldToStayOnLoopback(t *testing.T) {
 	if addr != LoopbackHost+":4321" {
 		t.Errorf("ADDR = %q, want the child bound to loopback, not every interface", addr)
 	}
-	if !slices.Contains(env, "RILL_DEV=1") || !slices.Contains(env, "EXTRA=1") {
+	if !slices.Contains(env, "GOPAGE_DEV=1") || !slices.Contains(env, "EXTRA=1") {
 		t.Errorf("env = %v, want the dev marker and the caller's entries kept", env)
 	}
 }
@@ -732,8 +732,8 @@ func TestGeneratedOutputNeverTriggersARebuild(t *testing.T) {
 		"dist",
 		"dist/server",
 		"dist/assets/app.css",
-		".rill",
-		".rill/cache/tailwind-inventory.txt",
+		".gopage",
+		".gopage/cache/tailwind-inventory.txt",
 		"node_modules/react/index.js",
 		".git/HEAD",
 	}
@@ -745,12 +745,12 @@ func TestGeneratedOutputNeverTriggersARebuild(t *testing.T) {
 	}
 
 	live := []string{
-		"app/page.rill",
-		"components/Card/template.rill",
+		"app/page.gopage",
+		"components/Card/template.gopage",
 		"locales/en.json",
 		"styles/app.css",
-		"app/gen/page.rill",
-		"app/dist-notes/page.rill",
+		"app/gen/page.gopage",
+		"app/dist-notes/page.gopage",
 	}
 	for _, name := range live {
 		path := filepath.Join(root, filepath.FromSlash(name))

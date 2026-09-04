@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const loaderPage = `---
@@ -22,7 +22,7 @@ type Card struct {
 	Name string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{Title: "hello"}, nil
 }
 ---
@@ -31,10 +31,10 @@ func Load(ctx *rill.Ctx) (Props, error) {
 
 const apiHandler = `package route
 
-import "github.com/apptivitypl/rill"
+import "github.com/apptivitypl/gopage"
 
-func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
-	return rill.JSON(map[string]string{"status": "ok"}), nil
+func GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) {
+	return gopage.JSON(map[string]string{"status": "ok"}), nil
 }
 `
 
@@ -60,14 +60,14 @@ func mustParse(t *testing.T, source string) {
 }
 
 func TestPagesWithALoaderAreGenerated(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": loaderPage})
 
 	page := read(t, dir, "internal/gen/features/page.go")
 	mustParse(t, page)
 	if !strings.Contains(page, "package features") {
 		t.Errorf("package clause = %q", page)
 	}
-	if !strings.Contains(page, "//line app/features/page.rill:2") {
+	if !strings.Contains(page, "//line app/features/page.gopage:2") {
 		t.Error("the line directive is missing")
 	}
 	if !strings.Contains(page, "func (v Props) Get(path []string)") {
@@ -79,22 +79,22 @@ func TestPagesWithALoaderAreGenerated(t *testing.T) {
 }
 
 func TestProviderIsGenerated(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": loaderPage})
 
 	provider := read(t, dir, "internal/gen/features/provider.go")
 	mustParse(t, provider)
 	if !strings.Contains(provider, `const Route = "features"`) {
 		t.Errorf("route name is missing: %q", provider)
 	}
-	if !strings.Contains(provider, "rill.NewCtx(request, params)") {
+	if !strings.Contains(provider, "gopage.NewCtx(request, params)") {
 		t.Error("the provider does not build a context")
 	}
 }
 
 func TestRegistryListsEveryGeneratedRoute(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/features/page.rill":      loaderPage,
-		"app/listings/[id]/page.rill": loaderPage,
+		"app/features/page.gopage":      loaderPage,
+		"app/listings/[id]/page.gopage": loaderPage,
 	})
 	registry := read(t, dir, "internal/gen/registry.go")
 	mustParse(t, registry)
@@ -113,7 +113,7 @@ func TestRegistryListsEveryGeneratedRoute(t *testing.T) {
 }
 
 func TestPagesWithoutALoaderAreNotGenerated(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/page.rill": "<h1>static</h1>"})
+	dir := buildProject(t, map[string]string{"app/page.gopage": "<h1>static</h1>"})
 
 	if _, err := os.Stat(filepath.Join(dir, paths.GenRoot, "index")); err == nil {
 		t.Error("a page without a loader needs no generated package")
@@ -126,7 +126,7 @@ func TestPagesWithoutALoaderAreNotGenerated(t *testing.T) {
 }
 
 func TestGeneratedDirectoryIsRebuiltFromScratch(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/features/page.rill": loaderPage}))
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": loaderPage}))
 	stale := filepath.Join(dir, paths.GenRoot, "gone", "page.go")
 	if err := os.MkdirAll(filepath.Dir(stale), 0o755); err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func TestGeneratedDirectoryIsRebuiltFromScratch(t *testing.T) {
 }
 
 func TestModuleCanBeGivenExplicitly(t *testing.T) {
-	dir := project(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := project(t, map[string]string{"app/features/page.gopage": loaderPage})
 	if _, err := Run(Options{Dir: dir, Module: "example.com/given", Runner: &recorder{}}); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestModuleCanBeGivenExplicitly(t *testing.T) {
 }
 
 func TestMissingModuleIsReported(t *testing.T) {
-	dir := project(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := project(t, map[string]string{"app/features/page.gopage": loaderPage})
 	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
 	if err == nil || !strings.Contains(err.Error(), "go.mod") {
 		t.Errorf("err = %v, want it to name the missing go.mod", err)
@@ -162,8 +162,8 @@ func TestMissingModuleIsReported(t *testing.T) {
 
 func TestGoModWithoutAModuleDirectiveIsReported(t *testing.T) {
 	dir := project(t, map[string]string{
-		"app/features/page.rill": loaderPage,
-		"go.mod":                 "go 1.24\n",
+		"app/features/page.gopage": loaderPage,
+		"go.mod":                   "go 1.24\n",
 	})
 	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
 	if err == nil || !strings.Contains(err.Error(), "module directive") {
@@ -172,7 +172,7 @@ func TestGoModWithoutAModuleDirectiveIsReported(t *testing.T) {
 }
 
 func TestPagesWithALoaderAreDynamic(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": loaderPage})
 	if _, err := os.Stat(filepath.Join(dir, "dist", "assets", "features", "index.html")); err == nil {
 		t.Error("a page with a loader must not be prerendered")
 	}
@@ -180,9 +180,9 @@ func TestPagesWithALoaderAreDynamic(t *testing.T) {
 
 func TestWorkerPatternsComeFromTheRouteTable(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":               "<h1>static</h1>",
-		"app/features/page.rill":      loaderPage,
-		"app/listings/[id]/page.rill": "<p>detail</p>",
+		"app/page.gopage":               "<h1>static</h1>",
+		"app/features/page.gopage":      loaderPage,
+		"app/listings/[id]/page.gopage": "<p>detail</p>",
 	}))
 	if _, err := Run(Options{Dir: dir, Target: TargetWorkers, Runner: &recorder{}}); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -215,8 +215,8 @@ func TestWorkerGlobStopsAtTheFirstParameter(t *testing.T) {
 }
 
 func TestBrokenFrontmatterStopsGeneration(t *testing.T) {
-	page := "---\nfunc Load(ctx *rill.Ctx) (Props, error) { return Props{}, nil }\nfunc (\n---\n<h1>x</h1>"
-	dir := project(t, withModule(map[string]string{"app/features/page.rill": page}))
+	page := "---\nfunc Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\nfunc (\n---\n<h1>x</h1>"
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": page}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err == nil {
 		t.Error("a frontmatter that does not parse must stop the build")
 	}
@@ -224,8 +224,8 @@ func TestBrokenFrontmatterStopsGeneration(t *testing.T) {
 
 func TestGeneratedCountIsReported(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/features/page.rill": loaderPage,
-		"app/page.rill":          "<h1>static</h1>",
+		"app/features/page.gopage": loaderPage,
+		"app/page.gopage":          "<h1>static</h1>",
 	}))
 	report, err := Run(Options{Dir: dir, Runner: &recorder{}})
 	if err != nil {
@@ -244,7 +244,7 @@ func decode(t *testing.T, text string, out *wrangler) {
 }
 
 func TestUnwritableProjectStopsGeneration(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/features/page.rill": loaderPage}))
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": loaderPage}))
 	denyWrites(t, dir)
 
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err == nil {
@@ -257,19 +257,19 @@ type Props struct {
 	Title string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{Title: "t"}, nil
 }
 
-func Meta(ctx *rill.Ctx, p Props) rill.Meta {
-	return rill.Meta{Title: p.Title}
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Title}
 }
 ---
 <h1>{{ Title }}</h1>
 `
 
 func TestMetaProviderIsGeneratedWhenDeclared(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/features/page.rill": metaPage})
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": metaPage})
 
 	provider := read(t, dir, "internal/gen/features/provider.go")
 	mustParse(t, provider)
@@ -284,13 +284,13 @@ func TestMetaProviderIsGeneratedWhenDeclared(t *testing.T) {
 }
 
 func TestNoMetaProviderWithoutAMetaFunction(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/features/page.rill": loaderPage})
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": loaderPage})
 
 	if strings.Contains(read(t, dir, "internal/gen/features/provider.go"), "MetaProvider") {
 		t.Error("a page without Meta needs no meta provider")
 	}
 	registry := read(t, dir, "internal/gen/registry.go")
-	if !strings.Contains(registry, "func Meta() map[string]rill.MetaProvider") {
+	if !strings.Contains(registry, "func Meta() map[string]gopage.MetaProvider") {
 		t.Errorf("the registry always declares Meta:\n%s", registry)
 	}
 }

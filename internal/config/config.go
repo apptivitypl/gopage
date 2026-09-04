@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/jsonc"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/jsonc"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const FileName = paths.Config
@@ -207,7 +207,7 @@ type Config struct {
 	Rewrites  []Rewrite  `json:"rewrites,omitempty"`
 }
 
-var defaultReserved = []string{"/api", "/_rill", "/robots.txt", "/sitemap.xml", "/favicon.ico"}
+var defaultReserved = []string{"/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/favicon.ico"}
 
 func Default() Config {
 	return Config{

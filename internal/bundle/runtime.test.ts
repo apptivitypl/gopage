@@ -4,7 +4,7 @@ import { hydrate, navigation, pull, register, release, slots, start } from "./ru
 type Props = Record<string, unknown>;
 
 function island(name: string, strategy: string, props: Props, media?: string): HTMLElement {
-	const element = document.createElement("rill-island");
+	const element = document.createElement("gopage-island");
 	element.setAttribute("name", name);
 	element.setAttribute("strategy", strategy);
 	if (media) {
@@ -82,11 +82,11 @@ describe("hydrate", () => {
 		island("Missing", "load", {});
 		hydrate();
 		await new Promise((resolve) => setTimeout(resolve, 10));
-		expect(document.querySelector("rill-island")?.isConnected).toBe(true);
+		expect(document.querySelector("gopage-island")?.isConnected).toBe(true);
 	});
 
 	it("ignores an island without a name", () => {
-		const element = document.createElement("rill-island");
+		const element = document.createElement("gopage-island");
 		document.body.append(element);
 		expect(() => hydrate()).not.toThrow();
 	});
@@ -221,7 +221,7 @@ describe("release", () => {
 		island("Cleanup", "load", {});
 
 		hydrate();
-		await vi.waitFor(() => expect(document.querySelector("rill-island")).not.toBeNull());
+		await vi.waitFor(() => expect(document.querySelector("gopage-island")).not.toBeNull());
 		await new Promise((resolve) => setTimeout(resolve, 5));
 
 		release();
@@ -290,15 +290,15 @@ describe("navigation", () => {
 		const nav = document.createElement("nav");
 		nav.textContent = "menu";
 		document.body.append(nav);
-		document.body.append(document.createComment("rill:o0"));
+		document.body.append(document.createComment("gopage:o0"));
 		const page = document.createElement("h1");
 		page.textContent = "home";
 		document.body.append(page);
-		document.body.append(document.createComment("/rill:o0"));
+		document.body.append(document.createComment("/gopage:o0"));
 	}
 
 	function respond(body: string, headers: Record<string, string> = {}): void {
-		const all = { "content-type": "text/vnd.rill-partial", ...headers };
+		const all = { "content-type": "text/vnd.gopage-partial", ...headers };
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(async () => ({
@@ -323,7 +323,7 @@ describe("navigation", () => {
 	it("swaps the outlet and keeps the shared layout", async () => {
 		shell();
 		const link = anchor("/docs");
-		respond("<h1>docs</h1>", { "RILL-Level": "1", "RILL-Title": "docs" });
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1", "GOPAGE-Title": "docs" });
 
 		navigation();
 		click(link);
@@ -338,7 +338,7 @@ describe("navigation", () => {
 		shell();
 		document.title = "docs";
 		const link = anchor("/other");
-		respond("<h1>other</h1>", { "RILL-Level": "1", "RILL-Title": "" });
+		respond("<h1>other</h1>", { "GOPAGE-Level": "1", "GOPAGE-Title": "" });
 
 		navigation();
 		click(link);
@@ -349,7 +349,7 @@ describe("navigation", () => {
 	it("decodes an escaped title", async () => {
 		shell();
 		const link = anchor("/pl");
-		respond("<h1>pl</h1>", { "RILL-Level": "1", "RILL-Title": "%C5%BC%C3%B3%C5%82w+%26+co" });
+		respond("<h1>pl</h1>", { "GOPAGE-Level": "1", "GOPAGE-Title": "%C5%BC%C3%B3%C5%82w+%26+co" });
 
 		navigation();
 		click(link);
@@ -360,19 +360,19 @@ describe("navigation", () => {
 		shell();
 		history.replaceState(null, "", "/start");
 		const link = anchor("/docs");
-		respond("<h1>docs</h1>", { "RILL-Level": "1" });
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
 
 		navigation();
 		click(link);
 		await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
 		const [, init] = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
-		expect((init.headers as Record<string, string>)["RILL-Partial"]).toBe("/start");
+		expect((init.headers as Record<string, string>)["GOPAGE-Partial"]).toBe("/start");
 	});
 
 	it("leaves the page alone when nothing is shared", async () => {
 		shell();
 		const link = anchor("/elsewhere");
-		respond("<h1>replaced</h1>", { "RILL-Level": "0" });
+		respond("<h1>replaced</h1>", { "GOPAGE-Level": "0" });
 
 		navigation();
 		click(link);
@@ -387,8 +387,8 @@ describe("navigation", () => {
 		register("Fresh", async () => ({ mount }));
 		const link = anchor("/docs");
 		respond(
-			'<rill-island name="Fresh" strategy="load"><script type="application/json">{}</script><div></div></rill-island>',
-			{ "RILL-Level": "1" },
+			'<gopage-island name="Fresh" strategy="load"><script type="application/json">{}</script><div></div></gopage-island>',
+			{ "GOPAGE-Level": "1" },
 		);
 
 		navigation();
@@ -400,7 +400,7 @@ describe("navigation", () => {
 		shell();
 		const stop = vi.fn();
 		register("Leaving", async () => ({ mount: () => stop }));
-		const island = document.createElement("rill-island");
+		const island = document.createElement("gopage-island");
 		island.setAttribute("name", "Leaving");
 		island.setAttribute("strategy", "load");
 		island.append(document.createElement("div"));
@@ -410,7 +410,7 @@ describe("navigation", () => {
 		await new Promise((resolve) => setTimeout(resolve, 5));
 
 		const link = anchor("/docs");
-		respond("<h1>docs</h1>", { "RILL-Level": "1" });
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
 		navigation();
 		click(link);
 		await vi.waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
@@ -419,14 +419,14 @@ describe("navigation", () => {
 	const skipped: Record<string, [string, Record<string, string>]> = {
 		"another origin": ["https://other.test/x", {}],
 		"a download": ["/download", { download: "" }],
-		"an opted out link": ["/opt-out", { "data-rill-nav": "off" }],
+		"an opted out link": ["/opt-out", { "data-gopage-nav": "off" }],
 		"another target": ["/target", { target: "_blank" }],
 	};
 
 	for (const [name, [href, attrs]] of Object.entries(skipped)) {
 		it(`leaves ${name} to the browser`, () => {
 			shell();
-			respond("<h1>x</h1>", { "RILL-Level": "1" });
+			respond("<h1>x</h1>", { "GOPAGE-Level": "1" });
 			navigation();
 			click(anchor(href, attrs));
 			expect(fetch).not.toHaveBeenCalled();
@@ -435,7 +435,7 @@ describe("navigation", () => {
 
 	it("leaves a link to the current page alone", () => {
 		shell();
-		respond("<h1>x</h1>", { "RILL-Level": "1" });
+		respond("<h1>x</h1>", { "GOPAGE-Level": "1" });
 		navigation();
 		click(anchor(location.pathname));
 		expect(fetch).not.toHaveBeenCalled();
@@ -465,7 +465,7 @@ describe("navigation", () => {
 	it("leaves modified clicks to the browser", () => {
 		shell();
 		const link = anchor("/docs");
-		respond("<h1>docs</h1>", { "RILL-Level": "1" });
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
 		navigation();
 
 		link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, metaKey: true }));
@@ -496,7 +496,7 @@ describe("navigation", () => {
 
 describe("deferred slots", () => {
 	function slot(name: string): HTMLElement {
-		const element = document.createElement("rill-slot");
+		const element = document.createElement("gopage-slot");
 		element.setAttribute("name", name);
 		element.textContent = "waiting";
 		document.body.append(element);
@@ -505,7 +505,7 @@ describe("deferred slots", () => {
 
 	function template(name: string, html: string): HTMLTemplateElement {
 		const element = document.createElement("template");
-		element.setAttribute("data-rill-slot", name);
+		element.setAttribute("data-gopage-slot", name);
 		element.innerHTML = html;
 		document.body.append(element);
 		return element;
@@ -518,18 +518,18 @@ describe("deferred slots", () => {
 		slots();
 
 		expect(target.innerHTML).toBe("<b>late</b>");
-		expect(document.querySelectorAll("template[data-rill-slot]").length).toBe(0);
+		expect(document.querySelectorAll("template[data-gopage-slot]").length).toBe(0);
 	});
 
 	it("hydrates an island that arrives inside a slot", async () => {
 		const mount = vi.fn(() => () => {});
 		register("Late", async () => ({ mount }));
 		const target = slot("Reviews");
-		const element = document.createElement("rill-island");
+		const element = document.createElement("gopage-island");
 		element.setAttribute("name", "Late");
 		element.setAttribute("strategy", "load");
 		const holder = document.createElement("template");
-		holder.setAttribute("data-rill-slot", "Reviews");
+		holder.setAttribute("data-gopage-slot", "Reviews");
 		holder.content.append(element);
 		document.body.append(holder);
 
@@ -537,7 +537,7 @@ describe("deferred slots", () => {
 		await Promise.resolve();
 		await Promise.resolve();
 
-		expect(target.querySelector("rill-island")).not.toBeNull();
+		expect(target.querySelector("gopage-island")).not.toBeNull();
 		expect(mount).toHaveBeenCalled();
 	});
 
@@ -546,13 +546,13 @@ describe("deferred slots", () => {
 
 		slots();
 
-		expect(document.querySelectorAll("template[data-rill-slot]").length).toBe(0);
+		expect(document.querySelectorAll("template[data-gopage-slot]").length).toBe(0);
 		expect(document.body.innerHTML).not.toContain("orphan");
 	});
 
 	it("ignores a template without a name", () => {
 		const element = document.createElement("template");
-		element.setAttribute("data-rill-slot", "");
+		element.setAttribute("data-gopage-slot", "");
 		document.body.append(element);
 
 		slots();
@@ -592,12 +592,12 @@ describe("hydration while the document streams", () => {
 		vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
 		start();
 
-		const slot = document.createElement("rill-slot");
+		const slot = document.createElement("gopage-slot");
 		slot.setAttribute("name", "Latest");
 		document.body.append(slot);
 		const template = document.createElement("template");
-		template.setAttribute("data-rill-slot", "Latest");
-		template.innerHTML = `<rill-island name="Slotted" strategy="load"></rill-island>`;
+		template.setAttribute("data-gopage-slot", "Latest");
+		template.innerHTML = `<gopage-island name="Slotted" strategy="load"></gopage-island>`;
 		document.body.append(template);
 
 		await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
@@ -621,7 +621,7 @@ describe("hydration without DOMContentLoaded", () => {
 
 describe("fetched fragments", () => {
 	function slot(name: string, placeholder = "<i>waiting</i>"): HTMLElement {
-		const element = document.createElement("rill-slot");
+		const element = document.createElement("gopage-slot");
 		element.setAttribute("name", name);
 		element.setAttribute("fetch", "");
 		element.innerHTML = placeholder;
@@ -634,7 +634,7 @@ describe("fetched fragments", () => {
 			"fetch",
 			vi.fn(async () => ({
 				ok: true,
-				headers: { get: () => "text/vnd.rill-fragment" },
+				headers: { get: () => "text/vnd.gopage-fragment" },
 				text: async () => body,
 				...init,
 			})),
@@ -658,14 +658,14 @@ describe("fetched fragments", () => {
 		await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
 		const [href, init] = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
 		expect(href).toBe("/listings/7");
-		expect((init.headers as Record<string, string>)["RILL-Fragment"]).toBe("Reviews");
+		expect((init.headers as Record<string, string>)["GOPAGE-Fragment"]).toBe("Reviews");
 	});
 
 	it("hydrates an island that arrives inside a fragment", async () => {
 		const mount = vi.fn();
 		register("Inside", async () => ({ mount }));
 		slot("Latest");
-		answer(`<rill-island name="Inside" strategy="load"></rill-island>`);
+		answer(`<gopage-island name="Inside" strategy="load"></gopage-island>`);
 
 		pull();
 		await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
@@ -730,7 +730,7 @@ describe("fetched fragments", () => {
 	});
 
 	it("leaves a slot without the attribute alone", async () => {
-		const element = document.createElement("rill-slot");
+		const element = document.createElement("gopage-slot");
 		element.setAttribute("name", "Tail");
 		document.body.append(element);
 		answer("<p>late</p>");

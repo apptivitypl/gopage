@@ -3,8 +3,8 @@ package runtime
 import "strconv"
 
 const (
-	MarkerOpen  = "<!--rill:o"
-	MarkerClose = "<!--/rill:o"
+	MarkerOpen  = "<!--gopage:o"
+	MarkerClose = "<!--/gopage:o"
 	markerEnd   = "-->"
 	maxMarker   = 16
 )

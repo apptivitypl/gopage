@@ -11,20 +11,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/assets"
-	"github.com/apptivitypl/rill/internal/cache"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/i18n"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
-	"github.com/apptivitypl/rill/internal/seo"
+	"github.com/apptivitypl/gopage/internal/assets"
+	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/seo"
 )
 
 type PropsProvider func(*http.Request, Params) (runtime.Accessible, error)
 
 type MetaProvider func(*http.Request, Params) (runtime.Meta, error)
 
-var ErrNotFound = errors.New("rill: not found")
+var ErrNotFound = errors.New("gopage: not found")
 
 type Middleware func(http.Handler) http.Handler
 

@@ -4,14 +4,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/compile"
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
-	"github.com/apptivitypl/rill/internal/schema"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/compile"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/schema"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
-const Source = "rill"
+const Source = "gopage"
 
 type Analysis struct {
 	Document    *syntax.Document

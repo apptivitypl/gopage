@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	PartialHeader = "RILL-Partial"
-	LevelHeader   = "RILL-Level"
-	PartialType   = "text/vnd.rill-partial"
+	PartialHeader = "GOPAGE-Partial"
+	LevelHeader   = "GOPAGE-Level"
+	PartialType   = "text/vnd.gopage-partial"
 	PartialFrom   = "/"
 	PartialTo     = "/items/1"
 )

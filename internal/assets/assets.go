@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const (
@@ -114,7 +114,7 @@ const (
 	PublicDir     = paths.PublicDir
 	PublicCache   = "public, max-age=3600"
 	PublicRefresh = "no-cache"
-	DevVar        = "RILL_DEV"
+	DevVar        = "GOPAGE_DEV"
 )
 
 func publicCache() string {
@@ -161,8 +161,8 @@ func Public(fsys fs.FS) ([]Asset, error) {
 }
 
 const (
-	PreloadFile   = "rill.preload"
-	RuntimePrefix = "rill.client."
+	PreloadFile   = "gopage.preload"
+	RuntimePrefix = "gopage.client."
 )
 
 func Verbatim(fsys fs.FS) ([]Asset, error) {

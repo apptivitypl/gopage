@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func metaChain() *ir.Manifest {
@@ -60,8 +60,8 @@ func TestCanonicalFollowsTheRequest(t *testing.T) {
 }
 
 func TestAConfiguredCanonicalHostWinsOverTheRequest(t *testing.T) {
-	app := seoApp(t, "{\"app\": {\"canonicalHost\": \"rill.test\"}}")
-	if got := metaOf(t, app, "/").Canonical; got != "http://rill.test/" {
+	app := seoApp(t, "{\"app\": {\"canonicalHost\": \"gopage.test\"}}")
+	if got := metaOf(t, app, "/").Canonical; got != "http://gopage.test/" {
 		t.Errorf("canonical = %q, want the configured host", got)
 	}
 }

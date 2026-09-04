@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-  Remove rill and, if you ask, everything it has cached.
+  Remove gopage and, if you ask, everything it has cached.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.ps1 | iex
+  irm https://raw.githubusercontent.com/apptivitypl/gopage/main/uninstall.ps1 | iex
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.ps1))) -Purge
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/gopage/main/uninstall.ps1))) -Purge
 #>
 [CmdletBinding()]
 param(
-  [string]$Dir = $env:RILL_INSTALL_DIR,
+  [string]$Dir = $env:GOPAGE_INSTALL_DIR,
   [switch]$Purge,
   [switch]$Yes
 )
@@ -20,12 +20,12 @@ $ErrorActionPreference = 'Stop'
 function Fail($message) { Write-Error "uninstall: $message"; exit 1 }
 
 if ($Dir) {
-  $target = Join-Path $Dir 'rill.exe'
-  if (-not (Test-Path $target)) { Fail "no rill.exe in $Dir" }
+  $target = Join-Path $Dir 'gopage.exe'
+  if (-not (Test-Path $target)) { Fail "no gopage.exe in $Dir" }
 } else {
-  $found = Get-Command rill -ErrorAction SilentlyContinue
+  $found = Get-Command gopage -ErrorAction SilentlyContinue
   if (-not $found) {
-    Write-Host 'rill is not on your PATH; nothing to remove'
+    Write-Host 'gopage is not on your PATH; nothing to remove'
     exit 0
   }
   $target = $found.Source
@@ -33,10 +33,10 @@ if ($Dir) {
 }
 
 $version = (& $target version 2>$null | Select-Object -First 1)
-if (-not $version) { $version = 'rill' }
+if (-not $version) { $version = 'gopage' }
 Write-Host "found $version at $target"
 
-$cache = Join-Path $env:LOCALAPPDATA 'rill'
+$cache = Join-Path $env:LOCALAPPDATA 'gopage'
 
 if (-not $Yes) {
   Write-Host ''

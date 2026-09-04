@@ -22,7 +22,7 @@ made to access a socket in a way forbidden by its access permissions" on Windows
 grep -rn 'err.Error(), "' --include="*_test.go" .
 ```
 
-A hit is a string this repository did not write. Asserting on rill's own message is correct and not
+A hit is a string this repository did not write. Asserting on gopage's own message is correct and not
 a finding. The fix is to assert on the typed error: `errors.As` into `*net.OpError`, `*fs.PathError`
 or `*exec.Error` and check the field the test actually cares about.
 
@@ -41,7 +41,7 @@ to run a file with no extension there even by absolute path, because it appends 
 grep -rn '#!/bin/sh' --include="*_test.go" .
 ```
 
-The same rule applies to the product, not only to tests: any file rill writes and later executes
+The same rule applies to the product, not only to tests: any file gopage writes and later executes
 needs `.exe` on Windows. `internal/paths.ServerBinary` and `internal/css.binaryName` exist for that.
 
 **4. A unix path literal where the value comes from `filepath`.** `filepath.Dir("/a/b")` walks to

@@ -1,11 +1,11 @@
 name: Bug report
-description: Something rill does that it should not, or does not do that it should.
+description: Something gopage does that it should not, or does not do that it should.
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Before filing: if the build stopped with a code like `RILL-C318`, its page under
+        Before filing: if the build stopped with a code like `GOPAGE-C318`, its page under
         `docs/errors/` explains what the compiler refused and why.
 
   - type: textarea
@@ -28,7 +28,7 @@ body:
     id: reproduce
     attributes:
       label: How to reproduce it
-      description: The smallest project or `.rill` file that shows it. A `rill new` starter plus the one edit is ideal.
+      description: The smallest project or `.gopage` file that shows it. A `gopage new` starter plus the one edit is ideal.
       render: text
     validations:
       required: true
@@ -49,7 +49,7 @@ body:
     id: version
     attributes:
       label: Versions
-      description: Output of `rill version` and `go version`.
+      description: Output of `gopage version` and `go version`.
       render: text
     validations:
       required: true

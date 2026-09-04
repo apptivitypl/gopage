@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/scaffold"
 )
 
 const repoRoot = "../../.."
@@ -28,8 +28,8 @@ func TestEveryExampleNamesATemplateThatExists(t *testing.T) {
 
 func TestTheConfigPinsEveryChoiceItCanMake(t *testing.T) {
 	config := Examples()[0].Config("v1.2.3")
-	if config.RillVersion != "v1.2.3" {
-		t.Errorf("RillVersion = %q", config.RillVersion)
+	if config.GopageVersion != "v1.2.3" {
+		t.Errorf("GopageVersion = %q", config.GopageVersion)
 	}
 	for name, value := range map[string]string{
 		"nav":   config.Nav,
@@ -41,18 +41,18 @@ func TestTheConfigPinsEveryChoiceItCanMake(t *testing.T) {
 			t.Errorf("%s is left to the default, so a changed default would slip in unseen", name)
 		}
 	}
-	if config.RillPath != "" {
-		t.Error("a committed example must not replace rill with a local path")
+	if config.GopagePath != "" {
+		t.Error("a committed example must not replace gopage with a local path")
 	}
 }
 
 func TestFingerprintSkipsWhatABuildLeavesBehind(t *testing.T) {
 	tree := fstest.MapFS{
-		"app/page.rill":             {Data: []byte("<h1>hi</h1>")},
+		"app/page.gopage":           {Data: []byte("<h1>hi</h1>")},
 		"internal/gen/manifest.bin": {Data: []byte("binary")},
 		"dist/server":               {Data: []byte("binary")},
 		"node_modules/react/x.js":   {Data: []byte("js")},
-		".rill/cache/thing":         {Data: []byte("cache")},
+		".gopage/cache/thing":       {Data: []byte("cache")},
 		"wrangler.log":              {Data: []byte("noise")},
 		"README.md":                 {Data: []byte("hand written")},
 		"go.sum":                    {Data: []byte("hashes")},
@@ -64,21 +64,21 @@ func TestFingerprintSkipsWhatABuildLeavesBehind(t *testing.T) {
 	if len(sums) != 1 {
 		t.Fatalf("fingerprinted %v, want only the source file", keys(sums))
 	}
-	if _, ok := sums["app/page.rill"]; !ok {
+	if _, ok := sums["app/page.gopage"]; !ok {
 		t.Errorf("fingerprinted %v", keys(sums))
 	}
 }
 
 func TestCompareNamesEveryKindOfDifference(t *testing.T) {
 	committed := fstest.MapFS{
-		"same.rill":    {Data: []byte("a")},
-		"changed.rill": {Data: []byte("old")},
-		"stale.rill":   {Data: []byte("gone")},
+		"same.gopage":    {Data: []byte("a")},
+		"changed.gopage": {Data: []byte("old")},
+		"stale.gopage":   {Data: []byte("gone")},
 	}
 	generated := fstest.MapFS{
-		"same.rill":    {Data: []byte("a")},
-		"changed.rill": {Data: []byte("new")},
-		"fresh.rill":   {Data: []byte("added")},
+		"same.gopage":    {Data: []byte("a")},
+		"changed.gopage": {Data: []byte("new")},
+		"fresh.gopage":   {Data: []byte("added")},
 	}
 	differences, err := Compare("example", committed, generated)
 	if err != nil {
@@ -88,13 +88,13 @@ func TestCompareNamesEveryKindOfDifference(t *testing.T) {
 	for _, difference := range differences {
 		found[difference.Path] = difference.Kind
 	}
-	want := map[string]Kind{"changed.rill": Changed, "fresh.rill": Missing, "stale.rill": Extra}
+	want := map[string]Kind{"changed.gopage": Changed, "fresh.gopage": Missing, "stale.gopage": Extra}
 	for path, kind := range want {
 		if found[path] != kind {
 			t.Errorf("%s = %q, want %q", path, found[path], kind)
 		}
 	}
-	if _, ok := found["same.rill"]; ok {
+	if _, ok := found["same.gopage"]; ok {
 		t.Error("an identical file was reported as a difference")
 	}
 	for _, difference := range differences {
@@ -108,7 +108,7 @@ func TestRenderSaysWhatToRun(t *testing.T) {
 	if got := Render(nil); got != "example: ok\n" {
 		t.Errorf("Render = %q", got)
 	}
-	out := Render([]Difference{{Example: "blog", Path: "app/page.rill", Kind: Changed}})
+	out := Render([]Difference{{Example: "blog", Path: "app/page.gopage", Kind: Changed}})
 	if !strings.Contains(out, "--update") {
 		t.Errorf("Render = %q, want the command that fixes it", out)
 	}
@@ -166,7 +166,7 @@ func TestGoModComparesOnlyWhatTheTemplateWrites(t *testing.T) {
 go 1.26.0
 
 require (
-	github.com/apptivitypl/rill v0.1.1
+	github.com/apptivitypl/gopage v0.1.1
 	github.com/syumai/workers v0.33.0
 )
 `)
@@ -175,7 +175,7 @@ require (
 go 1.26.0
 
 require (
-	github.com/apptivitypl/rill v0.1.1
+	github.com/apptivitypl/gopage v0.1.1
 	github.com/syumai/workers v0.33.0
 )
 

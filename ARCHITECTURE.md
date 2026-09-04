@@ -1,10 +1,10 @@
 # Architecture
 
-How a `.rill` file becomes bytes on a wire, and which package owns each step.
+How a `.gopage` file becomes bytes on a wire, and which package owns each step.
 
 ## The shape of the idea
 
-Most template engines walk a tree on every request. rill walks it once, at build time, and writes
+Most template engines walk a tree on every request. gopage walks it once, at build time, and writes
 down a flat list of instructions. What remains at request time is an interpreter over a byte slice.
 
 That has a second consequence, which is the real point: once the page is a plan, the server can
@@ -15,7 +15,7 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
 
 `internal/build.Run` is the whole pipeline. In order:
 
-1. **Load the config.** `internal/config` reads `rill.jsonc` through `internal/jsonc`, which strips
+1. **Load the config.** `internal/config` reads `gopage.jsonc` through `internal/jsonc`, which strips
    comments and trailing commas by overwriting them with spaces — every byte offset survives, so a
    decode error still names the line the reader is looking at. Decoding is strict: an unknown key
    is an error that names itself.
@@ -26,9 +26,9 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
    with a code, a file, a position and a help line. `internal/diag` owns the registry.
 
 3. **Bundle.** `internal/bundle` drives esbuild — the Go port, not the Node one — over the islands
-   the compiler found. Islands are written as intermediate `.tsx` under `.rill/cache/islands` and
+   the compiler found. Islands are written as intermediate `.tsx` under `.gopage/cache/islands` and
    bundled from there. `internal/css` runs the Tailwind standalone binary when the project asks for
-   it, over a class inventory the compiler wrote, because Tailwind cannot read `.rill`.
+   it, over a class inventory the compiler wrote, because Tailwind cannot read `.gopage`.
 
 4. **Lower.** `internal/compile/lower.go` turns each template into `internal/ir` operations. Runs
    of static markup collapse into a single `OpStatic` pointing at a range of one shared blob. A
@@ -82,7 +82,7 @@ and an unknown name is a hard error, so there is no escape hatch to audit.
 
 ## Two targets, one project
 
-`rill build --target native` compiles `cmd/server` into `dist/server` with everything embedded.
+`gopage build --target native` compiles `cmd/server` into `dist/server` with everything embedded.
 `--target workers` compiles `cmd/worker` to `js/wasm`, generates the JS shim and writes
 `wrangler.jsonc` with the assets pointed at `dist/assets`.
 
@@ -95,9 +95,9 @@ origin. A difference fails the build.
 
 ## The gates
 
-`cmd/rilltool` is a second binary that never ships. It owns the rules: coverage with a ratchet,
+`cmd/gopagetool` is a second binary that never ships. It owns the rules: coverage with a ratchet,
 the diagnostic registry, the config schema, the performance log, and the deploy smoke test.
-`go run ./cmd/rilltool ci` is what CI runs, so a green local run means a green remote one.
+`go run ./cmd/gopagetool ci` is what CI runs, so a green local run means a green remote one.
 
 `dev.jsonc` holds the thresholds a human sets. `dev.lock.json` holds the two ratchets a machine
 writes — coverage per package, and the benchmark and bundle-size baseline.

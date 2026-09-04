@@ -6,17 +6,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/paths"
-	"github.com/apptivitypl/rill/internal/schema"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/paths"
+	"github.com/apptivitypl/gopage/internal/schema"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
 const (
 	ComponentsDir  = paths.ComponentsDir
-	TemplateFile   = "template.rill"
+	TemplateFile   = "template.gopage"
 	PropsFile      = "props.go"
-	TemplateSuffix = ".rill"
+	TemplateSuffix = ".gopage"
 )
 
 type Component struct {

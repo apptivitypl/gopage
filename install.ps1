@@ -1,23 +1,23 @@
 <#
 .SYNOPSIS
-  Install rill. Run it again to update; it stops when what you have is current.
+  Install gopage. Run it again to update; it stops when what you have is current.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/apptivitypl/gopage/main/install.ps1 | iex
 
 .EXAMPLE
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1))) -Version v0.1.0
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/apptivitypl/gopage/main/install.ps1))) -Version v0.2.0
 #>
 [CmdletBinding()]
 param(
-  [string]$Version = $env:RILL_VERSION,
-  [string]$Dir = $env:RILL_INSTALL_DIR,
+  [string]$Version = $env:GOPAGE_VERSION,
+  [string]$Dir = $env:GOPAGE_INSTALL_DIR,
   [switch]$Force,
   [switch]$RequireSignature
 )
 
 $ErrorActionPreference = 'Stop'
-$repo = 'apptivitypl/rill'
+$repo = 'apptivitypl/gopage'
 
 function Fail($message) {
   [Console]::Error.WriteLine("install: $message")
@@ -30,9 +30,9 @@ $arch = switch ($env:PROCESSOR_ARCHITECTURE) {
   default { Fail "unsupported architecture $($env:PROCESSOR_ARCHITECTURE); see https://github.com/$repo/releases" }
 }
 
-if (-not $Dir) { $Dir = Join-Path $env:LOCALAPPDATA 'Programs\rill' }
-if ($env:RILL_FORCE) { $Force = $true }
-if ($env:RILL_REQUIRE_SIGNATURE) { $RequireSignature = $true }
+if (-not $Dir) { $Dir = Join-Path $env:LOCALAPPDATA 'Programs\gopage' }
+if ($env:GOPAGE_FORCE) { $Force = $true }
+if ($env:GOPAGE_REQUIRE_SIGNATURE) { $RequireSignature = $true }
 if (-not [System.IO.Path]::IsPathRooted($Dir)) { Fail "-Dir needs an absolute path, got $Dir" }
 
 if (-not $Version) {
@@ -44,22 +44,22 @@ if (-not $Version) {
 }
 $number = $Version.TrimStart('v')
 
-$target = Join-Path $Dir 'rill.exe'
+$target = Join-Path $Dir 'gopage.exe'
 if (-not $Force -and (Test-Path $target)) {
   $current = (& $target version 2>$null | Select-Object -First 1)
   if ($current -match [regex]::Escape($number)) {
-    Write-Host "rill $Version is already installed at $target"
+    Write-Host "gopage $Version is already installed at $target"
     exit 0
   }
 }
 
-$archive = "rill_${number}_windows_${arch}.zip"
+$archive = "gopage_${number}_windows_${arch}.zip"
 $base = "https://github.com/$repo/releases/download/$Version"
-$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("rill-" + [guid]::NewGuid())
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("gopage-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmp | Out-Null
 
 try {
-  Write-Host "downloading rill $Version for windows/$arch"
+  Write-Host "downloading gopage $Version for windows/$arch"
   try {
     Invoke-WebRequest "$base/$archive" -OutFile (Join-Path $tmp $archive) -UseBasicParsing
   } catch {
@@ -105,8 +105,8 @@ try {
 
   Expand-Archive -Path (Join-Path $tmp $archive) -DestinationPath $tmp -Force
   New-Item -ItemType Directory -Path $Dir -Force | Out-Null
-  Move-Item -Path (Join-Path $tmp 'rill.exe') -Destination $target -Force
-  Write-Host "installed rill $Version to $target"
+  Move-Item -Path (Join-Path $tmp 'gopage.exe') -Destination $target -Force
+  Write-Host "installed gopage $Version to $target"
 
   $user = [Environment]::GetEnvironmentVariable('Path', 'User')
   if ($user -notlike "*$Dir*") {

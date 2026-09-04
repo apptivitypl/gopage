@@ -3,13 +3,13 @@ package schema
 import (
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func deferredSchema(t *testing.T, code string) *Schema {
 	t.Helper()
 	var bag diag.Bag
-	return Parse([]Source{{File: "app/page.rill", Code: code}}, &bag)
+	return Parse([]Source{{File: "app/page.gopage", Code: code}}, &bag)
 }
 
 func TestALoaderBecomesADeferredField(t *testing.T) {
@@ -22,7 +22,7 @@ type Props struct {
 	Heading string
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 `)
@@ -48,11 +48,11 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Submit(ctx *rill.Ctx) (Props, error) {
+func Submit(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 `)
@@ -71,31 +71,31 @@ func NoContext() ([]string, error) {
 	return nil, nil
 }
 
-func TwoParams(ctx *rill.Ctx, extra int) ([]string, error) {
+func TwoParams(ctx *gopage.Ctx, extra int) ([]string, error) {
 	return nil, nil
 }
 
-func NotAPointer(ctx rill.Ctx) ([]string, error) {
+func NotAPointer(ctx gopage.Ctx) ([]string, error) {
 	return nil, nil
 }
 
-func OneResult(ctx *rill.Ctx) []string {
+func OneResult(ctx *gopage.Ctx) []string {
 	return nil
 }
 
-func WrongSecond(ctx *rill.Ctx) ([]string, string) {
+func WrongSecond(ctx *gopage.Ctx) ([]string, string) {
 	return nil, ""
 }
 
-func (p Props) Method(ctx *rill.Ctx) ([]string, error) {
+func (p Props) Method(ctx *gopage.Ctx) ([]string, error) {
 	return nil, nil
 }
 
-func lower(ctx *rill.Ctx) ([]string, error) {
+func lower(ctx *gopage.Ctx) ([]string, error) {
 	return nil, nil
 }
 
-func Good(ctx *rill.Ctx) (string, error) {
+func Good(ctx *gopage.Ctx) (string, error) {
 	return "", nil
 }
 `)
@@ -110,7 +110,7 @@ type Props struct {
 	Reviews string
 }
 
-func Reviews(ctx *rill.Ctx) ([]string, error) {
+func Reviews(ctx *gopage.Ctx) ([]string, error) {
 	return nil, nil
 }
 `)
@@ -123,7 +123,7 @@ func Reviews(ctx *rill.Ctx) ([]string, error) {
 
 func TestAProjectWithoutPropsHasNoDeferredFields(t *testing.T) {
 	model := deferredSchema(t, `
-func Reviews(ctx *rill.Ctx) ([]string, error) {
+func Reviews(ctx *gopage.Ctx) ([]string, error) {
 	return nil, nil
 }
 `)

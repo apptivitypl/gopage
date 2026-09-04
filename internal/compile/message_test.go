@@ -6,15 +6,15 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/i18n"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func localised(page string, catalogs map[string]string) fstest.MapFS {
 	fsys := fstest.MapFS{
-		"rill.jsonc":    &fstest.MapFile{Data: []byte("{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}")},
-		"app/page.rill": &fstest.MapFile{Data: []byte(page)},
+		"gopage.jsonc":    &fstest.MapFile{Data: []byte("{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}")},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(page)},
 	}
 	for locale, text := range catalogs {
 		fsys["locales/"+locale+".json"] = &fstest.MapFile{Data: []byte(text)}
@@ -130,7 +130,7 @@ func TestPluralMismatchesAreReported(t *testing.T) {
 func TestAProjectWithoutCatalogsFallsBackToTheKey(t *testing.T) {
 	var bag diag.Bag
 	result, err := Compile(fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte(`{{ t("listing.title") }}`)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(`{{ t("listing.title") }}`)},
 	}, &bag)
 	if err != nil || bag.HasErrors() {
 		t.Fatalf("err = %v, diagnostics = %v", err, bag.Sorted())
@@ -198,7 +198,7 @@ func TestMalformedMessageCallsAreReported(t *testing.T) {
 	for _, source := range cases {
 		var bag diag.Bag
 		if _, err := Compile(fstest.MapFS{
-			"app/page.rill": &fstest.MapFile{Data: []byte(source)},
+			"app/page.gopage": &fstest.MapFile{Data: []byte(source)},
 		}, &bag); err != nil {
 			t.Fatalf("Compile(%q): %v", source, err)
 		}
@@ -230,12 +230,12 @@ func TestKeysUsedFromTheGoBlockAreTranslated(t *testing.T) {
 		"en": `{"hero": {"title": "hello"}}`,
 		"pl": `{"hero": {"title": "czesc"}}`,
 	})
-	files["app/page.rill"] = &fstest.MapFile{Data: []byte(`---
+	files["app/page.gopage"] = &fstest.MapFile{Data: []byte(`---
 type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{Heading: ctx.T("hero.title")}, nil
 }
 ---
@@ -266,12 +266,12 @@ func TestAGoKeyMissingFromACatalogIsReported(t *testing.T) {
 		"en": `{"hero": {"title": "hello"}}`,
 		"pl": `{"other": "x"}`,
 	})
-	files["app/page.rill"] = &fstest.MapFile{Data: []byte(`---
+	files["app/page.gopage"] = &fstest.MapFile{Data: []byte(`---
 type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{Heading: ctx.T("hero.title")}, nil
 }
 ---
@@ -286,7 +286,7 @@ func Load(ctx *rill.Ctx) (Props, error) {
 }
 
 func TestGoMessagesReadsBothHelpers(t *testing.T) {
-	found := GoMessages(`func Load(ctx *rill.Ctx) (Props, error) {
+	found := GoMessages(`func Load(ctx *gopage.Ctx) (Props, error) {
 	_ = ctx.T("plain.key")
 	_ = ctx.Count("counted.key", 3)
 	_ = ctx.T(variable)

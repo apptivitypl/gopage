@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func elementOf(t *testing.T, source string) *Element {

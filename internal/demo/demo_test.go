@@ -90,7 +90,7 @@ func TestPackageNameIsSafeForNpm(t *testing.T) {
 	cases := map[string]string{
 		"Hello World": "hello-world-demo",
 		"My Site!!":   "my-site-demo",
-		"---":         "rill-demo",
+		"---":         "gopage-demo",
 		"blog":        "blog-demo",
 	}
 	for name, want := range cases {

@@ -1,5 +1,5 @@
 /internal/gen
 /dist
-/.rill
+/.gopage
 /.wrangler
 node_modules/

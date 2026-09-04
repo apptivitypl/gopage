@@ -7,9 +7,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func file(content string) *fstest.MapFile {
@@ -41,10 +41,10 @@ func hasCode(bag *diag.Bag, want diag.Code) bool {
 
 func TestDiscoverMapsDirectoriesToPatterns(t *testing.T) {
 	routes, bag := discover(t, fstest.MapFS{
-		"app/page.rill":                file("home"),
-		"app/listings/page.rill":       file("list"),
-		"app/listings/[id]/page.rill":  file("detail"),
-		"app/docs/[...slug]/page.rill": file("docs"),
+		"app/page.gopage":                file("home"),
+		"app/listings/page.gopage":       file("list"),
+		"app/listings/[id]/page.gopage":  file("detail"),
+		"app/docs/[...slug]/page.gopage": file("docs"),
 	})
 	if bag.Len() != 0 {
 		t.Fatalf("diagnostics: %+v", bag.Items())
@@ -56,14 +56,14 @@ func TestDiscoverMapsDirectoriesToPatterns(t *testing.T) {
 }
 
 func TestGroupsDoNotAppearInTheURL(t *testing.T) {
-	routes, _ := discover(t, fstest.MapFS{"app/(marketing)/about/page.rill": file("about")})
+	routes, _ := discover(t, fstest.MapFS{"app/(marketing)/about/page.gopage": file("about")})
 	if routes[0].Pattern != "/about" {
 		t.Errorf("pattern = %q, want the group stripped", routes[0].Pattern)
 	}
 }
 
 func TestGroupOnlyPathIsTheRoot(t *testing.T) {
-	routes, _ := discover(t, fstest.MapFS{"app/(marketing)/page.rill": file("home")})
+	routes, _ := discover(t, fstest.MapFS{"app/(marketing)/page.gopage": file("home")})
 	if routes[0].Pattern != "/" {
 		t.Errorf("pattern = %q, want /", routes[0].Pattern)
 	}
@@ -71,8 +71,8 @@ func TestGroupOnlyPathIsTheRoot(t *testing.T) {
 
 func TestRouteNames(t *testing.T) {
 	routes, _ := discover(t, fstest.MapFS{
-		"app/page.rill":               file("home"),
-		"app/listings/[id]/page.rill": file("detail"),
+		"app/page.gopage":               file("home"),
+		"app/listings/[id]/page.gopage": file("detail"),
 	})
 	names := map[string]string{}
 	for _, route := range routes {
@@ -88,28 +88,28 @@ func TestRouteNames(t *testing.T) {
 
 func TestLayoutChainRunsOutermostFirst(t *testing.T) {
 	routes, _ := discover(t, fstest.MapFS{
-		"app/layout.rill":             file("root"),
-		"app/listings/layout.rill":    file("section"),
-		"app/listings/[id]/page.rill": file("detail"),
-		"app/other/page.rill":         file("other"),
+		"app/layout.gopage":             file("root"),
+		"app/listings/layout.gopage":    file("section"),
+		"app/listings/[id]/page.gopage": file("detail"),
+		"app/other/page.gopage":         file("other"),
 	})
 	byPattern := map[string][]string{}
 	for _, route := range routes {
 		byPattern[route.Pattern] = route.Layouts
 	}
-	want := []string{"app/layout.rill", "app/listings/layout.rill"}
+	want := []string{"app/layout.gopage", "app/listings/layout.gopage"}
 	if got := byPattern["/listings/[id]"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("chain = %v, want %v", got, want)
 	}
-	if got := byPattern["/other"]; !reflect.DeepEqual(got, []string{"app/layout.rill"}) {
+	if got := byPattern["/other"]; !reflect.DeepEqual(got, []string{"app/layout.gopage"}) {
 		t.Errorf("sibling chain = %v", got)
 	}
 }
 
 func TestSiblingLayoutDoesNotLeakAcrossDirectories(t *testing.T) {
 	routes, _ := discover(t, fstest.MapFS{
-		"app/listings/layout.rill":       file("section"),
-		"app/listings-archive/page.rill": file("archive"),
+		"app/listings/layout.gopage":       file("section"),
+		"app/listings-archive/page.gopage": file("archive"),
 	})
 	if len(routes[0].Layouts) != 0 {
 		t.Errorf("layouts = %v, want none", routes[0].Layouts)
@@ -131,7 +131,7 @@ func TestRouteHandlersAreDiscovered(t *testing.T) {
 
 func TestApiHandlersGetNoLayouts(t *testing.T) {
 	routes, _ := discover(t, fstest.MapFS{
-		"app/layout.rill":         file("root"),
+		"app/layout.gopage":       file("root"),
 		"app/api/health/route.go": file("package route"),
 	})
 	if len(routes[0].Layouts) != 0 {
@@ -140,14 +140,14 @@ func TestApiHandlersGetNoLayouts(t *testing.T) {
 }
 
 func TestPagesAreLocalized(t *testing.T) {
-	routes, _ := discover(t, fstest.MapFS{"app/about/page.rill": file("about")})
+	routes, _ := discover(t, fstest.MapFS{"app/about/page.gopage": file("about")})
 	if !routes[0].Localized() {
 		t.Error("pages outside /api are localized")
 	}
 }
 
 func TestPageUnderApiReportsC102(t *testing.T) {
-	_, bag := discover(t, fstest.MapFS{"app/api/oops/page.rill": file("nope")})
+	_, bag := discover(t, fstest.MapFS{"app/api/oops/page.gopage": file("nope")})
 	if !hasCode(bag, diag.C102) {
 		t.Errorf("diagnostics = %+v, want C102", bag.Items())
 	}
@@ -155,8 +155,8 @@ func TestPageUnderApiReportsC102(t *testing.T) {
 
 func TestPageAndHandlerInOneSegmentReportsC101(t *testing.T) {
 	routes, bag := discover(t, fstest.MapFS{
-		"app/thing/page.rill": file("page"),
-		"app/thing/route.go":  file("package route"),
+		"app/thing/page.gopage": file("page"),
+		"app/thing/route.go":    file("package route"),
 	})
 	if !hasCode(bag, diag.C101) {
 		t.Errorf("diagnostics = %+v, want C101", bag.Items())
@@ -168,8 +168,8 @@ func TestPageAndHandlerInOneSegmentReportsC101(t *testing.T) {
 
 func TestGroupsCollidingOnOnePatternReportC101(t *testing.T) {
 	_, bag := discover(t, fstest.MapFS{
-		"app/(a)/about/page.rill": file("one"),
-		"app/(b)/about/page.rill": file("two"),
+		"app/(a)/about/page.gopage": file("one"),
+		"app/(b)/about/page.gopage": file("two"),
 	})
 	if !hasCode(bag, diag.C101) {
 		t.Errorf("diagnostics = %+v, want C101", bag.Items())
@@ -210,8 +210,8 @@ func TestPhasesAreOrdered(t *testing.T) {
 func TestCompileProducesARenderableManifest(t *testing.T) {
 	var bag diag.Bag
 	result, err := Compile(fstest.MapFS{
-		"app/layout.rill": file("<html><body>{% outlet %}</body></html>"),
-		"app/page.rill":   file("<h1>{{ Title }}</h1>"),
+		"app/layout.gopage": file("<html><body>{% outlet %}</body></html>"),
+		"app/page.gopage":   file("<h1>{{ Title }}</h1>"),
 	}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -241,7 +241,7 @@ func TestCompileProducesARenderableManifest(t *testing.T) {
 
 func TestCompileMarksDynamicRoutes(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/listings/[id]/page.rill": file("x")}, &bag)
+	result, err := Compile(fstest.MapFS{"app/listings/[id]/page.gopage": file("x")}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -254,9 +254,9 @@ func TestCompileMarksDynamicRoutes(t *testing.T) {
 func TestCompileSharesOnePlanPerLayout(t *testing.T) {
 	var bag diag.Bag
 	result, err := Compile(fstest.MapFS{
-		"app/layout.rill": file("{% outlet %}"),
-		"app/a/page.rill": file("a"),
-		"app/b/page.rill": file("b"),
+		"app/layout.gopage": file("{% outlet %}"),
+		"app/a/page.gopage": file("a"),
+		"app/b/page.gopage": file("b"),
 	}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -282,7 +282,7 @@ func TestCompileKeepsApiRoutesOutOfTheRenderManifest(t *testing.T) {
 
 func TestOutletInsideAPageReportsC103(t *testing.T) {
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file("{% outlet %}")}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file("{% outlet %}")}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if !hasCode(&bag, diag.C103) {
@@ -292,7 +292,7 @@ func TestOutletInsideAPageReportsC103(t *testing.T) {
 
 func TestCompileSurvivesABrokenTemplate(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file("<p>{{ ")}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file("<p>{{ ")}, &bag)
 	if err != nil {
 		t.Fatalf("Compile must not fail hard on a syntax error: %v", err)
 	}
@@ -306,7 +306,7 @@ func TestCompileSurvivesABrokenTemplate(t *testing.T) {
 
 func TestLowerDeduplicatesRepeatedPaths(t *testing.T) {
 	var bag diag.Bag
-	result, _ := Compile(fstest.MapFS{"app/page.rill": file("{{ A }}{{ A }}{{ B }}")}, &bag)
+	result, _ := Compile(fstest.MapFS{"app/page.gopage": file("{{ A }}{{ A }}{{ B }}")}, &bag)
 	plan := result.Manifest.Plans[0]
 	if len(plan.Paths) != 2 {
 		t.Errorf("paths = %v, want A and B once each", plan.Paths)
@@ -316,7 +316,7 @@ func TestLowerDeduplicatesRepeatedPaths(t *testing.T) {
 func TestLowerReservesCapacityAboveTheStaticSize(t *testing.T) {
 	var bag diag.Bag
 	const body = "<h1>a heading</h1>"
-	result, _ := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag)
+	result, _ := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag)
 	if got := result.Manifest.Plans[0].Capacity; got <= uint32(len(body)) {
 		t.Errorf("capacity = %d, want more than the %d static bytes", got, len(body))
 	}
@@ -325,8 +325,8 @@ func TestLowerReservesCapacityAboveTheStaticSize(t *testing.T) {
 func TestManifestRoundTripsThroughTheCodec(t *testing.T) {
 	var bag diag.Bag
 	result, _ := Compile(fstest.MapFS{
-		"app/layout.rill": file("<main>{% outlet %}</main>"),
-		"app/page.rill":   file("<p>{{ Title }}</p>"),
+		"app/layout.gopage": file("<main>{% outlet %}</main>"),
+		"app/page.gopage":   file("<p>{{ Title }}</p>"),
 	}, &bag)
 
 	decoded, err := ir.Decode(ir.Encode(result.Manifest))
@@ -345,7 +345,7 @@ func TestManifestRoundTripsThroughTheCodec(t *testing.T) {
 
 func TestUnreadableTemplateIsReported(t *testing.T) {
 	var bag diag.Bag
-	if _, ok := ReadTemplate(fstest.MapFS{}, "app/missing.rill", &bag); ok {
+	if _, ok := ReadTemplate(fstest.MapFS{}, "app/missing.gopage", &bag); ok {
 		t.Error("ReadTemplate must fail for a missing file")
 	}
 	if bag.Len() == 0 {
@@ -355,10 +355,10 @@ func TestUnreadableTemplateIsReported(t *testing.T) {
 
 func TestEveryDiscoveredRouteHasAName(t *testing.T) {
 	routes, _ := discover(t, fstest.MapFS{
-		"app/page.rill":        file("a"),
-		"app/a/page.rill":      file("b"),
-		"app/a/[id]/page.rill": file("c"),
-		"app/api/x/route.go":   file("package route"),
+		"app/page.gopage":        file("a"),
+		"app/a/page.gopage":      file("b"),
+		"app/a/[id]/page.gopage": file("c"),
+		"app/api/x/route.go":     file("package route"),
 	})
 	for _, route := range routes {
 		if route.Name == "" {

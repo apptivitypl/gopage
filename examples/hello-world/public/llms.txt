@@ -1,6 +1,6 @@
 # hello-world
 
-> A site built with rill: pages render on the server from a plan compiled at build time, and a
+> A site built with gopage: pages render on the server from a plan compiled at build time, and a
 > client component takes over only where the template marks one.
 
 Every page here is server-rendered HTML. There is no client-side router to wait for and no
@@ -8,7 +8,7 @@ hydration step for the page as a whole, so the markup you receive is the markup 
 
 ## Pages
 
-- [Home](/): what rill is, the source of a component, and a live server-sent event stream
+- [Home](/): what gopage is, the source of a component, and a live server-sent event stream
 
 ## Data
 

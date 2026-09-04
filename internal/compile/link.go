@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/schema"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/schema"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
 const (

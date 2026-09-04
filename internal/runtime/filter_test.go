@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 func apply(t *testing.T, name string, value, argument Value) Value {

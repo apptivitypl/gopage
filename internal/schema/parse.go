@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const (
-	tagKey     = "rill"
+	tagKey     = "gopage"
 	tagDefault = "default"
 	tagSlot    = "slot"
 	tagRest    = "rest"
@@ -121,7 +121,7 @@ func readConsts(schema *Schema, decl *ast.GenDecl) {
 }
 
 func wrap(code string) string {
-	return "package rillframe\n" + code
+	return "package framesrc\n" + code
 }
 
 func (s *Schema) add(value Struct) {

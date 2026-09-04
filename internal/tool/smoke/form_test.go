@@ -20,7 +20,7 @@ func (f *formServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !f.noToken {
-		http.SetCookie(w, &http.Cookie{Name: "rill.csrf", Value: f.token, Path: "/"})
+		http.SetCookie(w, &http.Cookie{Name: "gopage.csrf", Value: f.token, Path: "/"})
 	}
 	page := `<form method="post">`
 	if !f.noToken {
@@ -225,7 +225,7 @@ func (r *referenceServer) ServeHTTP(w http.ResponseWriter, request *http.Request
 
 func referenceBody(count string) string {
 	return "what is on offer " + count + ` listings <span class="item-price">410 000.00 PLN</span>` +
-		`<rill-island></rill-island><link rel="alternate" hreflang="pl" href="/pl">`
+		`<gopage-island></gopage-island><link rel="alternate" hreflang="pl" href="/pl">`
 }
 
 func TestTheReferenceChecksPassAgainstAMatchingServer(t *testing.T) {

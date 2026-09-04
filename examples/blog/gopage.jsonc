@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json",
+
+  "app": {"name": "blog"},
+
+  "i18n": {
+    "mode": "path",
+    "defaultLocale": "en",
+    "locales": ["en"],
+    "prefixDefault": false
+  },
+
+  "routing": {
+    "reserved": ["/api", "/_gopage", "/feed.xml", "/robots.txt", "/sitemap.xml", "/favicon.ico"]
+  },
+
+  "css": {"engine": "plain"},
+  "nav": {"mode": "partial"}
+}

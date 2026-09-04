@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/demo"
-	"github.com/apptivitypl/rill/internal/gotoolchain"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/demo"
+	"github.com/apptivitypl/gopage/internal/gotoolchain"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 type recorder struct {
@@ -51,9 +51,9 @@ func project(t *testing.T, files map[string]string) string {
 
 func helloWorld() map[string]string {
 	return map[string]string{
-		"app/layout.rill":     "<html><body>{% outlet %}</body></html>",
-		"app/page.rill":       "<h1>hello</h1>",
-		"app/about/page.rill": "<h1>about</h1>",
+		"app/layout.gopage":     "<html><body>{% outlet %}</body></html>",
+		"app/page.gopage":       "<h1>hello</h1>",
+		"app/about/page.gopage": "<h1>about</h1>",
 	}
 }
 
@@ -105,7 +105,7 @@ func TestBuildRendersStaticPages(t *testing.T) {
 
 func TestDynamicRoutesAreNotPrerendered(t *testing.T) {
 	files := helloWorld()
-	files["app/listings/[id]/page.rill"] = "<p>detail</p>"
+	files["app/listings/[id]/page.gopage"] = "<p>detail</p>"
 	dir := project(t, files)
 
 	report, err := Run(Options{Dir: dir, Runner: &recorder{}})
@@ -193,7 +193,7 @@ func TestNameDefaultsToTheDirectory(t *testing.T) {
 }
 
 func TestBuildStopsOnDiagnostics(t *testing.T) {
-	dir := project(t, map[string]string{"app/page.rill": "<p>{{ "})
+	dir := project(t, map[string]string{"app/page.gopage": "<p>{{ "})
 	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
 
 	var buildErr *Error
@@ -204,14 +204,14 @@ func TestBuildStopsOnDiagnostics(t *testing.T) {
 		t.Error("the build error carries no diagnostics")
 	}
 	rendered := buildErr.Render()
-	if !strings.Contains(rendered, "RILL-C002") || !strings.Contains(rendered, "app/page.rill") {
+	if !strings.Contains(rendered, "GOPAGE-C002") || !strings.Contains(rendered, "app/page.gopage") {
 		t.Errorf("rendered diagnostics =\n%s", rendered)
 	}
 }
 
 func TestBuildDoesNotRunToolsAfterADiagnostic(t *testing.T) {
 	runner := &recorder{}
-	dir := project(t, map[string]string{"app/page.rill": "{% nope %}"})
+	dir := project(t, map[string]string{"app/page.gopage": "{% nope %}"})
 	if _, err := Run(Options{Dir: dir, Target: TargetWorkers, Runner: runner}); err == nil {
 		t.Fatal("expected the build to stop")
 	}
@@ -288,9 +288,9 @@ func TestTheCurrentDirectoryIsNamedAfterItself(t *testing.T) {
 func TestABuildDoesNotTouchTheSourcesItReads(t *testing.T) {
 	sources := helloWorld()
 	sources["components/Counter/props.go"] = "package counter\n\ntype Props struct {\n\tStart int\n}\n"
-	sources["components/Counter/template.rill"] = "<div>{{ Start }}</div>\n"
+	sources["components/Counter/template.gopage"] = "<div>{{ Start }}</div>\n"
 	sources["components/Counter/client.ts"] = "export function mount() { return () => {} }\n"
-	sources["app/page.rill"] = `<h1>hello</h1><Counter client="load" :Start="1" />`
+	sources["app/page.gopage"] = `<h1>hello</h1><Counter client="load" :Start="1" />`
 	dir := project(t, sources)
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
 		t.Fatalf("Run: %v", err)

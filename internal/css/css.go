@@ -2,7 +2,7 @@ package css
 
 import (
 	"fmt"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/paths"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,7 +93,7 @@ func (t Tailwind) resolve() (string, error) {
 	}
 	if t.Fetch == nil {
 		return "", fmt.Errorf("tailwind %s is missing from %s\n"+
-			"run rill css install to fetch it, or set \"css\": {\"engine\": \"plain\"} in %s", Version, target, paths.Config)
+			"run gopage css install to fetch it, or set \"css\": {\"engine\": \"plain\"} in %s", Version, target, paths.Config)
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return "", err
@@ -104,7 +104,7 @@ func (t Tailwind) resolve() (string, error) {
 	}
 	if err := t.Fetch(assetBase+Version+"/"+build.Name, target, build.Digest); err != nil {
 		return "", fmt.Errorf("downloading tailwind %s: %w\n"+
-			"run rill css install again, or set \"css\": {\"engine\": \"plain\"} in %s",
+			"run gopage css install again, or set \"css\": {\"engine\": \"plain\"} in %s",
 			Version, err, paths.Config)
 	}
 	return target, os.Chmod(target, 0o755)
@@ -121,7 +121,7 @@ func (t Tailwind) path() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		root = filepath.Join(cache, "rill")
+		root = filepath.Join(cache, "gopage")
 	}
 	return filepath.Join(root, "tailwind", Version, binaryName(runtime.GOOS)), nil
 }

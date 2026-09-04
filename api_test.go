@@ -1,4 +1,4 @@
-package rill
+package gopage
 
 import (
 	"context"
@@ -43,13 +43,13 @@ func TestStaticAssetsAreServed(t *testing.T) {
 	}
 	recorder := httptest.NewRecorder()
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
-	if got := recorder.Header().Get("RILL-Assets"); !strings.Contains(got, "rel=preload") {
+	if got := recorder.Header().Get("GOPAGE-Assets"); !strings.Contains(got, "rel=preload") {
 		t.Errorf("assets header = %q", got)
 	}
 }
 
 func TestAnAppWithoutStaticFilesStillStarts(t *testing.T) {
-	for _, static := range []fstest.MapFS{nil, {"app/page.rill": {Data: []byte("<h1>x</h1>")}}} {
+	for _, static := range []fstest.MapFS{nil, {"app/page.gopage": {Data: []byte("<h1>x</h1>")}}} {
 		if _, err := New(Options{Manifest: demo(t), Static: static}); err != nil {
 			t.Errorf("New: %v", err)
 		}
@@ -161,7 +161,7 @@ func TestCtxWithoutARequestIsUsable(t *testing.T) {
 
 type tone string
 
-func (t tone) rillCase() string { return string(t) }
+func (t tone) gopageCase() string { return string(t) }
 
 type card struct{ name string }
 
@@ -243,13 +243,13 @@ func TestSequenceAdaptersClampOutOfRange(t *testing.T) {
 }
 
 func TestBundlesAreServedVerbatim(t *testing.T) {
-	bundles := fstest.MapFS{"bundles/rill.client.ABC.js": {Data: []byte("export{}")}}
+	bundles := fstest.MapFS{"bundles/gopage.client.ABC.js": {Data: []byte("export{}")}}
 	app, err := New(Options{Manifest: demo(t), Bundles: bundles})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
 	recorder := httptest.NewRecorder()
-	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/assets/rill.client.ABC.js", nil))
+	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/assets/gopage.client.ABC.js", nil))
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "export{}" {
 		t.Errorf("status = %d, body = %q", recorder.Code, recorder.Body.String())
 	}
@@ -257,14 +257,14 @@ func TestBundlesAreServedVerbatim(t *testing.T) {
 
 func TestStaticAndBundlesShareOneHandler(t *testing.T) {
 	static := fstest.MapFS{"styles/app.css": {Data: []byte("body{}")}}
-	bundles := fstest.MapFS{"bundles/rill.client.ABC.js": {Data: []byte("export{}")}}
+	bundles := fstest.MapFS{"bundles/gopage.client.ABC.js": {Data: []byte("export{}")}}
 	app, err := New(Options{Manifest: demo(t), Static: static, Bundles: bundles})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
 	recorder := httptest.NewRecorder()
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
-	link := recorder.Header().Get("RILL-Assets")
+	link := recorder.Header().Get("GOPAGE-Assets")
 	if !strings.Contains(link, "rel=preload") || !strings.Contains(link, "rel=modulepreload") {
 		t.Errorf("assets header = %q, want both stores listed", link)
 	}

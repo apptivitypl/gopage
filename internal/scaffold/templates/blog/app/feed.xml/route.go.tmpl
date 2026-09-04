@@ -3,14 +3,14 @@ package route
 import (
 	"strings"
 
-	"github.com/apptivitypl/rill"
+	"github.com/apptivitypl/gopage"
 
 	"{{.Module}}/content"
 )
 
 const feedType = "application/rss+xml; charset=utf-8"
 
-func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
+func GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) {
 	posts, err := content.All()
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
 		b.WriteString("</item>\n")
 	}
 	b.WriteString("</channel></rss>\n")
-	return rill.Content(feedType, []byte(b.String())), nil
+	return gopage.Content(feedType, []byte(b.String())), nil
 }
 
 var escaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")

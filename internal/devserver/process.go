@@ -58,7 +58,7 @@ func Start(launch Launch) (*App, error) {
 }
 
 func childEnv(extra []string, address string) []string {
-	return append(append(os.Environ(), extra...), "ADDR="+address, "RILL_DEV=1")
+	return append(append(os.Environ(), extra...), "ADDR="+address, "GOPAGE_DEV=1")
 }
 
 func (a *App) Handler() http.Handler {
@@ -71,7 +71,7 @@ func (a *App) Handler() http.Handler {
 			r.Out.Header.Del("Accept-Encoding")
 		},
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
-			http.Error(w, "rill dev: the application is not answering: "+err.Error(), http.StatusBadGateway)
+			http.Error(w, "gopage dev: the application is not answering: "+err.Error(), http.StatusBadGateway)
 		},
 	}
 	return proxy

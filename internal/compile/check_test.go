@@ -5,7 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const propsBlock = `---
@@ -37,7 +37,7 @@ type Card struct {
 func typed(t *testing.T, body string) *diag.Bag {
 	t.Helper()
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(propsBlock + body)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(propsBlock + body)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	return &bag
@@ -141,7 +141,7 @@ func TestDiagnosticPointsAtTheTemplateLine(t *testing.T) {
 	body := "<h1>ok</h1>\n<p>{{ Missing }}</p>\n"
 	var bag diag.Bag
 	source := propsBlock + body
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	d := bag.Items()[0]
@@ -149,7 +149,7 @@ func TestDiagnosticPointsAtTheTemplateLine(t *testing.T) {
 	if position.Line != 26 {
 		t.Errorf("line = %d, want the line inside the template body", position.Line)
 	}
-	if d.File != "app/page.rill" {
+	if d.File != "app/page.gopage" {
 		t.Errorf("file = %q", d.File)
 	}
 }
@@ -202,7 +202,7 @@ func TestLetOfAnExpressionIsNotChecked(t *testing.T) {
 
 func TestTemplateWithoutPropsIsNotChecked(t *testing.T) {
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file("{{ Anything }}")}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file("{{ Anything }}")}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if bag.HasErrors() {
@@ -213,7 +213,7 @@ func TestTemplateWithoutPropsIsNotChecked(t *testing.T) {
 func TestBlockWithoutPropsStructIsNotChecked(t *testing.T) {
 	var bag diag.Bag
 	source := "---\ntype Card struct{ Title string }\n---\n{{ Anything }}"
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if bag.HasErrors() {
@@ -223,18 +223,18 @@ func TestBlockWithoutPropsStructIsNotChecked(t *testing.T) {
 
 func TestSchemaIsReturnedForCodegen(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file(propsBlock + "{{ Title }}")}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file(propsBlock + "{{ Title }}")}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
-	model, ok := result.Schemas["app/page.rill"]
+	model, ok := result.Schemas["app/page.gopage"]
 	if !ok {
 		t.Fatal("the schema was not returned")
 	}
 	if !model.Has("Card") {
 		t.Errorf("structs = %v", model.Order)
 	}
-	template, ok := result.Templates["app/page.rill"]
+	template, ok := result.Templates["app/page.gopage"]
 	if !ok {
 		t.Fatal("the template was not returned")
 	}
@@ -271,7 +271,7 @@ func TestNestedLoopsKeepTheirOwnScopes(t *testing.T) {
 func TestOptionalStructFieldsResolve(t *testing.T) {
 	source := "---\ntype Props struct{ Owner *Owner }\ntype Owner struct{ Name string }\n---\n{{ Owner.Name }}"
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if bag.HasErrors() {

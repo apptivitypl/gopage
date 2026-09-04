@@ -1,6 +1,6 @@
 //go:build !js
 
-package rill
+package gopage
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 
 	"golang.org/x/net/http2"
 
-	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/gopage/internal/logs"
 )
 
 func listenApp(t *testing.T) (*App, string) {
@@ -271,7 +271,7 @@ func waitUp(t *testing.T, address string) {
 	t.Fatal("the server never came up")
 }
 
-func TestServeAnnouncesTheAddressUnlessRillDevRunsIt(t *testing.T) {
+func TestServeAnnouncesTheAddressUnlessGopageDevRunsIt(t *testing.T) {
 	written := &syncBuffer{}
 	logger := slog.New(slog.NewTextHandler(written, nil))
 	app, err := New(Options{Manifest: demo(t), Config: []byte("{\"app\": {\"name\": \"demo\"}}"), Logger: logger})

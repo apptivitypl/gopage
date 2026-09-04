@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/cookie"
-	"github.com/apptivitypl/rill/internal/redirect"
+	"github.com/apptivitypl/gopage/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/redirect"
 )
 
 const (
-	FlashCookie   = "rill.flash"
-	RefreshHeader = "RILL-Refresh"
+	FlashCookie   = "gopage.flash"
+	RefreshHeader = "GOPAGE-Refresh"
 	FlashRoot     = "flash"
 )
 

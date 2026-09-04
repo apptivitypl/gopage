@@ -8,8 +8,8 @@ import (
 
 	goruntime "runtime"
 
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func nested() *ir.Manifest {

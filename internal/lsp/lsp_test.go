@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const page = `---
@@ -41,14 +41,14 @@ func at(text, marker string) Position {
 }
 
 func TestACleanPageReportsNothing(t *testing.T) {
-	if report := Analyse("app/page.rill", page).Report(); len(report) != 0 {
+	if report := Analyse("app/page.gopage", page).Report(); len(report) != 0 {
 		t.Errorf("report = %+v", report)
 	}
 }
 
 func TestAnUnknownFieldIsReportedWithARange(t *testing.T) {
 	broken := strings.Replace(page, "{{ Heading }}", "{{ Headline }}", 1)
-	report := Analyse("app/page.rill", broken).Report()
+	report := Analyse("app/page.gopage", broken).Report()
 	if len(report) != 1 {
 		t.Fatalf("report = %+v", report)
 	}
@@ -65,7 +65,7 @@ func TestAnUnknownFieldIsReportedWithARange(t *testing.T) {
 }
 
 func TestFieldsAreOffered(t *testing.T) {
-	analysis := Analyse("app/page.rill", page)
+	analysis := Analyse("app/page.gopage", page)
 	items := analysis.Completions(at(page, "<h1>{{ "))
 	got := labels(items)
 	for _, want := range []string{"Heading", "Count", "Loud"} {
@@ -82,7 +82,7 @@ func TestFieldsAreOffered(t *testing.T) {
 
 func TestAPrefixNarrowsTheList(t *testing.T) {
 	source := "---\ntype Props struct {\n\tHeading string\n\tHeadline string\n\tCount int\n}\n---\n{{ Head"
-	items := Analyse("app/page.rill", source).Completions(at(source, "{{ Head"))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "{{ Head"))
 	got := labels(items)
 	if !slices.Equal(got, []string{"Heading", "Headline"}) {
 		t.Errorf("completions = %v", got)
@@ -91,7 +91,7 @@ func TestAPrefixNarrowsTheList(t *testing.T) {
 
 func TestCompletionWorksInAFileCutInHalf(t *testing.T) {
 	source := "---\ntype Props struct {\n\tHeading string\n}\n---\n<h1>{{ Head"
-	items := Analyse("app/page.rill", source).Completions(at(source, "{{ Head"))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "{{ Head"))
 	if !slices.Contains(labels(items), "Heading") {
 		t.Errorf("completions = %v, want the field even though the expression is unfinished", labels(items))
 	}
@@ -99,7 +99,7 @@ func TestCompletionWorksInAFileCutInHalf(t *testing.T) {
 
 func TestDirectivesAreOfferedInsideABlock(t *testing.T) {
 	source := "{% fra"
-	items := Analyse("app/page.rill", source).Completions(at(source, "{% fra"))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "{% fra"))
 	if !slices.Contains(labels(items), "fragment") {
 		t.Errorf("completions = %v", labels(items))
 	}
@@ -107,7 +107,7 @@ func TestDirectivesAreOfferedInsideABlock(t *testing.T) {
 
 func TestFiltersAreOfferedAfterAPipe(t *testing.T) {
 	source := "---\ntype Props struct {\n\tHeading string\n}\n---\n{{ Heading | up"
-	items := Analyse("app/page.rill", source).Completions(at(source, "| up"))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "| up"))
 	if !slices.Contains(labels(items), "upper") {
 		t.Errorf("completions = %v", labels(items))
 	}
@@ -115,7 +115,7 @@ func TestFiltersAreOfferedAfterAPipe(t *testing.T) {
 
 func TestBuiltinComponentsAreOffered(t *testing.T) {
 	source := "<Fi"
-	items := Analyse("app/page.rill", source).Completions(at(source, "<Fi"))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "<Fi"))
 	if !slices.Contains(labels(items), "Field") {
 		t.Errorf("completions = %v", labels(items))
 	}
@@ -123,13 +123,13 @@ func TestBuiltinComponentsAreOffered(t *testing.T) {
 
 func TestAPageWithoutAFrontmatterStillCompletes(t *testing.T) {
 	source := "{{ "
-	if items := Analyse("app/page.rill", source).Completions(at(source, "{{ ")); len(items) == 0 {
+	if items := Analyse("app/page.gopage", source).Completions(at(source, "{{ ")); len(items) == 0 {
 		t.Error("the built-ins are always available")
 	}
 }
 
 func TestHoverExplainsAField(t *testing.T) {
-	hover, ok := Analyse("app/page.rill", page).Hover(at(page, "<h1>{{ Head"))
+	hover, ok := Analyse("app/page.gopage", page).Hover(at(page, "<h1>{{ Head"))
 	if !ok || !strings.Contains(hover.Contents.Value, "Heading") {
 		t.Errorf("hover = %+v, ok = %v", hover, ok)
 	}
@@ -137,28 +137,28 @@ func TestHoverExplainsAField(t *testing.T) {
 
 func TestHoverExplainsAFilterAndADirective(t *testing.T) {
 	filter := "---\ntype Props struct{}\n---\n{{ 'x' | upper }}"
-	if hover, ok := Analyse("app/page.rill", filter).Hover(at(filter, "| upp")); !ok ||
+	if hover, ok := Analyse("app/page.gopage", filter).Hover(at(filter, "| upp")); !ok ||
 		!strings.Contains(hover.Contents.Value, "filter") {
 		t.Errorf("hover = %+v, ok = %v", hover, ok)
 	}
 	directive := "{% fragment \"a\" %}x{% endfragment %}"
-	if hover, ok := Analyse("app/page.rill", directive).Hover(at(directive, "{% frag")); !ok ||
+	if hover, ok := Analyse("app/page.gopage", directive).Hover(at(directive, "{% frag")); !ok ||
 		!strings.Contains(hover.Contents.Value, "directive") {
 		t.Errorf("hover = %+v, ok = %v", hover, ok)
 	}
 }
 
 func TestHoverSaysNothingAboutPlainText(t *testing.T) {
-	if _, ok := Analyse("app/page.rill", page).Hover(Position{Line: 0, Character: 0}); ok {
+	if _, ok := Analyse("app/page.gopage", page).Hover(Position{Line: 0, Character: 0}); ok {
 		t.Error("the frontmatter fence is not a symbol")
 	}
-	if _, ok := Analyse("app/page.rill", "<p>hello</p>").Hover(Position{Line: 0, Character: 4}); ok {
+	if _, ok := Analyse("app/page.gopage", "<p>hello</p>").Hover(Position{Line: 0, Character: 4}); ok {
 		t.Error("plain words are not symbols")
 	}
 }
 
 func TestPositionsSurviveOutOfRange(t *testing.T) {
-	analysis := Analyse("app/page.rill", "x")
+	analysis := Analyse("app/page.gopage", "x")
 	if items := analysis.Completions(Position{Line: 99, Character: 99}); len(items) > 0 {
 		t.Errorf("completions = %v, want nothing past the end", labels(items))
 	}
@@ -223,7 +223,7 @@ func TestTheServerAnswersTheHandshake(t *testing.T) {
 func TestOpeningADocumentPublishesDiagnostics(t *testing.T) {
 	broken := strings.Replace(page, "{{ Heading }}", "{{ Headline }}", 1)
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///app/page.rill", Text: broken}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///app/page.gopage", Text: broken}}),
 		frame(t, MethodExit, 0, nil),
 	)
 	if !strings.Contains(out, MethodDiagnostics) || !strings.Contains(out, "C305") {
@@ -233,9 +233,9 @@ func TestOpeningADocumentPublishesDiagnostics(t *testing.T) {
 
 func TestEditingRepublishes(t *testing.T) {
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill", Text: page}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage", Text: page}}),
 		frame(t, MethodDidChange, 0, DidChangeParams{
-			TextDocument:   TextDocument{URI: "file:///a.rill"},
+			TextDocument:   TextDocument{URI: "file:///a.gopage"},
 			ContentChanges: []ContentChange{{Text: strings.Replace(page, "{{ Heading }}", "{{ Missing }}", 1)}},
 		}),
 		frame(t, MethodExit, 0, nil),
@@ -250,13 +250,13 @@ func TestEditingRepublishes(t *testing.T) {
 
 func TestCompletionAndHoverOverTheWire(t *testing.T) {
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill", Text: page}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage", Text: page}}),
 		frame(t, MethodCompletion, 3, DocumentParams{
-			TextDocument: TextDocument{URI: "file:///a.rill"},
+			TextDocument: TextDocument{URI: "file:///a.gopage"},
 			Position:     at(page, "<h1>{{ "),
 		}),
 		frame(t, MethodHover, 4, DocumentParams{
-			TextDocument: TextDocument{URI: "file:///a.rill"},
+			TextDocument: TextDocument{URI: "file:///a.gopage"},
 			Position:     at(page, "<h1>{{ Head"),
 		}),
 		frame(t, MethodExit, 0, nil),
@@ -271,8 +271,8 @@ func TestCompletionAndHoverOverTheWire(t *testing.T) {
 
 func TestAskingAboutAnUnknownDocument(t *testing.T) {
 	out := run(t,
-		frame(t, MethodCompletion, 5, DocumentParams{TextDocument: TextDocument{URI: "file:///gone.rill"}}),
-		frame(t, MethodHover, 6, DocumentParams{TextDocument: TextDocument{URI: "file:///gone.rill"}}),
+		frame(t, MethodCompletion, 5, DocumentParams{TextDocument: TextDocument{URI: "file:///gone.gopage"}}),
+		frame(t, MethodHover, 6, DocumentParams{TextDocument: TextDocument{URI: "file:///gone.gopage"}}),
 		frame(t, MethodExit, 0, nil),
 	)
 	if strings.Count(out, "Content-Length:") != 2 {
@@ -282,9 +282,9 @@ func TestAskingAboutAnUnknownDocument(t *testing.T) {
 
 func TestAClosedDocumentIsForgotten(t *testing.T) {
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill", Text: page}}),
-		frame(t, MethodDidClose, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill"}}),
-		frame(t, MethodHover, 7, DocumentParams{TextDocument: TextDocument{URI: "file:///a.rill"}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage", Text: page}}),
+		frame(t, MethodDidClose, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage"}}),
+		frame(t, MethodHover, 7, DocumentParams{TextDocument: TextDocument{URI: "file:///a.gopage"}}),
 		frame(t, MethodExit, 0, nil),
 	)
 	if strings.Contains(out, "markdown") {
@@ -331,8 +331,8 @@ func TestMalformedParamsAreIgnored(t *testing.T) {
 
 func TestAnEmptyChangeListChangesNothing(t *testing.T) {
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill", Text: page}}),
-		frame(t, MethodDidChange, 0, DidChangeParams{TextDocument: TextDocument{URI: "file:///a.rill"}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage", Text: page}}),
+		frame(t, MethodDidChange, 0, DidChangeParams{TextDocument: TextDocument{URI: "file:///a.gopage"}}),
 		frame(t, MethodExit, 0, nil),
 	)
 	if strings.Count(out, MethodDiagnostics) != 1 {
@@ -341,7 +341,7 @@ func TestAnEmptyChangeListChangesNothing(t *testing.T) {
 }
 
 func TestADiagnosticWithoutHelpKeepsItsMessage(t *testing.T) {
-	if got := message(diag.New(diag.C001, "a.rill", diag.Span{}, "plain")); got != "plain" {
+	if got := message(diag.New(diag.C001, "a.gopage", diag.Span{}, "plain")); got != "plain" {
 		t.Errorf("message = %q", got)
 	}
 	if severity(diag.Warning) != SeverityWarning || severity(diag.Error) != SeverityError {
@@ -360,7 +360,7 @@ func TestOffsetsPastTheTextAreClamped(t *testing.T) {
 
 func TestAFrontmatterWithoutPropsOffersNoFields(t *testing.T) {
 	source := "---\ntype Other struct {\n\tName string\n}\n---\n{{ "
-	items := Analyse("app/page.rill", source).Completions(at(source, "{{ "))
+	items := Analyse("app/page.gopage", source).Completions(at(source, "{{ "))
 	for _, item := range items {
 		if item.Kind == CompletionKindField {
 			t.Errorf("completions = %v, want no fields without a Props type", labels(items))
@@ -398,9 +398,9 @@ func TestMalformedParamsOnEveryNotification(t *testing.T) {
 
 func TestHoverOverPlainTextAnswersNothing(t *testing.T) {
 	out := run(t,
-		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.rill", Text: "<p>hello</p>"}}),
+		frame(t, MethodDidOpen, 0, DidOpenParams{TextDocument: TextDocument{URI: "file:///a.gopage", Text: "<p>hello</p>"}}),
 		frame(t, MethodHover, 4, DocumentParams{
-			TextDocument: TextDocument{URI: "file:///a.rill"},
+			TextDocument: TextDocument{URI: "file:///a.gopage"},
 			Position:     Position{Line: 0, Character: 4},
 		}),
 		frame(t, MethodExit, 0, nil),

@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apptivitypl/rill/internal/assets"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/css"
-	"github.com/apptivitypl/rill/internal/fetch"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/assets"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/css"
+	"github.com/apptivitypl/gopage/internal/fetch"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 type styles struct {

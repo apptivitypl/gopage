@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/assets"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/cookie"
-	"github.com/apptivitypl/rill/internal/redirect"
+	"github.com/apptivitypl/gopage/internal/assets"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/redirect"
 )
 
 const (
-	LocaleHeader   = "RILL-Locale"
-	AssetsHeader   = "RILL-Assets"
+	LocaleHeader   = "GOPAGE-Locale"
+	AssetsHeader   = "GOPAGE-Assets"
 	ForwardedProto = "X-Forwarded-Proto"
 )
 

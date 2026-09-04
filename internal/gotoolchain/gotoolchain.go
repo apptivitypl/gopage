@@ -10,7 +10,7 @@ import (
 
 const (
 	Version  = "go1.27.1"
-	Override = "RILL_GO"
+	Override = "GOPAGE_GO"
 
 	assetBase = "https://go.dev/dl/"
 	homepage  = "https://go.dev/dl/"
@@ -146,7 +146,7 @@ func (t Toolchain) root() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		base = filepath.Join(cache, "rill")
+		base = filepath.Join(cache, "gopage")
 	}
 	return filepath.Join(base, "go", Version), nil
 }

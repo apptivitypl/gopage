@@ -1,19 +1,19 @@
 #!/bin/sh
-# Install rill. Run it again to update; it stops when what you have is current.
+# Install gopage. Run it again to update; it stops when what you have is current.
 #
-#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh
-#   ... | sh -s -- --version v0.1.0
+#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/gopage/main/install.sh | sh
+#   ... | sh -s -- --version v0.2.0
 #   ... | sh -s -- --dir /usr/local/bin
 #   ... | sh -s -- --force
 #   ... | sh -s -- --require-signature
 set -eu
 
-REPO="apptivitypl/rill"
-BINARY="rill"
-VERSION="${RILL_VERSION:-}"
-DIR="${RILL_INSTALL_DIR:-}"
-FORCE="${RILL_FORCE:-}"
-REQUIRE_SIGNATURE="${RILL_REQUIRE_SIGNATURE:-}"
+REPO="apptivitypl/gopage"
+BINARY="gopage"
+VERSION="${GOPAGE_VERSION:-}"
+DIR="${GOPAGE_INSTALL_DIR:-}"
+FORCE="${GOPAGE_FORCE:-}"
+REQUIRE_SIGNATURE="${GOPAGE_REQUIRE_SIGNATURE:-}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'install: %s\n' "$*" >&2; exit 1; }
@@ -28,7 +28,7 @@ usage: install.sh [--version TAG] [--dir PATH] [--force] [--require-signature]
   --force              reinstall even when the current version already matches
   --require-signature  refuse to install unless cosign verifies the release
 
-  RILL_VERSION, RILL_INSTALL_DIR, RILL_FORCE and RILL_REQUIRE_SIGNATURE do the same.
+  GOPAGE_VERSION, GOPAGE_INSTALL_DIR, GOPAGE_FORCE and GOPAGE_REQUIRE_SIGNATURE do the same.
 EOF
 }
 
@@ -78,18 +78,18 @@ number="${VERSION#v}"
 if [ -z "$FORCE" ] && have "$BINARY"; then
   current=$("$BINARY" version 2>/dev/null | head -n 1 | awk '{print $2}' || true)
   if [ "$current" = "$number" ] || [ "$current" = "$VERSION" ]; then
-    say "rill $VERSION is already installed at $(command -v "$BINARY")"
+    say "gopage $VERSION is already installed at $(command -v "$BINARY")"
     exit 0
   fi
 fi
 
-archive="rill_${number}_${os}_${arch}.tar.gz"
+archive="gopage_${number}_${os}_${arch}.tar.gz"
 base="https://github.com/$REPO/releases/download/$VERSION"
 tmp=$(mktemp -d)
 cleanup() { rm -rf "$tmp"; }
 trap cleanup EXIT INT TERM
 
-say "downloading rill $VERSION for $os/$arch"
+say "downloading gopage $VERSION for $os/$arch"
 curl -fsSL "$base/$archive" -o "$tmp/$archive" || die "no archive for $os/$arch in $VERSION"
 curl -fsSL "$base/checksums.txt" -o "$tmp/checksums.txt" || die "could not download checksums.txt"
 
@@ -137,7 +137,7 @@ else
   die "$DIR is not writable and sudo is not available; pass --dir"
 fi
 
-say "installed rill $VERSION to $DIR/$BINARY"
+say "installed gopage $VERSION to $DIR/$BINARY"
 case ":$PATH:" in
   *":$DIR:"*) ;;
   *) say ""; say "$DIR is not on your PATH. Add it:"; say "  export PATH=\"$DIR:\$PATH\"" ;;

@@ -15,7 +15,7 @@ type Segment struct {
 func SplitImports(source string) ([]string, []Segment) {
 	lines := strings.Split(source, "\n")
 	fileSet := token.NewFileSet()
-	parsed, err := parser.ParseFile(fileSet, "frontmatter.go", "package rillpage\n"+source, parser.SkipObjectResolution)
+	parsed, err := parser.ParseFile(fileSet, "frontmatter.go", "package pagesrc\n"+source, parser.SkipObjectResolution)
 	if err != nil {
 		return nil, []Segment{{Line: 1, Text: source}}
 	}

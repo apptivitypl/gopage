@@ -1,20 +1,20 @@
 {
   "$schema": "https://codesandbox.io/schemas/tasks.json",
   "setupTasks": [
-    {"name": "Install rill", "command": "go install github.com/apptivitypl/rill/cmd/rill@latest"},
+    {"name": "Install gopage", "command": "go install github.com/apptivitypl/gopage/cmd/gopage@latest"},
     {"name": "Download the go modules", "command": "go mod download"},
-    {"name": "Install tailwind", "command": "rill css install"}
+    {"name": "Install tailwind", "command": "gopage css install"}
   ],
   "tasks": {
     "dev": {
-      "name": "rill dev",
-      "command": "rill dev --addr 0.0.0.0:3000",
+      "name": "gopage dev",
+      "command": "gopage dev --addr 0.0.0.0:3000",
       "runAtStart": true,
       "preview": {"port": 3000}
     },
     "build": {
-      "name": "rill build",
-      "command": "rill build"
+      "name": "gopage build",
+      "command": "gopage build"
     }
   }
 }

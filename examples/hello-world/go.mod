@@ -1,9 +1,9 @@
-module github.com/apptivitypl/rill/examples/hello-world
+module github.com/apptivitypl/gopage/examples/hello-world
 
 go 1.26.0
 
 require (
-	github.com/apptivitypl/rill v0.1.3
+	github.com/apptivitypl/gopage v0.2.0
 	github.com/syumai/workers v0.33.0
 )
 

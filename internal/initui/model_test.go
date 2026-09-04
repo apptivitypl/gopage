@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/apptivitypl/rill/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/scaffold"
 )
 
 func press(model Model, keys ...tea.KeyMsg) Model {
@@ -167,7 +167,7 @@ func TestEmptyLocalesFallBack(t *testing.T) {
 func TestTheViewShowsTheQuestionAndTheAnswers(t *testing.T) {
 	model := start(t)
 	view := model.View()
-	if !strings.Contains(view, "go module path") || !strings.Contains(view, "rill new demo") {
+	if !strings.Contains(view, "go module path") || !strings.Contains(view, "gopage new demo") {
 		t.Errorf("view = %q", view)
 	}
 	model = press(model, typing("example.com/demo")...)

@@ -60,7 +60,7 @@ func TestBagCollectsAndReportsErrors(t *testing.T) {
 	if bag.HasErrors() {
 		t.Error("warnings alone must not count as errors")
 	}
-	bag.Add(New(C002, "a.rill", Span{}, "boom"))
+	bag.Add(New(C002, "a.gopage", Span{}, "boom"))
 	if !bag.HasErrors() || bag.Len() != 2 {
 		t.Errorf("bag = %d items, errors = %v", bag.Len(), bag.HasErrors())
 	}
@@ -71,24 +71,24 @@ func TestBagCollectsAndReportsErrors(t *testing.T) {
 
 func TestBagSortsByFileThenOffset(t *testing.T) {
 	var bag Bag
-	bag.Add(New(C001, "b.rill", Span{Start: 1}, ""))
-	bag.Add(New(C001, "a.rill", Span{Start: 9}, ""))
-	bag.Add(New(C001, "a.rill", Span{Start: 2}, ""))
+	bag.Add(New(C001, "b.gopage", Span{Start: 1}, ""))
+	bag.Add(New(C001, "a.gopage", Span{Start: 9}, ""))
+	bag.Add(New(C001, "a.gopage", Span{Start: 2}, ""))
 
 	sorted := bag.Sorted()
-	if sorted[0].File != "a.rill" || sorted[0].Span.Start != 2 {
+	if sorted[0].File != "a.gopage" || sorted[0].Span.Start != 2 {
 		t.Errorf("first = %s:%d", sorted[0].File, sorted[0].Span.Start)
 	}
-	if sorted[2].File != "b.rill" {
+	if sorted[2].File != "b.gopage" {
 		t.Errorf("last = %s", sorted[2].File)
 	}
-	if bag.Items()[0].File != "b.rill" {
+	if bag.Items()[0].File != "b.gopage" {
 		t.Error("Sorted must not reorder the original slice")
 	}
 }
 
 func TestWithHelpAttachesASuggestion(t *testing.T) {
-	d := New(C001, "a.rill", Span{}, "boom").WithHelp("close the fence")
+	d := New(C001, "a.gopage", Span{}, "boom").WithHelp("close the fence")
 	if d.Help != "close the fence" {
 		t.Errorf("Help = %q", d.Help)
 	}
@@ -133,13 +133,13 @@ func TestLineTextReadsTheRequestedLine(t *testing.T) {
 
 func TestRenderShowsCodeLocationAndCaret(t *testing.T) {
 	source := "<h1>{{ title }}\n"
-	d := New(C002, "app/page.rill", Span{Start: 4, End: 6}, "unterminated interpolation").
+	d := New(C002, "app/page.gopage", Span{Start: 4, End: 6}, "unterminated interpolation").
 		WithHelp("close it with }}")
 
 	out := Render(d, source)
 	for _, want := range []string{
-		"error[RILL-C002]: unterminated interpolation",
-		"--> app/page.rill:1:5",
+		"error[GOPAGE-C002]: unterminated interpolation",
+		"--> app/page.gopage:1:5",
 		"1 | <h1>{{ title }}",
 		"^^",
 		"= help: close it with }}",
@@ -151,21 +151,21 @@ func TestRenderShowsCodeLocationAndCaret(t *testing.T) {
 }
 
 func TestRenderClampsTheCaretToTheLine(t *testing.T) {
-	out := Render(New(C001, "a.rill", Span{Start: 0, End: 100}, "boom"), "ab\ncd")
+	out := Render(New(C001, "a.gopage", Span{Start: 0, End: 100}, "boom"), "ab\ncd")
 	if !strings.Contains(out, "^^\n") {
 		t.Errorf("caret must stop at the end of the line:\n%s", out)
 	}
 }
 
 func TestRenderKeepsACaretForEmptySpans(t *testing.T) {
-	out := Render(New(C001, "a.rill", Span{}, "boom"), "")
+	out := Render(New(C001, "a.gopage", Span{}, "boom"), "")
 	if !strings.Contains(out, "^") {
 		t.Errorf("render must always show a caret:\n%s", out)
 	}
 }
 
 func TestRenderWithoutHelpHasNoHelpLine(t *testing.T) {
-	out := Render(New(C001, "a.rill", Span{Start: 0, End: 1}, "boom"), "ab")
+	out := Render(New(C001, "a.gopage", Span{Start: 0, End: 1}, "boom"), "ab")
 	if strings.Contains(out, "help:") {
 		t.Errorf("render must not invent a help line:\n%s", out)
 	}
@@ -173,17 +173,17 @@ func TestRenderWithoutHelpHasNoHelpLine(t *testing.T) {
 
 func TestTheBagKeepsOneCopyOfEachDiagnostic(t *testing.T) {
 	var bag Bag
-	item := New(C001, "app/page.rill", Span{Start: 1, End: 2}, "same")
+	item := New(C001, "app/page.gopage", Span{Start: 1, End: 2}, "same")
 	bag.Add(item)
 	bag.Add(item)
-	bag.Add(New(C001, "app/page.rill", Span{Start: 3, End: 4}, "same"))
+	bag.Add(New(C001, "app/page.gopage", Span{Start: 3, End: 4}, "same"))
 	if len(bag.Items()) != 2 {
 		t.Errorf("items = %+v, want the exact repeat dropped", bag.Items())
 	}
 }
 
 func TestWarningsCarryTheirSeverity(t *testing.T) {
-	item := Warn(W703, "app/page.rill", Span{}, "careful")
+	item := Warn(W703, "app/page.gopage", Span{}, "careful")
 	if item.Severity != Warning || item.Code != W703 {
 		t.Errorf("item = %+v", item)
 	}

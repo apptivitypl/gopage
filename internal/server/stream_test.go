@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/cache"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 type slow string
@@ -121,9 +121,9 @@ func TestOutOfOrderStreamingSendsTheTemplateAfterTheDocument(t *testing.T) {
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
-	slot := strings.Index(body, `<rill-slot name="Reviews">`)
+	slot := strings.Index(body, `<gopage-slot name="Reviews">`)
 	tail := strings.Index(body, "<p>tail</p>")
-	template := strings.Index(body, `<template data-rill-slot="Reviews">`)
+	template := strings.Index(body, `<template data-gopage-slot="Reviews">`)
 	if slot < 0 || tail < 0 || template < 0 {
 		t.Fatalf("body = %q", body)
 	}
@@ -306,7 +306,7 @@ func TestOutOfOrderSkipsAFragmentWhoseLoaderFailed(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 	body := recorder.Body.String()
-	if !strings.Contains(body, `<rill-slot name="Reviews">`) {
+	if !strings.Contains(body, `<gopage-slot name="Reviews">`) {
 		t.Errorf("body = %q, want the slot", body)
 	}
 	if strings.Contains(body, "<template") {
@@ -415,9 +415,9 @@ func TestABudgetLeavesASlotAndSendsTheTemplateInTheTail(t *testing.T) {
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
-	slot := strings.Index(body, `<rill-slot name="Reviews">`)
+	slot := strings.Index(body, `<gopage-slot name="Reviews">`)
 	tail := strings.Index(body, "<p>tail</p>")
-	template := strings.Index(body, `<template data-rill-slot="Reviews">`)
+	template := strings.Index(body, `<template data-gopage-slot="Reviews">`)
 	if slot < 0 || tail < 0 || template < 0 {
 		t.Fatalf("body = %q, want the budget to turn the fragment into a slot", body)
 	}
@@ -445,7 +445,7 @@ func TestALoaderInsideItsBudgetStaysInTheDocument(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 	body := recorder.Body.String()
-	if strings.Contains(body, "rill-slot") {
+	if strings.Contains(body, "gopage-slot") {
 		t.Errorf("body = %q, want a loader inside its budget rendered in place", body)
 	}
 	if !strings.Contains(body, "<b>late</b>") {
@@ -469,7 +469,7 @@ func TestTheTailFillsASlotWhoseLoaderAlreadyFinished(t *testing.T) {
 	app.writeTail(set, sink, ir.Route{Name: "home", Plan: 0}, runtime.Empty{}, runtime.Options{})
 	sink.flush()
 
-	if !strings.Contains(recorder.Body.String(), `<template data-rill-slot="Reviews">`) {
+	if !strings.Contains(recorder.Body.String(), `<template data-gopage-slot="Reviews">`) {
 		t.Errorf("tail = %q, want a template for every slot the render left behind",
 			recorder.Body.String())
 	}
@@ -533,7 +533,7 @@ func TestTheBufferedPathNeverLeavesASlot(t *testing.T) {
 	app.Handler().ServeHTTP(recorder, request)
 
 	body := recorder.Body.String()
-	if strings.Contains(body, "rill-slot") {
+	if strings.Contains(body, "gopage-slot") {
 		t.Errorf("body = %q, want a buffered answer to wait for every loader", body)
 	}
 	if !strings.Contains(body, "late") {
@@ -561,7 +561,7 @@ func TestFetchModeNeverRunsALoaderWhileTheDocumentRenders(t *testing.T) {
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, `<rill-slot name="Reviews" fetch>`) {
+	if !strings.Contains(body, `<gopage-slot name="Reviews" fetch>`) {
 		t.Errorf("body = %q, want a slot the client can fetch", body)
 	}
 	if strings.Contains(body, "late") {

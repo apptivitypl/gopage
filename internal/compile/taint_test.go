@@ -5,12 +5,12 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const privateProps = "---\n" + `type Props struct {
 	Title   string
-	Viewer  Viewer ` + "`rill:\"private\"`" + `
+	Viewer  Viewer ` + "`gopage:\"private\"`" + `
 	Session Session
 }
 
@@ -19,7 +19,7 @@ type Viewer struct {
 }
 
 type Session struct {
-	Email string ` + "`rill:\"private\"`" + `
+	Email string ` + "`gopage:\"private\"`" + `
 	Theme string
 }
 ` + "---\n"
@@ -177,7 +177,7 @@ func TestAnIslandDeclaringAPrivatePropIsRejected(t *testing.T) {
 
 type Props struct {
 	Placeholder string
-	Token       string ` + "`rill:\"private\"`" + `
+	Token       string ` + "`gopage:\"private\"`" + `
 }
 `)}
 	var bag diag.Bag

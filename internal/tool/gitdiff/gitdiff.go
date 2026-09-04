@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/gopage/internal/tool/covprofile"
 )
 
 type ChangedLines map[string]map[int]bool

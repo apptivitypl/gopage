@@ -2,14 +2,14 @@ package server
 
 import (
 	"context"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/runtime"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/i18n"
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 func translated(t *testing.T, locale string) Translator {

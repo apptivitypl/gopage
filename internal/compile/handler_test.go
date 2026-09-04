@@ -5,7 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func handlerRoute(file string) Route {
@@ -23,8 +23,8 @@ func loadHandler(t *testing.T, source string) (Handler, *diag.Bag) {
 func TestHandlerMethodsAreCollected(t *testing.T) {
 	handler, bag := loadHandler(t, `package route
 
-func POST(ctx *rill.Ctx, params rill.Params) (rill.Response, error) { return nil, nil }
-func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) { return nil, nil }
+func POST(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) { return nil, nil }
+func GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) { return nil, nil }
 func helper() {}
 `)
 	if bag.HasErrors() {
@@ -48,14 +48,14 @@ func TestHandlerWithoutAMethodIsReported(t *testing.T) {
 func TestHandlerWithAWrongSignatureIsReported(t *testing.T) {
 	sources := []string{
 		"package route\n\nfunc GET() {}\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx) (rill.Response, error) { return nil, nil }\n",
-		"package route\n\nfunc GET(ctx rill.Ctx, params rill.Params) (rill.Response, error) { return nil, nil }\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx, params string) (rill.Response, error) { return nil, nil }\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (string, error) { return \"\", nil }\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (rill.Response, string) { return nil, \"\" }\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx, params rill.Params) rill.Response { return nil }\n",
-		"package route\n\nfunc GET(ctx, params *rill.Ctx) (rill.Response, error) { return nil, nil }\n",
-		"package route\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (func(), error) { return nil, nil }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx) (gopage.Response, error) { return nil, nil }\n",
+		"package route\n\nfunc GET(ctx gopage.Ctx, params gopage.Params) (gopage.Response, error) { return nil, nil }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx, params string) (gopage.Response, error) { return nil, nil }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) (string, error) { return \"\", nil }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, string) { return nil, \"\" }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) gopage.Response { return nil }\n",
+		"package route\n\nfunc GET(ctx, params *gopage.Ctx) (gopage.Response, error) { return nil, nil }\n",
+		"package route\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) (func(), error) { return nil, nil }\n",
 	}
 	for _, source := range sources {
 		_, bag := loadHandler(t, source)
@@ -70,7 +70,7 @@ func TestHandlerWithAMethodOnAReceiverIsIgnored(t *testing.T) {
 
 type api struct{}
 
-func (api) GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) { return nil, nil }
+func (api) GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) { return nil, nil }
 `)
 	if !hasCode(bag, diag.C104) {
 		t.Errorf("diagnostics = %v, want C104", bag.Sorted())
@@ -120,9 +120,9 @@ func TestMuxParamsListsTheNames(t *testing.T) {
 
 func TestHandlersReachTheResult(t *testing.T) {
 	fsys := fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte("<h1>home</h1>")},
+		"app/page.gopage": &fstest.MapFile{Data: []byte("<h1>home</h1>")},
 		"app/api/health/route.go": &fstest.MapFile{Data: []byte(
-			"package route\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) { return nil, nil }\n")},
+			"package route\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) { return nil, nil }\n")},
 	}
 	var bag diag.Bag
 	result, err := Compile(fsys, &bag)

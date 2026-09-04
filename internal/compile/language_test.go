@@ -5,8 +5,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 type row struct {
@@ -36,7 +36,7 @@ func numbers(values ...int64) runtime.Value {
 func renderPage(t *testing.T, body string, props runtime.Accessible) (string, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -66,7 +66,7 @@ func mustRender(t *testing.T, body string, props runtime.Accessible) string {
 func renderFails(t *testing.T, body string, props runtime.Accessible) error {
 	t.Helper()
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestUnbalancedBlockReportsC006(t *testing.T) {
 		"{% if A %}x{% endfor %}",
 	} {
 		var bag diag.Bag
-		if _, err := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag); err != nil {
+		if _, err := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag); err != nil {
 			t.Fatalf("Compile: %v", err)
 		}
 		if !hasCode(&bag, diag.C006) {
@@ -311,7 +311,7 @@ func TestMalformedDirectivesAreReported(t *testing.T) {
 	}
 	for body, want := range cases {
 		var bag diag.Bag
-		if _, err := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag); err != nil {
+		if _, err := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag); err != nil {
 			t.Fatalf("Compile: %v", err)
 		}
 		if !hasCode(&bag, want) {
@@ -322,7 +322,7 @@ func TestMalformedDirectivesAreReported(t *testing.T) {
 
 func TestConstantsAreDeduplicated(t *testing.T) {
 	var bag diag.Bag
-	result, _ := Compile(fstest.MapFS{"app/page.rill": file("{{ 'x' }}{{ 'x' }}{{ 'y' }}")}, &bag)
+	result, _ := Compile(fstest.MapFS{"app/page.gopage": file("{{ 'x' }}{{ 'x' }}{{ 'y' }}")}, &bag)
 	if got := len(result.Manifest.Plans[0].Consts); got != 2 {
 		t.Errorf("constants = %d, want x and y once each", got)
 	}

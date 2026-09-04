@@ -7,17 +7,17 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const (
 	AppDir       = paths.AppDir
-	PageFile     = "page.rill"
-	LayoutFile   = "layout.rill"
+	PageFile     = "page.gopage"
+	LayoutFile   = "layout.gopage"
 	RouteFile    = "route.go"
-	NotFoundFile = "not-found.rill"
-	ErrorFile    = "error.rill"
+	NotFoundFile = "not-found.gopage"
+	ErrorFile    = "error.gopage"
 	APIPrefix    = "/api"
 )
 

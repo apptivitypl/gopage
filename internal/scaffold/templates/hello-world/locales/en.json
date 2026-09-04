@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Rill"
+    "name": "Gopage"
   },
   "theme": {
     "label": "switch theme"
@@ -10,21 +10,21 @@
     "lead2": "Interactive",
     "fast": "in React.",
     "title": "Rendered in Go. Interactive in React.",
-    "lead": "Rill compiles templates into one binary and sends HTML first. JavaScript ships only for the components you mark, in React or a few lines of TypeScript. No Node at build or run time."
+    "lead": "Gopage compiles templates into one binary and sends HTML first. JavaScript ships only for the components you mark, in React or a few lines of TypeScript. No Node at build or run time."
   },
   "source": {
     "title": "one file per component, one per route",
-    "client": "Ticker.rill",
-    "list": "HackerNews.rill",
+    "client": "Ticker.gopage",
+    "list": "HackerNews.gopage",
     "server": "hackernews.go",
     "preview": "preview",
     "code": "code"
   },
   "pane": {
-    "client-code": "Ticker.rill code",
-    "client-preview": "Ticker.rill preview",
-    "list-code": "HackerNews.rill code",
-    "list-preview": "HackerNews.rill preview",
+    "client-code": "Ticker.gopage code",
+    "client-preview": "Ticker.gopage preview",
+    "list-code": "HackerNews.gopage code",
+    "list-preview": "HackerNews.gopage preview",
     "server-code": "hackernews.go code",
     "server-preview": "hackernews.go preview"
   },
@@ -45,6 +45,6 @@
     "by": "a product of"
   },
   "stars": {
-    "label": "rill on github, with the star count"
+    "label": "gopage on github, with the star count"
   }
 }

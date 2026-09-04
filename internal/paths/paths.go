@@ -3,7 +3,7 @@ package paths
 import "runtime"
 
 const (
-	Config   = "rill.jsonc"
+	Config   = "gopage.jsonc"
 	Wrangler = "wrangler.jsonc"
 )
 
@@ -27,9 +27,9 @@ const (
 )
 
 const (
-	CacheRoot = ".rill"
-	CacheDir  = ".rill/cache"
-	Inventory = ".rill/cache/tailwind-inventory.txt"
+	CacheRoot = ".gopage"
+	CacheDir  = ".gopage/cache"
+	Inventory = ".gopage/cache/tailwind-inventory.txt"
 )
 
 const (

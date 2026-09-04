@@ -1,8 +1,8 @@
 {
   "packages": {
-    "rill": {
+    "gopage": {
       "kind": "go",
-      "version": "0.1.3",
+      "version": "0.2.0",
       "tag": "v{version}",
       "release": "goreleaser",
       "paths": [
@@ -10,7 +10,7 @@
         "go.mod",
         "go.sum",
         "internal/**",
-        "cmd/rill/**",
+        "cmd/gopage/**",
         "schema/**",
         "install.sh",
         "install.ps1",
@@ -23,13 +23,13 @@
       ]
     },
 
-    "@apptivitypl/rill": {
+    "@apptivitypl/gopage": {
       "kind": "npm",
-      "version": "0.1.3",
-      "dir": "npm/rill",
-      "needs": ["rill"],
+      "version": "0.2.0",
+      "dir": "npm/gopage",
+      "needs": ["gopage"],
       "paths": [
-        "npm/rill/**",
+        "npm/gopage/**",
         "internal/tool/npmpkg/**"
       ]
     }

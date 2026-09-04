@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"errors"
-	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"net/http"
 	"net/http/httptest"
 	"strings"

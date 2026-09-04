@@ -1,0 +1,65 @@
+---
+import (
+	"time"
+
+	"<<.Module>>/catalog"
+)
+
+type Props struct {
+	Name    string
+	City    string
+	Price   int64
+	Area    int64
+	Summary string
+}
+
+func (p Props) PricePerM2() int64 {
+	if p.Area == 0 {
+		return 0
+	}
+	return p.Price / p.Area
+}
+
+type EnquiryForm struct {
+	Name    string  `validate:"required,len:2..80"`
+	Email   string  `validate:"required,email"`
+	Message *string `validate:"max:2000"`
+	Consent bool    `validate:"accepted"`
+}
+
+func Submit(ctx *gopage.Ctx, params gopage.Params, form EnquiryForm) (gopage.Action, error) {
+	return gopage.RedirectTo("/items/" + params["id"]).Flash(ctx.T("enquiry.sent")), nil
+}
+
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Name, Description: p.Summary, Robots: "index"}
+}
+
+func Load(ctx *gopage.Ctx, params gopage.Params) (Props, error) {
+	item, ok := catalog.Get(params["id"])
+	if !ok {
+		return Props{}, gopage.ErrNotFound
+	}
+	ctx.Cache().TTL(time.Hour).Tag("items", "item:"+item.ID)
+	return Props{Name: item.Name, City: item.City, Price: item.Price, Area: item.Area, Summary: item.Summary}, nil
+}
+---
+<article class="detail">
+    <h1>{{ Name }}</h1>
+    <p class="price">{{ Price | money("PLN") }}</p>
+    <p class="meta">{{ City }} · {{ Area }} m2 · {{ PricePerM2 | money("PLN") }} {{ t("items.per_m2") }}</p>
+    <p>{{ Summary }}</p>
+    <p><a href="/">{{ t("nav.home") }}</a></p>
+
+    <section class="enquiry">
+        <h2>{{ t("enquiry.title") }}</h2>
+        {% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+        <Form class="stack">
+            <Field name="Name" :label="t('enquiry.name')" />
+            <Field name="Email" :label="t('enquiry.email')" type="email" />
+            <Field name="Message" :label="t('enquiry.message')" as="textarea" rows="4" />
+            <Field name="Consent" :label="t('enquiry.consent')" type="checkbox" />
+            <button type="submit">{{ t("enquiry.send") }}</button>
+        </Form>
+    </section>
+</article>

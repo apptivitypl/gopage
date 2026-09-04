@@ -1,6 +1,6 @@
 package form
 
-import "github.com/apptivitypl/rill/internal/runtime"
+import "github.com/apptivitypl/gopage/internal/runtime"
 
 const (
 	valuesField = "Values"

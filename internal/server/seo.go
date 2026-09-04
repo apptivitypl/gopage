@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
-	"github.com/apptivitypl/rill/internal/seo"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/seo"
 )
 
 const defaultHreflang = "x-default"

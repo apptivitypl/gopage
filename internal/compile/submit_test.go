@@ -3,13 +3,13 @@ package compile
 import (
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func formType(t *testing.T, frontmatter string) (string, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	template := Template{File: "app/page.rill", Frontmatter: frontmatter}
+	template := Template{File: "app/page.gopage", Frontmatter: frontmatter}
 	return template.FormType(&bag), &bag
 }
 
@@ -17,7 +17,7 @@ func TestFormTypeComesFromTheSubmitSignature(t *testing.T) {
 	name, bag := formType(t, `
 type ContactForm struct{}
 
-func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, error) {
+func Submit(ctx *gopage.Ctx, params gopage.Params, form ContactForm) (gopage.Action, error) {
 	return nil, nil
 }
 `)
@@ -36,13 +36,13 @@ func TestNoSubmitMeansNoFormType(t *testing.T) {
 func TestAMalformedSubmitIsReported(t *testing.T) {
 	sources := []string{
 		"func Submit() {}\n",
-		"func Submit(ctx *rill.Ctx, params rill.Params) (rill.Action, error) { return nil, nil }\n",
-		"func Submit(ctx rill.Ctx, params rill.Params, form F) (rill.Action, error) { return nil, nil }\n",
-		"func Submit(ctx *rill.Ctx, params string, form F) (rill.Action, error) { return nil, nil }\n",
-		"func Submit(ctx *rill.Ctx, params rill.Params, form F) (string, error) { return \"\", nil }\n",
-		"func Submit(ctx *rill.Ctx, params rill.Params, form F) (rill.Action, string) { return nil, \"\" }\n",
-		"func Submit(ctx *rill.Ctx, params rill.Params, form F) rill.Action { return nil }\n",
-		"func Submit(ctx *rill.Ctx, params rill.Params, form *F) (rill.Action, error) { return nil, nil }\n",
+		"func Submit(ctx *gopage.Ctx, params gopage.Params) (gopage.Action, error) { return nil, nil }\n",
+		"func Submit(ctx gopage.Ctx, params gopage.Params, form F) (gopage.Action, error) { return nil, nil }\n",
+		"func Submit(ctx *gopage.Ctx, params string, form F) (gopage.Action, error) { return nil, nil }\n",
+		"func Submit(ctx *gopage.Ctx, params gopage.Params, form F) (string, error) { return \"\", nil }\n",
+		"func Submit(ctx *gopage.Ctx, params gopage.Params, form F) (gopage.Action, string) { return nil, \"\" }\n",
+		"func Submit(ctx *gopage.Ctx, params gopage.Params, form F) gopage.Action { return nil }\n",
+		"func Submit(ctx *gopage.Ctx, params gopage.Params, form *F) (gopage.Action, error) { return nil, nil }\n",
 	}
 	for _, source := range sources {
 		name, bag := formType(t, source)
@@ -111,14 +111,14 @@ func TestRootPathsAreRecognised(t *testing.T) {
 
 func TestLoaderArity(t *testing.T) {
 	cases := map[string]bool{
-		"func Load(ctx *rill.Ctx) (Props, error) { return Props{}, nil }":                     false,
-		"func Load(ctx *rill.Ctx, params rill.Params) (Props, error) { return Props{}, nil }": true,
-		"func Load(ctx, other *rill.Ctx) (Props, error) { return Props{}, nil }":              true,
+		"func Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }":                       false,
+		"func Load(ctx *gopage.Ctx, params gopage.Params) (Props, error) { return Props{}, nil }": true,
+		"func Load(ctx, other *gopage.Ctx) (Props, error) { return Props{}, nil }":                true,
 		"type Props struct{}": false,
 		"func Load( {":        false,
 	}
 	for source, want := range cases {
-		template := Template{File: "app/page.rill", Frontmatter: source}
+		template := Template{File: "app/page.gopage", Frontmatter: source}
 		if got := template.LoaderTakesParams(); got != want {
 			t.Errorf("%q = %v, want %v", source, got, want)
 		}
@@ -126,7 +126,7 @@ func TestLoaderArity(t *testing.T) {
 }
 
 func TestALoaderOnAReceiverIsIgnored(t *testing.T) {
-	template := Template{File: "app/page.rill", Frontmatter: "type p struct{}\n\nfunc (p) Load(a, b int) int { return 0 }\n"}
+	template := Template{File: "app/page.gopage", Frontmatter: "type p struct{}\n\nfunc (p) Load(a, b int) int { return 0 }\n"}
 	if template.LoaderTakesParams() {
 		t.Error("a method is not the page loader")
 	}

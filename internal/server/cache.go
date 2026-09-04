@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/apptivitypl/rill/internal/action"
-	"github.com/apptivitypl/rill/internal/cache"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/action"
+	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 const (
-	CacheHeader      = "RILL-Cache"
+	CacheHeader      = "GOPAGE-Cache"
 	PrivateFreshness = "private, no-cache"
 )
 

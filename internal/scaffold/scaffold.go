@@ -33,8 +33,8 @@ type Config struct {
 	Module        string
 	Name          string
 	Template      string
-	RillPath      string
-	RillVersion   string
+	GopagePath    string
+	GopageVersion string
 	CompatDate    string
 	Locales       []string
 	DefaultLocale string
@@ -44,7 +44,7 @@ type Config struct {
 	React         string
 }
 
-const DefaultRillVersion = "v0.0.0"
+const DefaultGopageVersion = "v0.0.0"
 
 const (
 	ReactOn     = "react"
@@ -61,8 +61,8 @@ const (
 )
 
 func (c Config) withDefaults() Config {
-	if c.RillVersion == "" {
-		c.RillVersion = DefaultRillVersion
+	if c.GopageVersion == "" {
+		c.GopageVersion = DefaultGopageVersion
 	}
 	if c.Template == "" {
 		c.Template = DefaultTemplate
@@ -102,8 +102,8 @@ func (c Config) UsesReact() bool {
 type data struct {
 	Module        string
 	Name          string
-	RillPath      string
-	RillVersion   string
+	GopagePath    string
+	GopageVersion string
 	CompatDate    string
 	Locales       string
 	DefaultLocale string
@@ -180,8 +180,8 @@ func Create(cfg Config) error {
 	values := data{
 		Module:        cfg.Module,
 		Name:          cfg.Name,
-		RillPath:      cfg.RillPath,
-		RillVersion:   cfg.RillVersion,
+		GopagePath:    cfg.GopagePath,
+		GopageVersion: cfg.GopageVersion,
 		CompatDate:    cfg.CompatDate,
 		Locales:       quoteList(cfg.Locales),
 		DefaultLocale: cfg.DefaultLocale,
@@ -207,8 +207,8 @@ func Create(cfg Config) error {
 }
 
 var optional = map[string]func(data) bool{
-	"components/ThemeToggle.rill": func(values data) bool { return values.Toggle },
-	"package.json.tmpl":           func(values data) bool { return values.React },
+	"components/ThemeToggle.gopage": func(values data) bool { return values.Toggle },
+	"package.json.tmpl":             func(values data) bool { return values.React },
 }
 
 func skipped(relative string, values data) bool {
@@ -250,14 +250,14 @@ func targetName(relative string) (string, bool) {
 }
 
 const (
-	rillOpen  = "<<"
-	rillClose = ">>"
+	gopageOpen  = "<<"
+	gopageClose = ">>"
 )
 
 func render(name string, content []byte, values data) ([]byte, error) {
 	engine := template.New(name)
-	if strings.HasSuffix(name, ".rill"+tmplSuffix) {
-		engine = engine.Delims(rillOpen, rillClose)
+	if strings.HasSuffix(name, ".gopage"+tmplSuffix) {
+		engine = engine.Delims(gopageOpen, gopageClose)
 	}
 	parsed, err := engine.Parse(string(content))
 	if err != nil {

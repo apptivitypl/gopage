@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
 const MaxFragments = 64
@@ -101,7 +101,7 @@ func (b *builder) deferrable(node *syntax.Fragment) bool {
 	if !b.deferred[node.Name] {
 		b.report(diag.C318, node.NameSpan,
 			fmt.Sprintf("%s is deferred but the go block has no func %s", node.Name, node.Name),
-			fmt.Sprintf("write func %s(ctx *rill.Ctx) (T, error) in the --- block, or drop defer", node.Name))
+			fmt.Sprintf("write func %s(ctx *gopage.Ctx) (T, error) in the --- block, or drop defer", node.Name))
 		return false
 	}
 	if node.Strategy == "" {

@@ -1,5 +1,5 @@
 {
-  // Gates that `go run ./cmd/rilltool ci` enforces, and that CI runs unchanged.
+  // Gates that `go run ./cmd/gopagetool ci` enforces, and that CI runs unchanged.
   "coverage": {
     // Every package must reach this, measured in statements.
     "globalStatements": 90.0,

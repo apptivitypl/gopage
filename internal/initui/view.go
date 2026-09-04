@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/apptivitypl/rill/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/scaffold"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 
 func (m Model) View() string {
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("rill new " + m.config.Dir))
+	b.WriteString(titleStyle.Render("gopage new " + m.config.Dir))
 	b.WriteString("\n\n")
 	m.writeAnswered(&b)
 	if m.Step() == StepDone {

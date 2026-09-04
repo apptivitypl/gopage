@@ -81,7 +81,7 @@ func TestCompressorsReportAFailingSink(t *testing.T) {
 }
 
 func TestFastCompressesWhatBrotliCanRead(t *testing.T) {
-	source := bytes.Repeat([]byte("rill renders pages from a compiled plan. "), 40)
+	source := bytes.Repeat([]byte("gopage renders pages from a compiled plan. "), 40)
 	var packed bytes.Buffer
 	if err := Fast(&packed, source); err != nil {
 		t.Fatalf("Fast: %v", err)

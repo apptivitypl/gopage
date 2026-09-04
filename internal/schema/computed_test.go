@@ -4,13 +4,13 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func parseSchema(t *testing.T, code string) *Schema {
 	t.Helper()
 	var bag diag.Bag
-	schema := Parse([]Source{{File: "app/page.rill", Code: code}}, &bag)
+	schema := Parse([]Source{{File: "app/page.gopage", Code: code}}, &bag)
 	if bag.HasErrors() {
 		t.Fatalf("diagnostics: %v", bag.Sorted())
 	}
@@ -102,7 +102,7 @@ func (p Props) Price() int64 { return 0 }
 
 func TestAMethodOnAMultiReceiverListIsIgnored(t *testing.T) {
 	var bag diag.Bag
-	schema := Parse([]Source{{File: "app/page.rill", Code: `
+	schema := Parse([]Source{{File: "app/page.gopage", Code: `
 type Props struct {
 	Price int64
 }
@@ -138,7 +138,7 @@ func (b *Box[int64]) PointerGeneric() int64 { return 0 }
 func TestPrivateFieldsAreMarked(t *testing.T) {
 	schema := parseSchema(t, "\n"+`type Props struct {
 	Title   string
-	Viewer  Viewer `+"`rill:\"private\"`"+`
+	Viewer  Viewer `+"`gopage:\"private\"`"+`
 	Session Session
 }
 
@@ -147,7 +147,7 @@ type Viewer struct {
 }
 
 type Session struct {
-	Email string `+"`rill:\"private\"`"+`
+	Email string `+"`gopage:\"private\"`"+`
 	Theme string
 }
 `)
@@ -172,7 +172,7 @@ func TestPrivateStopsAtWhatItCannotResolve(t *testing.T) {
 }
 
 type Tag struct {
-	Name string `+"`rill:\"private\"`"+`
+	Name string `+"`gopage:\"private\"`"+`
 }
 
 type Deep struct {

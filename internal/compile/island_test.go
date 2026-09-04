@@ -6,9 +6,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func islandProject(page string) fstest.MapFS {
@@ -17,15 +17,15 @@ func islandProject(page string) fstest.MapFS {
 
 type Props struct {
 	Placeholder string
-	Tags        []string ` + "`rill:\"rest\"`" + `
+	Tags        []string ` + "`gopage:\"rest\"`" + `
 	Compact     bool
 }
 `)},
-		"components/Search/template.rill": &fstest.MapFile{Data: []byte(`<div class="search">{{ Placeholder }}</div>`)},
-		"components/Search/client.ts":     &fstest.MapFile{Data: []byte("export function mount() {}")},
-		"components/Badge/props.go":       &fstest.MapFile{Data: []byte("package badge\n\ntype Props struct {\n\tLabel string\n}\n")},
-		"components/Badge/template.rill":  &fstest.MapFile{Data: []byte(`<b>{{ Label }}</b>`)},
-		"app/page.rill":                   &fstest.MapFile{Data: []byte(page)},
+		"components/Search/template.gopage": &fstest.MapFile{Data: []byte(`<div class="search">{{ Placeholder }}</div>`)},
+		"components/Search/client.ts":       &fstest.MapFile{Data: []byte("export function mount() {}")},
+		"components/Badge/props.go":         &fstest.MapFile{Data: []byte("package badge\n\ntype Props struct {\n\tLabel string\n}\n")},
+		"components/Badge/template.gopage":  &fstest.MapFile{Data: []byte(`<b>{{ Label }}</b>`)},
+		"app/page.gopage":                   &fstest.MapFile{Data: []byte(page)},
 	}
 }
 
@@ -64,12 +64,12 @@ type Props struct {
 		"Tags": runtime.Seq(runtime.Values{runtime.String("a"), runtime.String("<b>")}),
 	})
 	for _, want := range []string{
-		`<rill-island style="display:contents" name="Search" strategy="visible">`,
+		`<gopage-island style="display:contents" name="Search" strategy="visible">`,
 		`<script type="application/json">`,
 		`"Placeholder":"find"`,
 		`"Tags":["a","\u003cb\u003e"]`,
 		`<div class="search">find</div>`,
-		`</rill-island>`,
+		`</gopage-island>`,
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("html = %q, want %q", html, want)
@@ -131,7 +131,7 @@ func TestAComponentWithoutClientIsStillInlined(t *testing.T) {
 		t.Fatalf("diagnostics: %v", bag.Sorted())
 	}
 	html := renderIsland(t, result, runtime.Empty{})
-	if strings.Contains(html, "rill-island") || !strings.Contains(html, "<b>ready</b>") {
+	if strings.Contains(html, "gopage-island") || !strings.Contains(html, "<b>ready</b>") {
 		t.Errorf("html = %q", html)
 	}
 }
@@ -166,7 +166,7 @@ func TestAnIslandOmitsItsOwnAttributesFromTheProps(t *testing.T) {
 
 func singleFileIsland(page, script string) fstest.MapFS {
 	return fstest.MapFS{
-		"components/Ticker.rill": &fstest.MapFile{Data: []byte(`---
+		"components/Ticker.gopage": &fstest.MapFile{Data: []byte(`---
 type Props struct {
 	Start int
 }
@@ -177,7 +177,7 @@ type Props struct {
 ` + script + `
 </script>
 `)},
-		"app/page.rill": &fstest.MapFile{Data: []byte(page)},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(page)},
 	}
 }
 
@@ -209,7 +209,7 @@ func TestASingleFileComponentIsAnIsland(t *testing.T) {
 func TestAClientScriptOutsideAComponentIsRejected(t *testing.T) {
 	var bag diag.Bag
 	files := fstest.MapFS{
-		"app/page.rill": &fstest.MapFile{Data: []byte("<p>x</p>\n<script client>export function mount() {}</script>")},
+		"app/page.gopage": &fstest.MapFile{Data: []byte("<p>x</p>\n<script client>export function mount() {}</script>")},
 	}
 	if _, err := Compile(files, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -222,7 +222,7 @@ func TestAClientScriptOutsideAComponentIsRejected(t *testing.T) {
 func TestASecondClientScriptIsRejected(t *testing.T) {
 	var bag diag.Bag
 	files := singleFileIsland(`<Ticker client="load" :Start="1" />`, "export function mount() {}")
-	files["components/Ticker.rill"] = &fstest.MapFile{Data: []byte(`<output>x</output>
+	files["components/Ticker.gopage"] = &fstest.MapFile{Data: []byte(`<output>x</output>
 <script client>export function mount() {}</script>
 <script client>export function mount() {}</script>
 `)}
@@ -247,7 +247,7 @@ func TestAClientScriptWithoutMountIsRejected(t *testing.T) {
 
 func TestAReactIslandIsDiscoveredInEitherShape(t *testing.T) {
 	files := singleFileIsland(`<Ticker client="load" :Start="1" />`, "export function mount() {}")
-	files["components/Ticker.rill"] = &fstest.MapFile{Data: []byte(`---
+	files["components/Ticker.gopage"] = &fstest.MapFile{Data: []byte(`---
 type Props struct {
 	Start int
 }
@@ -255,15 +255,15 @@ type Props struct {
 <output>{{ Start }}</output>
 
 <script client lang="tsx">
-import type { Props } from "rill:props/Ticker";
+import type { Props } from "gopage:props/Ticker";
 export default function Ticker(props: Props) { return <output>{props.Start}</output>; }
 </script>
 `)}
 	files["components/Chart/props.go"] = &fstest.MapFile{Data: []byte("package chart\n\ntype Props struct {\n\tPoints []int\n}\n")}
-	files["components/Chart/template.rill"] = &fstest.MapFile{Data: []byte(`<div class="chart"></div>`)}
+	files["components/Chart/template.gopage"] = &fstest.MapFile{Data: []byte(`<div class="chart"></div>`)}
 	files["components/Chart/client.tsx"] = &fstest.MapFile{Data: []byte("export default function Chart() { return null; }\n")}
 	files["components/Plain/props.go"] = &fstest.MapFile{Data: []byte("package plain\n\ntype Props struct {\n\tLabel string\n}\n")}
-	files["components/Plain/template.rill"] = &fstest.MapFile{Data: []byte(`<b></b>`)}
+	files["components/Plain/template.gopage"] = &fstest.MapFile{Data: []byte(`<b></b>`)}
 	files["components/Plain/client.js"] = &fstest.MapFile{Data: []byte("export function mount() {}\n")}
 
 	islands := DiscoverIslands(files)
@@ -329,7 +329,7 @@ func TestAPlanRecordsWhichIslandsItUsesAndHow(t *testing.T) {
 
 func TestTheAssetsBlockLeavesRoomForRoutePreloads(t *testing.T) {
 	files := islandProject(`<p>x</p>`)
-	files["app/layout.rill"] = &fstest.MapFile{Data: []byte("<head>{% assets %}</head>{% outlet %}")}
+	files["app/layout.gopage"] = &fstest.MapFile{Data: []byte("<head>{% assets %}</head>{% outlet %}")}
 	var bag diag.Bag
 	result, err := Compile(files, &bag)
 	if err != nil {

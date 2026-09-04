@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 const (
-	PartialHeader = "RILL-Partial"
-	LevelHeader   = "RILL-Level"
-	TitleHeader   = "RILL-Title"
-	PartialType   = "text/vnd.rill-partial"
+	PartialHeader = "GOPAGE-Partial"
+	LevelHeader   = "GOPAGE-Level"
+	TitleHeader   = "GOPAGE-Title"
+	PartialType   = "text/vnd.gopage-partial"
 
 	MaxPartialPath = 512
 )

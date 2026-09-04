@@ -183,7 +183,7 @@ func TestUnpackSkipsAnEntryKindItDoesNotHandle(t *testing.T) {
 		t.Errorf("real = %q", got)
 	}
 	if _, err := os.Lstat(filepath.Join(into, "go", "fifo")); err == nil {
-		t.Error("an entry kind rill does not handle must be skipped, not written")
+		t.Error("an entry kind gopage does not handle must be skipped, not written")
 	}
 }
 
@@ -215,18 +215,18 @@ func TestUnpackReportsADirectoryItCannotCreate(t *testing.T) {
 }
 
 func TestFileTakesOneBinaryOutOfAnArchive(t *testing.T) {
-	archive := tarball(t, "rill.tar.gz", []entry{
+	archive := tarball(t, "gopage.tar.gz", []entry{
 		{name: "LICENSE", body: "mit", mode: 0o644, kind: tar.TypeReg},
-		{name: "rill", body: "binary", mode: 0o644, kind: tar.TypeReg},
+		{name: "gopage", body: "binary", mode: 0o644, kind: tar.TypeReg},
 	})
 	into := filepath.Join(t.TempDir(), "bin")
-	if err := File(archive, "rill", into); err != nil {
+	if err := File(archive, "gopage", into); err != nil {
 		t.Fatalf("File: %v", err)
 	}
-	if got := read(t, filepath.Join(into, "rill")); got != "binary" {
-		t.Errorf("rill = %q", got)
+	if got := read(t, filepath.Join(into, "gopage")); got != "binary" {
+		t.Errorf("gopage = %q", got)
 	}
-	info, err := os.Stat(filepath.Join(into, "rill"))
+	info, err := os.Stat(filepath.Join(into, "gopage"))
 	if err != nil {
 		t.Fatalf("stat: %v", err)
 	}
@@ -241,32 +241,32 @@ func TestFileTakesOneBinaryOutOfAnArchive(t *testing.T) {
 func TestFileTakesOneBinaryOutOfAZip(t *testing.T) {
 	archive := zipped(t, []entry{
 		{name: "LICENSE", body: "mit", mode: 0o644},
-		{name: "rill.exe", body: "binary", mode: 0o644},
+		{name: "gopage.exe", body: "binary", mode: 0o644},
 	})
 	into := filepath.Join(t.TempDir(), "bin")
-	if err := File(archive, "rill.exe", into); err != nil {
+	if err := File(archive, "gopage.exe", into); err != nil {
 		t.Fatalf("File: %v", err)
 	}
-	if got := read(t, filepath.Join(into, "rill.exe")); got != "binary" {
-		t.Errorf("rill.exe = %q", got)
+	if got := read(t, filepath.Join(into, "gopage.exe")); got != "binary" {
+		t.Errorf("gopage.exe = %q", got)
 	}
 }
 
 func TestFileReportsABinaryTheArchiveDoesNotHold(t *testing.T) {
-	archive := tarball(t, "rill.tar.gz", []entry{{name: "LICENSE", body: "mit", mode: 0o644, kind: tar.TypeReg}})
-	err := File(archive, "rill", t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "holds no rill") {
+	archive := tarball(t, "gopage.tar.gz", []entry{{name: "LICENSE", body: "mit", mode: 0o644, kind: tar.TypeReg}})
+	err := File(archive, "gopage", t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "holds no gopage") {
 		t.Errorf("err = %v, want the missing binary named", err)
 	}
 	empty := zipped(t, nil)
-	err = File(empty, "rill.exe", t.TempDir())
-	if err == nil || !strings.Contains(err.Error(), "holds no rill.exe") {
+	err = File(empty, "gopage.exe", t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "holds no gopage.exe") {
 		t.Errorf("err = %v, want the missing binary named", err)
 	}
-	if err := File(filepath.Join(t.TempDir(), "absent.tar.gz"), "rill", t.TempDir()); err == nil {
+	if err := File(filepath.Join(t.TempDir(), "absent.tar.gz"), "gopage", t.TempDir()); err == nil {
 		t.Error("a missing archive must be reported")
 	}
-	if err := File(filepath.Join(t.TempDir(), "absent.zip"), "rill", t.TempDir()); err == nil {
+	if err := File(filepath.Join(t.TempDir(), "absent.zip"), "gopage", t.TempDir()); err == nil {
 		t.Error("a missing zip must be reported")
 	}
 }
@@ -276,7 +276,7 @@ func TestFileReportsADirectoryItCannotCreate(t *testing.T) {
 	if err := os.WriteFile(blocked, nil, 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	if err := File("archive.tar.gz", "rill", filepath.Join(blocked, "bin")); err == nil {
+	if err := File("archive.tar.gz", "gopage", filepath.Join(blocked, "bin")); err == nil {
 		t.Error("a directory that cannot be created must be reported")
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const (
@@ -62,7 +62,7 @@ func LoadHandler(fsys fs.FS, route Route, bag *diag.Bag) (Handler, bool) {
 		if !validSignature(fn) {
 			bag.Add(diag.New(diag.C105, route.File, diag.Span{},
 				fmt.Sprintf("%s has the wrong signature", fn.Name.Name)).
-				WithHelp("write func " + fn.Name.Name + "(ctx *rill.Ctx, params rill.Params) (rill.Response, error)"))
+				WithHelp("write func " + fn.Name.Name + "(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error)"))
 			continue
 		}
 		handler.Methods = append(handler.Methods, fn.Name.Name)

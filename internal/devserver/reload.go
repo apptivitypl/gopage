@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ReloadPath   = "/_rill/reload"
+	ReloadPath   = "/_gopage/reload"
 	ReloadScript = `<script>(()=>{const s=new EventSource("` + ReloadPath + `");` +
 		`s.addEventListener("reload",()=>location.reload());})()</script>`
 	reloadEvent = "reload"

@@ -135,7 +135,7 @@ func TestTheRuntimeSourceIsEmbedded(t *testing.T) {
 	if !strings.Contains(RuntimeSource(), "export function register") {
 		t.Error("the embedded runtime must export register")
 	}
-	if !strings.Contains(RuntimeSource(), "rill-island") {
+	if !strings.Contains(RuntimeSource(), "gopage-island") {
 		t.Error("the embedded runtime must look for islands")
 	}
 }
@@ -258,7 +258,7 @@ func TestAnInlineIslandIsStagedAndImported(t *testing.T) {
 	dir := t.TempDir()
 	results, err := Build(Options{
 		Dir:     dir,
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: "export function mount() { return () => {} }"}},
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: "export function mount() { return () => {} }"}},
 	})
 	if err != nil {
 		t.Fatalf("Build: %v", err)
@@ -282,7 +282,7 @@ func TestThePropsAliasResolvesToAnEmptyModule(t *testing.T) {
 	dir := t.TempDir()
 	results, err := Build(Options{
 		Dir: dir,
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: `import type { Props } from "rill:props/Ticker";
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: `import type { Props } from "gopage:props/Ticker";
 export function mount(element: HTMLElement, props: Props): () => void {
 	element.dataset.start = String(props.Start);
 	return () => {};
@@ -292,7 +292,7 @@ export function mount(element: HTMLElement, props: Props): () => void {
 		t.Fatalf("Build: %v", err)
 	}
 	for _, result := range results.Files {
-		if strings.Contains(string(result.Bytes), "rill:props") {
+		if strings.Contains(string(result.Bytes), "gopage:props") {
 			t.Errorf("%s still imports the alias", result.Name)
 		}
 	}
@@ -301,7 +301,7 @@ export function mount(element: HTMLElement, props: Props): () => void {
 func TestAPropsAliasWithAPathIsRejected(t *testing.T) {
 	_, err := Build(Options{
 		Dir: t.TempDir(),
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: `import "rill:props/nested/Thing";
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: `import "gopage:props/nested/Thing";
 export function mount() { return () => {}; }`}},
 	})
 	if err == nil {
@@ -319,7 +319,7 @@ func TestAnEmptyProjectBundlesNothing(t *testing.T) {
 func TestAnEmptyPropsAliasIsRejected(t *testing.T) {
 	_, err := Build(Options{
 		Dir: t.TempDir(),
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: `import "rill:props/";
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: `import "gopage:props/";
 export function mount() { return () => {}; }`}},
 	})
 	if err == nil {
@@ -334,7 +334,7 @@ func TestAnInlineIslandThatCannotBeStagedIsReported(t *testing.T) {
 	}
 	_, err := Build(Options{
 		Dir:     dir,
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: "export function mount() { return () => {} }"}},
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: "export function mount() { return () => {} }"}},
 	})
 	if err == nil {
 		t.Error("an island that cannot be staged must fail the bundle")
@@ -344,7 +344,7 @@ func TestAnInlineIslandThatCannotBeStagedIsReported(t *testing.T) {
 func TestAValueImportedFromThePropsAliasResolvesToNothing(t *testing.T) {
 	results, err := Build(Options{
 		Dir: t.TempDir(),
-		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.rill", Code: `import * as props from "rill:props/Ticker";
+		Islands: map[string]Island{"Ticker": {Source: "components/Ticker.gopage", Code: `import * as props from "gopage:props/Ticker";
 export function mount(element: HTMLElement): () => void {
 	element.dataset.keys = Object.keys(props).join(",");
 	return () => {};
@@ -354,7 +354,7 @@ export function mount(element: HTMLElement): () => void {
 		t.Fatalf("Build: %v", err)
 	}
 	for _, result := range results.Files {
-		if strings.Contains(string(result.Bytes), `from "rill:props`) {
+		if strings.Contains(string(result.Bytes), `from "gopage:props`) {
 			t.Errorf("%s still imports the alias at runtime", result.Name)
 		}
 	}
@@ -373,7 +373,7 @@ export function createRoot(element) {
 }
 `
 
-const reactComponent = `import type { Props } from "rill:props/Chart";
+const reactComponent = `import type { Props } from "gopage:props/Chart";
 export default function Chart(props: Props) { return <div className="chart">{props.Points.length}</div>; }
 `
 
@@ -396,7 +396,7 @@ func TestAReactIslandIsWrappedIntoAMount(t *testing.T) {
 	dir := reactProject(t, nil)
 	out, err := Build(Options{
 		Dir:     dir,
-		Islands: map[string]Island{"Chart": {Source: "components/Chart.rill", Code: reactComponent, Lang: "tsx", React: true}},
+		Islands: map[string]Island{"Chart": {Source: "components/Chart.gopage", Code: reactComponent, Lang: "tsx", React: true}},
 	})
 	if err != nil {
 		t.Fatalf("Build: %v", err)
@@ -410,7 +410,7 @@ func TestAReactIslandIsWrappedIntoAMount(t *testing.T) {
 			t.Errorf("bundle lacks %q", want)
 		}
 	}
-	if strings.Contains(joined, `from "rill:react"`) {
+	if strings.Contains(joined, `from "gopage:react"`) {
 		t.Error("the adapter alias must be resolved at build time")
 	}
 	wrapper := filepath.Join(dir, workDir, islandDir, "Chart"+mountSuffix)
@@ -589,10 +589,10 @@ func TestIslandChunksFollowTheStaticImportsOfEachIsland(t *testing.T) {
 
 func TestEveryIslandShapeMapsToItsOwnModule(t *testing.T) {
 	cases := map[string]Island{
-		".rill/cache/islands/Chart.mount.ts": {Source: "components/Chart.rill", Code: "x", Lang: "tsx", React: true},
-		".rill/cache/islands/Chart.tsx":      {Source: "components/Chart.rill", Code: "x", Lang: "tsx"},
-		".rill/cache/islands/Chart.ts":       {Source: "components/Chart.rill", Code: "x"},
-		"components/Chart/client.ts":         {Source: "components/Chart/client.ts"},
+		".gopage/cache/islands/Chart.mount.ts": {Source: "components/Chart.gopage", Code: "x", Lang: "tsx", React: true},
+		".gopage/cache/islands/Chart.tsx":      {Source: "components/Chart.gopage", Code: "x", Lang: "tsx"},
+		".gopage/cache/islands/Chart.ts":       {Source: "components/Chart.gopage", Code: "x"},
+		"components/Chart/client.ts":           {Source: "components/Chart/client.ts"},
 	}
 	for want, island := range cases {
 		if got := moduleOf(island, "Chart"); got != want {

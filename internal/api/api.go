@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/logs"
+	"github.com/apptivitypl/gopage/internal/logs"
 )
 
 type Response interface {

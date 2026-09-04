@@ -49,7 +49,7 @@ func PackageName(name string) string {
 	cleaned := unsafeName.ReplaceAllString(strings.ToLower(name), "-")
 	cleaned = strings.Trim(cleaned, "-._")
 	if cleaned == "" {
-		cleaned = "rill"
+		cleaned = "gopage"
 	}
 	return cleaned + "-demo"
 }

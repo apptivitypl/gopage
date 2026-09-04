@@ -1,15 +1,15 @@
 version: 2
 
-project_name: rill
+project_name: gopage
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - id: rill
-    main: ./cmd/rill
-    binary: rill
+  - id: gopage
+    main: ./cmd/gopage
+    binary: gopage
     env:
       - CGO_ENABLED=0
     flags:
@@ -17,7 +17,7 @@ builds:
     ldflags:
       - -s -w
       - -X main.version={{ .Version }}
-      - -X main.module={{ envOrDefault "RILL_MODULE" (printf "v%s" .Version) }}
+      - -X main.module={{ envOrDefault "GOPAGE_MODULE" (printf "v%s" .Version) }}
       - -X main.commit={{ .FullCommit }}
       - -X main.date={{ .CommitDate }}
     mod_timestamp: "{{ .CommitTimestamp }}"
@@ -25,9 +25,9 @@ builds:
     goarch: [amd64, arm64]
 
 archives:
-  - id: rill
-    ids: [rill]
-    name_template: "rill_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - id: gopage
+    ids: [gopage]
+    name_template: "gopage_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats: [zip]
@@ -80,6 +80,6 @@ release:
     cosign verify-blob checksums.txt \
       --certificate checksums.txt.pem \
       --signature checksums.txt.sig \
-      --certificate-identity-regexp 'https://github\.com/apptivitypl/rill/\.github/workflows/publish\.yml@.*' \
+      --certificate-identity-regexp 'https://github\.com/apptivitypl/gopage/\.github/workflows/publish\.yml@.*' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com
     ```

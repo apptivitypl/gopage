@@ -4,18 +4,18 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 func fallbackApp() fstest.MapFS {
 	return fstest.MapFS{
-		"app/layout.rill":           &fstest.MapFile{Data: []byte("<main>{% outlet %}</main>")},
-		"app/page.rill":             &fstest.MapFile{Data: []byte("<h1>home</h1>")},
-		"app/not-found.rill":        &fstest.MapFile{Data: []byte("<p>gone</p>")},
-		"app/error.rill":            &fstest.MapFile{Data: []byte("<p>broken</p>")},
-		"app/docs/not-found.rill":   &fstest.MapFile{Data: []byte("<p>no such doc</p>")},
-		"app/docs/[slug]/page.rill": &fstest.MapFile{Data: []byte("<h1>doc</h1>")},
+		"app/layout.gopage":           &fstest.MapFile{Data: []byte("<main>{% outlet %}</main>")},
+		"app/page.gopage":             &fstest.MapFile{Data: []byte("<h1>home</h1>")},
+		"app/not-found.gopage":        &fstest.MapFile{Data: []byte("<p>gone</p>")},
+		"app/error.gopage":            &fstest.MapFile{Data: []byte("<p>broken</p>")},
+		"app/docs/not-found.gopage":   &fstest.MapFile{Data: []byte("<p>no such doc</p>")},
+		"app/docs/[slug]/page.gopage": &fstest.MapFile{Data: []byte("<h1>doc</h1>")},
 	}
 }
 
@@ -34,7 +34,7 @@ func TestDiscoverFallbacksNamesAndOrders(t *testing.T) {
 			t.Errorf("fallback %d = %+v, want %+v", i, found[i], expected)
 		}
 	}
-	if len(found[2].Layouts) != 1 || found[2].Layouts[0] != "app/layout.rill" {
+	if len(found[2].Layouts) != 1 || found[2].Layouts[0] != "app/layout.gopage" {
 		t.Errorf("layouts = %v", found[2].Layouts)
 	}
 }
@@ -63,7 +63,7 @@ func TestFallbacksReachTheManifest(t *testing.T) {
 
 func TestFallbacksAreOptional(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte("<h1>home</h1>")}}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte("<h1>home</h1>")}}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}

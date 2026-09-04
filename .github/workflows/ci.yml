@@ -56,16 +56,16 @@ jobs:
         run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
       - name: Run every gate
-        run: go run ./cmd/rilltool ci
+        run: go run ./cmd/gopagetool ci
 
       - name: Hold the coverage of what this change touched
         if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-        run: go run ./cmd/rilltool coverage --ci --diff-base "$BASE"
+        run: go run ./cmd/gopagetool coverage --ci --diff-base "$BASE"
 
       - name: Compare against the performance log
-        run: go run ./cmd/rilltool bench --check
+        run: go run ./cmd/gopagetool bench --check
 
       - name: Upload the coverage report
         if: always()
@@ -236,7 +236,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build a project and probe what it answers
-        run: PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/rilltool smoke ${{ matrix.flag }}
+        run: PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/gopagetool smoke ${{ matrix.flag }}
 
   example:
     name: committed examples
@@ -263,21 +263,21 @@ jobs:
       - name: Keep the downloaded binary between runs
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ~/.cache/rill
+          path: ~/.cache/gopage
           key: tailwind-${{ runner.os }}
 
       - name: They are still what the templates write
-        run: go run ./cmd/rilltool example
+        run: go run ./cmd/gopagetool example
 
       - name: Point them at this checkout
-        run: go run ./cmd/rilltool example --workspace
+        run: go run ./cmd/gopagetool example --workspace
 
       - run: pnpm --dir examples/hello-world install --no-frozen-lockfile
 
       - name: They build, and the demo target answers from wasm
         run: |
-          go run ./cmd/rill build --dir examples/blog
-          go run ./cmd/rill build --dir examples/hello-world --target demo
+          go run ./cmd/gopage build --dir examples/blog
+          go run ./cmd/gopage build --dir examples/hello-world --target demo
           PORT=3123 node examples/hello-world/dist/demo/server.mjs &
           for _ in $(seq 1 40); do
             curl -fsS -o /dev/null http://127.0.0.1:3123/ && break
@@ -305,15 +305,15 @@ jobs:
       - name: Keep the downloaded binary between runs
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          path: ~/.cache/rill
+          path: ~/.cache/gopage
           key: tailwind-${{ runner.os }}
 
-      - run: go run ./cmd/rill css install
+      - run: go run ./cmd/gopage css install
 
       - name: Build the starter with tailwind
         run: |
-          go run ./cmd/rill new "$RUNNER_TEMP/starter" --module example.com/demo --rill-path "$PWD" --css tailwind --yes
-          go run ./cmd/rill build --dir "$RUNNER_TEMP/starter"
+          go run ./cmd/gopage new "$RUNNER_TEMP/starter" --module example.com/demo --gopage-path "$PWD" --css tailwind --yes
+          go run ./cmd/gopage build --dir "$RUNNER_TEMP/starter"
 
       - name: The stylesheet carries the classes the compiler found
         run: grep -q 'max-w-3xl' "$RUNNER_TEMP"/starter/dist/assets/assets/app.*.css

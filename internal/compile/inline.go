@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/schema"
-	"github.com/apptivitypl/rill/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/schema"
+	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
 const maxComponentDepth = 32
@@ -176,7 +176,7 @@ func (b *builder) componentHelp(name string) string {
 		return fmt.Sprintf("did you mean <%s>?", suggestion)
 	}
 	if len(names) == 0 {
-		return "components live in components/<Name>/template.rill"
+		return "components live in components/<Name>/template.gopage"
 	}
 	return "components: " + strings.Join(names, ", ")
 }

@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/apptivitypl/rill/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/scaffold"
 )
 
 var ErrCancelled = errors.New("cancelled")

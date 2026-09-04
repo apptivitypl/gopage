@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 type parser struct {

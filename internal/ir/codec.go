@@ -10,7 +10,7 @@ import (
 
 var magic = [4]byte{'R', 'I', 'L', 'L'}
 
-var ErrBadMagic = errors.New("not a rill manifest")
+var ErrBadMagic = errors.New("not a gopage manifest")
 
 func Encode(m *Manifest) []byte {
 	var w writer

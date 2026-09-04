@@ -136,7 +136,7 @@ func TestTailwindDownloadsWhenTheCacheIsEmpty(t *testing.T) {
 
 func TestTailwindWithoutADownloaderExplainsItself(t *testing.T) {
 	_, err := Tailwind{CacheDir: t.TempDir()}.Install()
-	if err == nil || !strings.Contains(err.Error(), "rill css install") {
+	if err == nil || !strings.Contains(err.Error(), "gopage css install") {
 		t.Errorf("err = %v, want the instruction", err)
 	}
 }
@@ -177,7 +177,7 @@ func TestTheCacheFallsBackToTheUserDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("path: %v", err)
 	}
-	if !strings.Contains(path, filepath.Join("rill", "tailwind", Version)) {
+	if !strings.Contains(path, filepath.Join("gopage", "tailwind", Version)) {
 		t.Errorf("path = %q, want the versioned cache", path)
 	}
 }

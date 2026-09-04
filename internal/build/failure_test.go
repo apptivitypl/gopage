@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 func TestErrorMessageCountsDiagnostics(t *testing.T) {
@@ -29,7 +29,7 @@ func TestManifestWriteFailureStopsTheBuild(t *testing.T) {
 }
 
 func TestStaticRenderFailureIsReported(t *testing.T) {
-	dir := project(t, map[string]string{"app/page.rill": "<p>{{ Missing }}</p>"})
+	dir := project(t, map[string]string{"app/page.gopage": "<p>{{ Missing }}</p>"})
 	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
 	if err == nil || !strings.Contains(err.Error(), "render /") {
 		t.Errorf("err = %v, want the failing route named", err)
@@ -75,7 +75,7 @@ func TestWranglerWriteFailureIsReported(t *testing.T) {
 }
 
 func TestSourcesAreReadOncePerFile(t *testing.T) {
-	dir := project(t, map[string]string{"app/page.rill": "{{ # }}{{ # }}"})
+	dir := project(t, map[string]string{"app/page.gopage": "{{ # }}{{ # }}"})
 	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
 
 	var buildErr *Error
@@ -88,17 +88,17 @@ func TestSourcesAreReadOncePerFile(t *testing.T) {
 	if len(buildErr.Sources) != 1 {
 		t.Errorf("sources = %d entries, want one per file", len(buildErr.Sources))
 	}
-	if !strings.Contains(buildErr.Render(), "app/page.rill") {
+	if !strings.Contains(buildErr.Render(), "app/page.gopage") {
 		t.Error("the rendered output lost the file name")
 	}
 }
 
 func TestSourcesToleratesAMissingFile(t *testing.T) {
 	err := &Error{
-		Diagnostics: []diag.Diagnostic{diag.New(diag.C001, "gone.rill", diag.Span{}, "boom")},
-		Sources:     sourcesOf(t.TempDir(), []diag.Diagnostic{diag.New(diag.C001, "gone.rill", diag.Span{}, "boom")}),
+		Diagnostics: []diag.Diagnostic{diag.New(diag.C001, "gone.gopage", diag.Span{}, "boom")},
+		Sources:     sourcesOf(t.TempDir(), []diag.Diagnostic{diag.New(diag.C001, "gone.gopage", diag.Span{}, "boom")}),
 	}
-	if got := err.Render(); !strings.Contains(got, "gone.rill") {
+	if got := err.Render(); !strings.Contains(got, "gone.gopage") {
 		t.Errorf("render = %q, want it to survive a missing source file", got)
 	}
 }

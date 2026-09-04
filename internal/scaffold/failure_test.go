@@ -66,7 +66,7 @@ func TestTargetNameHandlesRenamesAndPlainFiles(t *testing.T) {
 	}{
 		{"gomod.tmpl", "go.mod", true},
 		{"gitignore.tmpl", ".gitignore", true},
-		{"app/page.rill", "app/page.rill", false},
+		{"app/page.gopage", "app/page.gopage", false},
 		{"site/site.go.tmpl", "site/site.go", true},
 	}
 	for _, c := range cases {

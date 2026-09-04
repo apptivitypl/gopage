@@ -5,8 +5,8 @@ import (
 	"maps"
 	"sort"
 
-	"github.com/apptivitypl/rill/internal/tool/config"
-	"github.com/apptivitypl/rill/internal/tool/covprofile"
+	"github.com/apptivitypl/gopage/internal/tool/config"
+	"github.com/apptivitypl/gopage/internal/tool/covprofile"
 )
 
 type Lock struct {

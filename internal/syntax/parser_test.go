@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func parse(t *testing.T, src string) (*Document, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	return Parse("page.rill", src, &bag), &bag
+	return Parse("page.gopage", src, &bag), &bag
 }
 
 func parseClean(t *testing.T, src string) *Document {
@@ -200,7 +200,7 @@ func TestParserRecoversAndKeepsGoing(t *testing.T) {
 
 func TestDiagnosticsCarryTheFileName(t *testing.T) {
 	_, bag := parse(t, "{{ # }}")
-	if bag.Items()[0].File != "page.rill" {
+	if bag.Items()[0].File != "page.gopage" {
 		t.Errorf("file = %q", bag.Items()[0].File)
 	}
 }
@@ -212,7 +212,7 @@ func TestParseIsTotal(t *testing.T) {
 	}
 	for _, src := range inputs {
 		var bag diag.Bag
-		if doc := Parse("x.rill", src, &bag); doc == nil {
+		if doc := Parse("x.gopage", src, &bag); doc == nil {
 			t.Errorf("Parse(%q) returned nil", src)
 		}
 	}
@@ -230,7 +230,7 @@ func FuzzParse(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, src string) {
 		var bag diag.Bag
-		doc := Parse("fuzz.rill", src, &bag)
+		doc := Parse("fuzz.gopage", src, &bag)
 		if doc == nil {
 			t.Fatal("Parse returned nil")
 		}
@@ -261,7 +261,7 @@ func TestDirectivesAreListed(t *testing.T) {
 func TestAClientScriptIsOneRawNode(t *testing.T) {
 	source := "<div>x</div>\n<script client>\nconst a = 1 < 2 && {{ not an interpolation }};\n</script>\n"
 	var bag diag.Bag
-	document := Parse("components/Counter.rill", source, &bag)
+	document := Parse("components/Counter.gopage", source, &bag)
 	if bag.HasErrors() {
 		t.Fatalf("diagnostics = %v", bag.Sorted())
 	}
@@ -276,7 +276,7 @@ func TestAClientScriptIsOneRawNode(t *testing.T) {
 
 func TestAPlainScriptStaysMarkup(t *testing.T) {
 	var bag diag.Bag
-	document := Parse("app/page.rill", "<script>console.log(1)</script>", &bag)
+	document := Parse("app/page.gopage", "<script>console.log(1)</script>", &bag)
 	if _, ok := ClientScriptOf(document); ok {
 		t.Error("a script without the client attribute is ordinary markup")
 	}
@@ -284,7 +284,7 @@ func TestAPlainScriptStaysMarkup(t *testing.T) {
 
 func TestAnUnclosedClientScriptStaysText(t *testing.T) {
 	var bag diag.Bag
-	document := Parse("components/Counter.rill", "<script client>\nconst a = 1;\n", &bag)
+	document := Parse("components/Counter.gopage", "<script client>\nconst a = 1;\n", &bag)
 	if _, ok := ClientScriptOf(document); ok {
 		t.Error("an unterminated script must not be taken for a client block")
 	}
@@ -295,7 +295,7 @@ func TestAnUnclosedClientScriptStaysText(t *testing.T) {
 
 func TestEveryClientScriptIsListed(t *testing.T) {
 	var bag diag.Bag
-	document := Parse("components/Counter.rill",
+	document := Parse("components/Counter.gopage",
 		"<script client>export function mount() {}</script><script client>export function mount() {}</script>", &bag)
 	if got := len(ClientScripts(document)); got != 2 {
 		t.Errorf("scripts = %d, want both so the compiler can reject the second", got)
@@ -305,7 +305,7 @@ func TestEveryClientScriptIsListed(t *testing.T) {
 func TestEveryNodeReportsItsSpan(t *testing.T) {
 	source := "<div>{{ Name }}</div>\n{% fragment \"Reviews\" defer %}x{% endfragment %}\n<script client>export function mount() {}</script>"
 	var bag diag.Bag
-	document := Parse("components/Reviews.rill", source, &bag)
+	document := Parse("components/Reviews.gopage", source, &bag)
 	for _, node := range document.Nodes {
 		if node.NodeSpan().End == 0 && node.NodeSpan().Start == 0 {
 			t.Errorf("%T reports an empty span", node)
@@ -315,7 +315,7 @@ func TestEveryNodeReportsItsSpan(t *testing.T) {
 
 func TestTheDeferFlagIsParsedAlongsideCache(t *testing.T) {
 	var bag diag.Bag
-	document := Parse("app/page.rill", `{% fragment "Reviews" defer cache="5m" %}x{% endfragment %}`, &bag)
+	document := Parse("app/page.gopage", `{% fragment "Reviews" defer cache="5m" %}x{% endfragment %}`, &bag)
 	if bag.HasErrors() {
 		t.Fatalf("diagnostics = %v", bag.Sorted())
 	}
@@ -330,7 +330,7 @@ func TestTheDeferFlagIsParsedAlongsideCache(t *testing.T) {
 
 func TestAnUnknownFragmentSettingIsReported(t *testing.T) {
 	var bag diag.Bag
-	Parse("app/page.rill", `{% fragment "Reviews" later="1m" %}x{% endfragment %}`, &bag)
+	Parse("app/page.gopage", `{% fragment "Reviews" later="1m" %}x{% endfragment %}`, &bag)
 	if !bag.HasErrors() {
 		t.Error("an unknown setting must be reported")
 	}
@@ -373,7 +373,7 @@ func TestAClientScriptCarriesItsLanguage(t *testing.T) {
 	}
 	for source, want := range cases {
 		var bag diag.Bag
-		script, ok := ClientScriptOf(Parse("components/Chart.rill", source, &bag))
+		script, ok := ClientScriptOf(Parse("components/Chart.gopage", source, &bag))
 		if !ok {
 			t.Fatalf("%s: the client script was not parsed", source)
 		}
@@ -386,7 +386,7 @@ func TestAClientScriptCarriesItsLanguage(t *testing.T) {
 func TestAClosingAngleInsideAnAttributeDoesNotEndTheTag(t *testing.T) {
 	var bag diag.Bag
 	source := `<script client data-note="a > b">export function mount() {}</script>`
-	script, ok := ClientScriptOf(Parse("components/Chart.rill", source, &bag))
+	script, ok := ClientScriptOf(Parse("components/Chart.gopage", source, &bag))
 	if !ok {
 		t.Fatal("the client script was not parsed")
 	}
@@ -404,7 +404,7 @@ func TestClientTagEdgesAreHandled(t *testing.T) {
 	}
 	for source, want := range cases {
 		var bag diag.Bag
-		_, got := ClientScriptOf(Parse("components/Chart.rill", source, &bag))
+		_, got := ClientScriptOf(Parse("components/Chart.gopage", source, &bag))
 		if got != want {
 			t.Errorf("%s: client script = %v, want %v", source, got, want)
 		}
@@ -424,7 +424,7 @@ func TestDeferCarriesAnOptionalStrategy(t *testing.T) {
 	}
 	for source, want := range cases {
 		var bag diag.Bag
-		document := Parse("app/page.rill", source, &bag)
+		document := Parse("app/page.gopage", source, &bag)
 		if bag.HasErrors() {
 			t.Fatalf("%s: %v", source, bag.Sorted())
 		}

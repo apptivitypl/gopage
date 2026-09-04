@@ -1,0 +1,25 @@
+---
+type Props struct {
+	Heading string
+}
+
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Heading, Robots: "noindex"}
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Heading: ctx.T("failure.title")}, nil
+}
+---
+<div class="shell">
+<div class="card">
+<main class="grid min-h-[60vh] place-items-center px-6 py-20 text-center">
+    <div>
+        <p class="badge">500</p>
+        <h1 class="mt-6">{{ Heading }}</h1>
+        <p class="mt-4 max-w-[46ch]" style="color: var(--color-ink-soft)">{{ t("failure.lead") }}</p>
+        <p class="mt-8"><a class="action" href="/">{{ t("missing.back") }}</a></p>
+    </div>
+</main>
+</div>
+</div>

@@ -3,10 +3,10 @@
 ## Reporting
 
 Report privately through
-[a security advisory](https://github.com/apptivitypl/rill/security/advisories/new). Do not open a
+[a security advisory](https://github.com/apptivitypl/gopage/security/advisories/new). Do not open a
 public issue for a vulnerability.
 
-Say what you did, what happened, and what you expected. A `.rill` file or a project that shows the
+Say what you did, what happened, and what you expected. A `.gopage` file or a project that shows the
 problem is worth more than a description of it.
 
 Expect an acknowledgement within a few days. Until 1.0 there are no supported branches: fixes land
@@ -14,7 +14,7 @@ on `main`, and the fix is the release.
 
 ## What counts as a vulnerability here
 
-rill compiles templates and serves the result, so the interesting failures are the ones where data
+gopage compiles templates and serves the result, so the interesting failures are the ones where data
 crosses a boundary it should not.
 
 - **Escaping.** Anything that gets attacker-controlled text into rendered HTML without escaping, or
@@ -31,7 +31,7 @@ crosses a boundary it should not.
 - **Forms.** A submission accepted without its CSRF token, or a token that is valid across
   origins or across users. State-changing requests are also held to their origin through
   `Sec-Fetch-Site`, so a cross-site write that gets through is one of these too.
-- **The compiler as an attack surface.** A `.rill` file that makes the compiler write outside the
+- **The compiler as an attack surface.** A `.gopage` file that makes the compiler write outside the
   project, execute something, or loop forever. Templates are trusted input in most projects, so
   this is lower severity, but it is still a bug worth reporting.
 - **Generated projects.** A default in a scaffolded project that is unsafe in production, such as
@@ -40,12 +40,12 @@ crosses a boundary it should not.
 ## What does not count
 
 - A denial of service from a request that is expensive by construction, such as a loader you wrote
-  that is slow. rill bounds its cache, not your code.
+  that is slow. gopage bounds its cache, not your code.
 - Anything that needs write access to the project's own source. A template can already run Go.
-- Vulnerabilities in a dependency that rill does not reach. `govulncheck` runs daily and reports
+- Vulnerabilities in a dependency that gopage does not reach. `govulncheck` runs daily and reports
   what is actually called; a finding in an unreached path is not one of ours to fix, though a
   report of it is still welcome.
-- Missing hardening headers on the dev server. `rill dev` is not a production server and does not
+- Missing hardening headers on the dev server. `gopage dev` is not a production server and does not
   pretend to be.
 
 ## What ships with a release

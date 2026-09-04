@@ -16,7 +16,7 @@ func sample() fstest.MapFS {
 		"styles/app.css":      &fstest.MapFile{Data: []byte("body{margin:0}")},
 		"styles/js/island.js": &fstest.MapFile{Data: []byte("export const mount = () => {}")},
 		"styles/img/logo.svg": &fstest.MapFile{Data: []byte("<svg></svg>")},
-		"app/page.rill":       &fstest.MapFile{Data: []byte("<h1>home</h1>")},
+		"app/page.gopage":     &fstest.MapFile{Data: []byte("<h1>home</h1>")},
 	}
 }
 
@@ -69,7 +69,7 @@ func TestContentIsPartOfTheHash(t *testing.T) {
 }
 
 func TestMissingStaticDirectoryIsNotAnError(t *testing.T) {
-	list, err := Collect(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte("<h1>home</h1>")}})
+	list, err := Collect(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte("<h1>home</h1>")}})
 	if err != nil || list != nil {
 		t.Errorf("list = %v, err = %v", list, err)
 	}
@@ -189,11 +189,11 @@ func TestAnUnreadableDirectoryStopsCollection(t *testing.T) {
 }
 
 func TestDescribeKeepsTheNameVerbatim(t *testing.T) {
-	asset := Describe("rill.client.ABC.js", []byte("export{}"))
-	if asset.Path != "/assets/rill.client.ABC.js" {
+	asset := Describe("gopage.client.ABC.js", []byte("export{}"))
+	if asset.Path != "/assets/gopage.client.ABC.js" {
 		t.Errorf("path = %q, want the bundler name kept", asset.Path)
 	}
-	if asset.Source != "bundles/rill.client.ABC.js" || asset.Kind != KindScript {
+	if asset.Source != "bundles/gopage.client.ABC.js" || asset.Kind != KindScript {
 		t.Errorf("asset = %+v", asset)
 	}
 	if asset.ETag == "" || asset.Size != 8 {
@@ -203,10 +203,10 @@ func TestDescribeKeepsTheNameVerbatim(t *testing.T) {
 
 func TestVerbatimListsTheBundleStore(t *testing.T) {
 	fsys := fstest.MapFS{
-		"bundles/rill.client.ABC.js": &fstest.MapFile{Data: []byte("export{}")},
-		"bundles/island.XYZ.js":      &fstest.MapFile{Data: []byte("export{}")},
-		"bundles/.keep":              &fstest.MapFile{Data: nil},
-		"bundles/nested/x.js":        &fstest.MapFile{Data: []byte("export{}")},
+		"bundles/gopage.client.ABC.js": &fstest.MapFile{Data: []byte("export{}")},
+		"bundles/island.XYZ.js":        &fstest.MapFile{Data: []byte("export{}")},
+		"bundles/.keep":                &fstest.MapFile{Data: nil},
+		"bundles/nested/x.js":          &fstest.MapFile{Data: []byte("export{}")},
 	}
 	list, err := Verbatim(fsys)
 	if err != nil {
@@ -215,7 +215,7 @@ func TestVerbatimListsTheBundleStore(t *testing.T) {
 	if len(list) != 3 {
 		t.Fatalf("list = %+v", list)
 	}
-	if list[0].Path != "/assets/.keep" || list[1].Path != "/assets/island.XYZ.js" {
+	if list[0].Path != "/assets/.keep" || list[1].Path != "/assets/gopage.client.ABC.js" || list[2].Path != "/assets/island.XYZ.js" {
 		t.Errorf("list = %+v", list)
 	}
 }
@@ -239,7 +239,7 @@ func TestVerbatimReportsAnUnreadableFile(t *testing.T) {
 
 func TestServeMergesStores(t *testing.T) {
 	static := fstest.MapFS{"styles/app.css": &fstest.MapFile{Data: []byte("body{}")}}
-	bundles := fstest.MapFS{"bundles/rill.client.ABC.js": &fstest.MapFile{Data: []byte("export{}")}}
+	bundles := fstest.MapFS{"bundles/gopage.client.ABC.js": &fstest.MapFile{Data: []byte("export{}")}}
 	staticList := collect(t, static)
 	bundleList, err := Verbatim(bundles)
 	if err != nil {
@@ -504,11 +504,11 @@ func TestPublicFilesRevalidateWhileDeveloping(t *testing.T) {
 
 func TestVerbatimPreloadsOnlyWhatTheEntryNeedsEagerly(t *testing.T) {
 	fsys := fstest.MapFS{
-		"bundles/rill.client.AAA.js": &fstest.MapFile{Data: []byte("entry")},
-		"bundles/island.EAGER.js":    &fstest.MapFile{Data: []byte("helper")},
-		"bundles/island.LAZY.js":     &fstest.MapFile{Data: []byte("island")},
-		"bundles/island.LAZY.js.br":  &fstest.MapFile{Data: []byte("x")},
-		"bundles/" + PreloadFile:     &fstest.MapFile{Data: []byte("module island.EAGER.js\nisland Stars island.S.js island.EAGER.js\n")},
+		"bundles/gopage.client.AAA.js": &fstest.MapFile{Data: []byte("entry")},
+		"bundles/island.EAGER.js":      &fstest.MapFile{Data: []byte("helper")},
+		"bundles/island.LAZY.js":       &fstest.MapFile{Data: []byte("island")},
+		"bundles/island.LAZY.js.br":    &fstest.MapFile{Data: []byte("x")},
+		"bundles/" + PreloadFile:       &fstest.MapFile{Data: []byte("module island.EAGER.js\nisland Stars island.S.js island.EAGER.js\n")},
 	}
 	list, err := Verbatim(fsys)
 	if err != nil {
@@ -519,9 +519,9 @@ func TestVerbatimPreloadsOnlyWhatTheEntryNeedsEagerly(t *testing.T) {
 		kinds[asset.Path] = asset.Kind
 	}
 	want := map[string]Kind{
-		Prefix + "rill.client.AAA.js": KindScript,
-		Prefix + "island.EAGER.js":    KindModule,
-		Prefix + "island.LAZY.js":     KindOther,
+		Prefix + "gopage.client.AAA.js": KindScript,
+		Prefix + "island.EAGER.js":      KindModule,
+		Prefix + "island.LAZY.js":       KindOther,
 	}
 	for path, kind := range want {
 		if kinds[path] != kind {

@@ -171,7 +171,7 @@ func TestLoadReadsEveryCatalog(t *testing.T) {
 }
 
 func TestLoadWithoutCatalogsIsNotAnError(t *testing.T) {
-	catalogs, err := Load(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte("x")}})
+	catalogs, err := Load(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte("x")}})
 	if err != nil || len(catalogs) != 0 {
 		t.Errorf("catalogs = %v, err = %v", catalogs, err)
 	}
@@ -283,7 +283,7 @@ func TestLegaciesNamesTomlCatalogs(t *testing.T) {
 }
 
 func TestLegaciesOnAProjectWithoutCatalogs(t *testing.T) {
-	if names := Legacies(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte("x")}}); names != nil {
+	if names := Legacies(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte("x")}}); names != nil {
 		t.Errorf("names = %v, want none", names)
 	}
 }

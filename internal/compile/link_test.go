@@ -5,16 +5,16 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func site(body string) fstest.MapFS {
 	return app(map[string]string{
-		"app/page.rill":                body,
-		"app/about/page.rill":          "<p>about</p>",
-		"app/listings/page.rill":       "<p>list</p>",
-		"app/listings/[id]/page.rill":  "<p>one</p>",
-		"app/docs/[...slug]/page.rill": "<p>docs</p>",
+		"app/page.gopage":                body,
+		"app/about/page.gopage":          "<p>about</p>",
+		"app/listings/page.gopage":       "<p>list</p>",
+		"app/listings/[id]/page.gopage":  "<p>one</p>",
+		"app/docs/[...slug]/page.gopage": "<p>docs</p>",
 	})
 }
 
@@ -129,8 +129,8 @@ func TestLinksInsideControlFlowAreChecked(t *testing.T) {
 func TestLinksInsideComponentsAreChecked(t *testing.T) {
 	var bag diag.Bag
 	if _, err := Compile(app(map[string]string{
-		"components/Card/template.rill": `<a href="/nope">x</a>`,
-		"app/page.rill":                 "<Card />",
+		"components/Card/template.gopage": `<a href="/nope">x</a>`,
+		"app/page.gopage":                 "<Card />",
 	}), &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}

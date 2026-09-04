@@ -33,7 +33,7 @@ function sink() {
 }
 
 describe("contentType", () => {
-	it("names the types a rill build emits", () => {
+	it("names the types a gopage build emits", () => {
 		expect(contentType("app.css")).toBe("text/css; charset=utf-8");
 		expect(contentType("island.JS.js")).toBe("text/javascript; charset=utf-8");
 		expect(contentType("sky.avif")).toBe("image/avif");

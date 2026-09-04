@@ -8,7 +8,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 
-	"github.com/apptivitypl/rill/internal/jsonc"
+	"github.com/apptivitypl/gopage/internal/jsonc"
 )
 
 const FileName = "dev.jsonc"

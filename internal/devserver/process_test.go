@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func buildApp(t *testing.T) string {
@@ -132,9 +132,9 @@ func TestAToolchainFailureIsShownInTheOverlay(t *testing.T) {
 }
 
 func TestADiagnosticFailureKeepsTheDiagnosticOverlay(t *testing.T) {
-	broken := diag.New("C107", "app/page.rill", diag.At(0), "unterminated expression")
+	broken := diag.New("C107", "app/page.gopage", diag.At(0), "unterminated expression")
 	server := New(func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
-		return nil, []diag.Diagnostic{broken}, map[string]string{"app/page.rill": "<p>{{"}, errors.New("build failed")
+		return nil, []diag.Diagnostic{broken}, map[string]string{"app/page.gopage": "<p>{{"}, errors.New("build failed")
 	}, nil)
 	server.Rebuild()
 
@@ -147,7 +147,7 @@ func TestADiagnosticFailureKeepsTheDiagnosticOverlay(t *testing.T) {
 
 func TestRelevantIgnoresGeneratedAndBuildOutput(t *testing.T) {
 	cases := map[string]bool{
-		filepath.Join("app", "page.rill"):                   true,
+		filepath.Join("app", "page.gopage"):                 true,
 		filepath.Join("locales", "en.json"):                 true,
 		filepath.Join("components", "Counter", "client.ts"): true,
 		filepath.Join("public", "favicon.ico"):              true,

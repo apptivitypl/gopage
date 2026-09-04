@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func parse(t *testing.T, code string) (*Schema, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	return Parse([]Source{{File: "page.rill", Code: code}}, &bag), &bag
+	return Parse([]Source{{File: "page.gopage", Code: code}}, &bag), &bag
 }
 
 func parseClean(t *testing.T, code string) *Schema {
@@ -118,9 +118,9 @@ func TestSeveralNamesOnOneLine(t *testing.T) {
 
 func TestStructTags(t *testing.T) {
 	schema := parseClean(t, "type Props struct {\n"+
-		"\tVariant string `rill:\"default=secondary\"`\n"+
-		"\tFooter  *Slot  `rill:\"slot\"`\n"+
-		"\tAttrs   Attrs  `rill:\"rest\"`\n"+
+		"\tVariant string `gopage:\"default=secondary\"`\n"+
+		"\tFooter  *Slot  `gopage:\"slot\"`\n"+
+		"\tAttrs   Attrs  `gopage:\"rest\"`\n"+
 		"}\ntype Slot struct{ X string }\ntype Attrs struct{ X string }")
 	props, _ := schema.Props()
 
@@ -139,7 +139,7 @@ func TestStructTags(t *testing.T) {
 }
 
 func TestUnknownTagOptionsAreIgnored(t *testing.T) {
-	schema := parseClean(t, "type Props struct {\n\tA string `json:\"a\" rill:\"nonsense\"`\n}")
+	schema := parseClean(t, "type Props struct {\n\tA string `json:\"a\" gopage:\"nonsense\"`\n}")
 	props, _ := schema.Props()
 	field, _ := props.Field("A")
 	if field.Default != "" || field.Slot || field.Rest {
@@ -160,7 +160,7 @@ func TestSeveralStructsAreCollected(t *testing.T) {
 func TestSeveralSourcesAreMerged(t *testing.T) {
 	var bag diag.Bag
 	schema := Parse([]Source{
-		{File: "page.rill", Code: "type Props struct{ C Card }"},
+		{File: "page.gopage", Code: "type Props struct{ C Card }"},
 		{File: "props.go", Code: "type Card struct{ Title string }"},
 	}, &bag)
 	if bag.HasErrors() {

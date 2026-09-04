@@ -5,8 +5,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func TestPlainElementsPassThrough(t *testing.T) {
@@ -117,7 +117,7 @@ func TestElementsInsideControlFlow(t *testing.T) {
 
 func TestAdjacentStaticsAreCoalesced(t *testing.T) {
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": file("<div><span><b>deep</b></span></div>")}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": file("<div><span><b>deep</b></span></div>")}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestAdjacentStaticsAreCoalesced(t *testing.T) {
 
 func TestCoalescingStopsAtDynamicParts(t *testing.T) {
 	var bag diag.Bag
-	result, _ := Compile(fstest.MapFS{"app/page.rill": file("<p>{{ A }}</p>")}, &bag)
+	result, _ := Compile(fstest.MapFS{"app/page.gopage": file("<p>{{ A }}</p>")}, &bag)
 	plan := result.Manifest.Plans[0]
 	if len(plan.Ops) != 3 {
 		t.Errorf("ops = %d, want static, text, static", len(plan.Ops))
@@ -152,7 +152,7 @@ func TestMalformedAttributesReportC310(t *testing.T) {
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
 			var bag diag.Bag
-			if _, err := Compile(fstest.MapFS{"app/page.rill": file(body)}, &bag); err != nil {
+			if _, err := Compile(fstest.MapFS{"app/page.gopage": file(body)}, &bag); err != nil {
 				t.Fatalf("Compile: %v", err)
 			}
 			if !hasCode(&bag, diag.C310) {
@@ -171,7 +171,7 @@ func TestAttributeExpressionsAreTypeChecked(t *testing.T) {
 	} {
 		var bag diag.Bag
 		source := propsBlock + body
-		if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+		if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 			t.Fatalf("Compile: %v", err)
 		}
 		if !hasCode(&bag, diag.C305) {
@@ -183,7 +183,7 @@ func TestAttributeExpressionsAreTypeChecked(t *testing.T) {
 func TestAttributeDiagnosticPointsIntoTheValue(t *testing.T) {
 	source := propsBlock + `<div title="{{ Missing }}">x</div>`
 	var bag diag.Bag
-	if _, err := Compile(fstest.MapFS{"app/page.rill": file(source)}, &bag); err != nil {
+	if _, err := Compile(fstest.MapFS{"app/page.gopage": file(source)}, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	for _, d := range bag.Items() {

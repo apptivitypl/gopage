@@ -205,7 +205,7 @@ func TestDecodeNeverPanicsOnGarbage(t *testing.T) {
 func FuzzDecode(f *testing.F) {
 	f.Add(Encode(sample()))
 	f.Add(Encode(&Manifest{Version: Version}))
-	f.Add([]byte("RILL"))
+	f.Add([]byte("GOPAGE"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		manifest, err := Decode(data)
 		if err != nil {

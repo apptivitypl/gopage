@@ -11,10 +11,10 @@ import (
 	"runtime"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/assets"
-	"github.com/apptivitypl/rill/internal/bundle"
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/assets"
+	"github.com/apptivitypl/gopage/internal/bundle"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/paths"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -22,8 +22,8 @@ import (
 
 func TestTheConfigIsNormalisedIntoTheGeneratedTree(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\"app\": {\"name\": \"demo\"}}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\"app\": {\"name\": \"demo\"}}",
 	})
 	if got := read(t, dir, paths.GenConfig); !strings.Contains(got, "demo") {
 		t.Errorf("config = %q", got)
@@ -31,7 +31,7 @@ func TestTheConfigIsNormalisedIntoTheGeneratedTree(t *testing.T) {
 }
 
 func TestAProjectWithoutAConfigEmbedsTheDefaults(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/page.rill": "<h1>home</h1>"})
+	dir := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
 	settings, err := config.Parse(read(t, dir, paths.GenConfig))
 	if err != nil {
 		t.Fatalf("the generated config does not parse: %v", err)
@@ -43,8 +43,8 @@ func TestAProjectWithoutAConfigEmbedsTheDefaults(t *testing.T) {
 
 func TestTheGeneratedConfigCarriesNoComments(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\n  // the name shows up in the worker\n  \"app\": {\"name\": \"demo\"}\n}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\n  // the name shows up in the worker\n  \"app\": {\"name\": \"demo\"}\n}",
 	})
 	if got := read(t, dir, paths.GenConfig); strings.Contains(got, "//") {
 		t.Errorf("config = %q, want the comments stripped before the embed", got)
@@ -53,8 +53,8 @@ func TestTheGeneratedConfigCarriesNoComments(t *testing.T) {
 
 func TestBrokenConfigStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\"i18n\": {\"mode\": \"domain\"}}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\"i18n\": {\"mode\": \"domain\"}}",
 	}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err == nil {
 		t.Fatal("expected the build to stop")
@@ -63,8 +63,8 @@ func TestBrokenConfigStopsTheBuild(t *testing.T) {
 
 func TestRedirectsAreExportedForTheStaticEdge(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}, \"redirects\": [{\"from\": \"/old\", \"to\": \"/\", \"status\": 302}]}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}, \"redirects\": [{\"from\": \"/old\", \"to\": \"/\", \"status\": 302}]}",
 	})
 	got := read(t, dir, paths.Redirects)
 	for _, want := range []string{"/old / 302", "/en/* /:splat 301"} {
@@ -76,8 +76,8 @@ func TestRedirectsAreExportedForTheStaticEdge(t *testing.T) {
 
 func TestNoRedirectsFileWithoutRules(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\"i18n\": {\"mode\": \"single\"}}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\"i18n\": {\"mode\": \"single\"}}",
 	})
 	if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(paths.Redirects))); !os.IsNotExist(err) {
 		t.Errorf("stat = %v, want the file to be absent", err)
@@ -86,8 +86,8 @@ func TestNoRedirectsFileWithoutRules(t *testing.T) {
 
 func TestFallbackProvidersAreGenerated(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":         "<h1>home</h1>",
-		"app/not-found.rill":    loaderPage,
+		"app/page.gopage":       "<h1>home</h1>",
+		"app/not-found.gopage":  loaderPage,
 		"app/api/ping/route.go": apiHandler,
 	})
 	registry := read(t, dir, RegistryGo)
@@ -102,8 +102,8 @@ func TestFallbackProvidersAreGenerated(t *testing.T) {
 
 func TestRedirectsWriteFailureStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"rill.jsonc":    "{\"redirects\": [{\"from\": \"/old\", \"to\": \"/\"}]}",
+		"app/page.gopage": "<h1>home</h1>",
+		"gopage.jsonc":    "{\"redirects\": [{\"from\": \"/old\", \"to\": \"/\"}]}",
 	}))
 	if err := os.MkdirAll(filepath.Join(dir, filepath.FromSlash(paths.Redirects)), 0o755); err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestRedirectsWriteFailureStopsTheBuild(t *testing.T) {
 }
 
 func TestConfigWriteFailureStopsTheBuild(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/page.rill": "<h1>home</h1>"}))
+	dir := project(t, withModule(map[string]string{"app/page.gopage": "<h1>home</h1>"}))
 	if err := os.MkdirAll(filepath.Join(dir, filepath.FromSlash(paths.GenConfig)), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -125,8 +125,8 @@ func TestConfigWriteFailureStopsTheBuild(t *testing.T) {
 
 func TestFallbackWithoutALoaderNeedsNoProvider(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":      "<h1>home</h1>",
-		"app/not-found.rill": "<p>gone</p>",
+		"app/page.gopage":      "<h1>home</h1>",
+		"app/not-found.gopage": "<p>gone</p>",
 	})
 	if registry := read(t, dir, RegistryGo); strings.Contains(registry, "not_found") {
 		t.Errorf("registry = %q, want no provider for a static fallback", registry)
@@ -135,7 +135,7 @@ func TestFallbackWithoutALoaderNeedsNoProvider(t *testing.T) {
 
 func TestApiRouteParametersReachTheAdapter(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":                    "<h1>home</h1>",
+		"app/page.gopage":                  "<h1>home</h1>",
 		"app/api/listings/[id]/route.go":   apiHandler,
 		"app/api/files/[...path]/route.go": apiHandler,
 	})
@@ -154,7 +154,7 @@ func TestApiRouteParametersReachTheAdapter(t *testing.T) {
 
 func TestAdapterWriteFailureStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":         "<h1>home</h1>",
+		"app/page.gopage":       "<h1>home</h1>",
 		"app/api/ping/route.go": apiHandler,
 	}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
@@ -168,8 +168,8 @@ func TestAdapterWriteFailureStopsTheBuild(t *testing.T) {
 
 func TestStaticFilesAreCopiedAndHashed(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":  "<h1>home</h1>",
-		"styles/app.css": "body{margin:0}",
+		"app/page.gopage": "<h1>home</h1>",
+		"styles/app.css":  "body{margin:0}",
 	})
 	if got := read(t, dir, "internal/gen/styles/app.css"); got != "body{margin:0}" {
 		t.Errorf("site copy = %q", got)
@@ -181,7 +181,7 @@ func TestStaticFilesAreCopiedAndHashed(t *testing.T) {
 }
 
 func TestTheAssetsDirectoryAlwaysExists(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/page.rill": "<h1>home</h1>"})
+	dir := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
 	if _, err := os.Stat(filepath.Join(dir, "internal", "gen", "styles", ".keep")); err != nil {
 		t.Errorf("stat = %v, want a placeholder so the embed compiles", err)
 	}
@@ -189,9 +189,9 @@ func TestTheAssetsDirectoryAlwaysExists(t *testing.T) {
 
 func TestAssetsDirectiveInlinesASmallStylesheetAndLinksALargeOne(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/layout.rill": "<head>{% assets %}</head><body>{% outlet %}</body>",
-		"app/page.rill":   "<h1>home</h1>",
-		"styles/app.css":  "body{margin:0}",
+		"app/layout.gopage": "<head>{% assets %}</head><body>{% outlet %}</body>",
+		"app/page.gopage":   "<h1>home</h1>",
+		"styles/app.css":    "body{margin:0}",
 	})
 	page := read(t, dir, "dist/assets/index.html")
 	if !strings.Contains(page, "<style>body{margin:0}</style>") || strings.Contains(page, `rel="stylesheet"`) {
@@ -199,9 +199,9 @@ func TestAssetsDirectiveInlinesASmallStylesheetAndLinksALargeOne(t *testing.T) {
 	}
 
 	dir = buildProject(t, map[string]string{
-		"app/layout.rill": "<head>{% assets %}</head><body>{% outlet %}</body>",
-		"app/page.rill":   "<h1>home</h1>",
-		"styles/app.css":  sheet(config.DefaultInlineLimit + 1),
+		"app/layout.gopage": "<head>{% assets %}</head><body>{% outlet %}</body>",
+		"app/page.gopage":   "<h1>home</h1>",
+		"styles/app.css":    sheet(config.DefaultInlineLimit + 1),
 	})
 	page = read(t, dir, "dist/assets/index.html")
 	if !strings.Contains(page, `<link rel="stylesheet" href="/assets/app.`) || strings.Contains(page, "<style>") {
@@ -232,9 +232,9 @@ func TestTheInlineLimitIsMeasuredInRawBytes(t *testing.T) {
 	for name, want := range cases {
 		t.Run(name, func(t *testing.T) {
 			dir := buildProject(t, map[string]string{
-				"app/layout.rill": "<head>{% assets %}</head><body>{% outlet %}</body>",
-				"app/page.rill":   "<h1>home</h1>",
-				"styles/app.css":  sheet(want.size),
+				"app/layout.gopage": "<head>{% assets %}</head><body>{% outlet %}</body>",
+				"app/page.gopage":   "<h1>home</h1>",
+				"styles/app.css":    sheet(want.size),
 			})
 			page := read(t, dir, "dist/assets/index.html")
 			if got := strings.Contains(page, "<style>"); got != want.inline {
@@ -246,10 +246,10 @@ func TestTheInlineLimitIsMeasuredInRawBytes(t *testing.T) {
 
 func TestAZeroInlineLimitLinksEveryStylesheet(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/layout.rill": "<head>{% assets %}</head><body>{% outlet %}</body>",
-		"app/page.rill":   "<h1>home</h1>",
-		"styles/app.css":  "body{margin:0}",
-		"rill.jsonc":      `{"css": {"inlineLimit": "0"}}`,
+		"app/layout.gopage": "<head>{% assets %}</head><body>{% outlet %}</body>",
+		"app/page.gopage":   "<h1>home</h1>",
+		"styles/app.css":    "body{margin:0}",
+		"gopage.jsonc":      `{"css": {"inlineLimit": "0"}}`,
 	})
 	page := read(t, dir, "dist/assets/index.html")
 	if strings.Contains(page, "<style>") || !strings.Contains(page, `<link rel="stylesheet"`) {
@@ -263,10 +263,10 @@ func TestAZeroInlineLimitLinksEveryStylesheet(t *testing.T) {
 
 func TestTheInlineLimitCanBeRaised(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/layout.rill": "<head>{% assets %}</head><body>{% outlet %}</body>",
-		"app/page.rill":   "<h1>home</h1>",
-		"styles/app.css":  sheet(config.DefaultInlineLimit + 200),
-		"rill.jsonc":      `{"css": {"inlineLimit": "64kb"}}`,
+		"app/layout.gopage": "<head>{% assets %}</head><body>{% outlet %}</body>",
+		"app/page.gopage":   "<h1>home</h1>",
+		"styles/app.css":    sheet(config.DefaultInlineLimit + 200),
+		"gopage.jsonc":      `{"css": {"inlineLimit": "64kb"}}`,
 	})
 	if page := read(t, dir, "dist/assets/index.html"); !strings.Contains(page, "<style>") {
 		t.Errorf("page = %q, want a sheet under the raised limit inlined", page[:200])
@@ -275,8 +275,8 @@ func TestTheInlineLimitCanBeRaised(t *testing.T) {
 
 func TestAssetCopyFailureStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":  "<h1>home</h1>",
-		"styles/app.css": "body{margin:0}",
+		"app/page.gopage": "<h1>home</h1>",
+		"styles/app.css":  "body{margin:0}",
 	}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -289,8 +289,8 @@ func TestAssetCopyFailureStopsTheBuild(t *testing.T) {
 
 func TestStaleSiteAssetsCannotBeReplacedIsReported(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":  "<h1>home</h1>",
-		"styles/app.css": "body{margin:0}",
+		"app/page.gopage": "<h1>home</h1>",
+		"styles/app.css":  "body{margin:0}",
 	}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -303,8 +303,8 @@ func TestStaleSiteAssetsCannotBeReplacedIsReported(t *testing.T) {
 
 func TestHashedAssetCopyFailureStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":  "<h1>home</h1>",
-		"styles/app.css": "body{margin:0}",
+		"app/page.gopage": "<h1>home</h1>",
+		"styles/app.css":  "body{margin:0}",
 	}))
 	if err := os.MkdirAll(filepath.Join(dir, "dist"), 0o755); err != nil {
 		t.Fatal(err)
@@ -318,7 +318,7 @@ func TestHashedAssetCopyFailureStopsTheBuild(t *testing.T) {
 }
 
 func TestHeadersAreExportedForTheStaticEdge(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/page.rill": "<h1>home</h1>"})
+	dir := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
 	got := read(t, dir, paths.Headers)
 	for _, want := range []string{"/assets/*", "immutable", "X-Content-Type-Options: nosniff"} {
 		if !strings.Contains(got, want) {
@@ -328,7 +328,7 @@ func TestHeadersAreExportedForTheStaticEdge(t *testing.T) {
 }
 
 func TestHeadersWriteFailureStopsTheBuild(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/page.rill": "<h1>home</h1>"}))
+	dir := project(t, withModule(map[string]string{"app/page.gopage": "<h1>home</h1>"}))
 	if err := os.MkdirAll(filepath.Join(dir, filepath.FromSlash(paths.Headers)), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -346,12 +346,12 @@ type ContactForm struct {
 	Email string ` + "`validate:\"required,email\"`" + `
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{Heading: "contact"}, nil
 }
 
-func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, error) {
-	return rill.RedirectTo("/"), nil
+func Submit(ctx *gopage.Ctx, params gopage.Params, form ContactForm) (gopage.Action, error) {
+	return gopage.RedirectTo("/"), nil
 }
 ---
 <Form><Field name="Email" /></Form>
@@ -359,14 +359,14 @@ func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, e
 
 func TestSubmitProvidersAreGenerated(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":         "<h1>home</h1>",
-		"app/contact/page.rill": submitPage,
+		"app/page.gopage":         "<h1>home</h1>",
+		"app/contact/page.gopage": submitPage,
 	})
 	provider := read(t, dir, "internal/gen/contact/provider.go")
 	if !strings.Contains(provider, "var submitted ContactForm") {
 		t.Errorf("provider = %q", provider)
 	}
-	if !strings.Contains(provider, "func SubmitProvider(") || !strings.Contains(provider, "rill.DecodeForm") {
+	if !strings.Contains(provider, "func SubmitProvider(") || !strings.Contains(provider, "gopage.DecodeForm") {
 		t.Errorf("provider = %q", provider)
 	}
 	registry := read(t, dir, RegistryGo)
@@ -377,14 +377,14 @@ func TestSubmitProvidersAreGenerated(t *testing.T) {
 
 func TestAPageWithOnlySubmitNeedsNoPropsProvider(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": "<h1>home</h1>",
-		"app/contact/page.rill": `---
+		"app/page.gopage": "<h1>home</h1>",
+		"app/contact/page.gopage": `---
 type ContactForm struct {
 	Email string
 }
 
-func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, error) {
-	return rill.RedirectTo("/"), nil
+func Submit(ctx *gopage.Ctx, params gopage.Params, form ContactForm) (gopage.Action, error) {
+	return gopage.RedirectTo("/"), nil
 }
 ---
 <Form><Field name="Email" /></Form>
@@ -402,8 +402,8 @@ func Submit(ctx *rill.Ctx, params rill.Params, form ContactForm) (rill.Action, e
 
 func TestAMalformedSubmitStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill": `---
-func Submit(ctx *rill.Ctx) (rill.Action, error) {
+		"app/page.gopage": `---
+func Submit(ctx *gopage.Ctx) (gopage.Action, error) {
 	return nil, nil
 }
 ---
@@ -424,11 +424,11 @@ const islandClient = `export function mount(element: HTMLElement, props: { Label
 
 func islandProject() map[string]string {
 	return map[string]string{
-		"app/layout.rill":                  "<head>{% assets %}</head><body>{% outlet %}</body>",
-		"app/page.rill":                    `<Counter client="load" Label="hi" />`,
-		"components/Counter/props.go":      "package counter\n\ntype Props struct {\n\tLabel string\n}\n",
-		"components/Counter/template.rill": `<div class="counter">{{ Label }}</div>`,
-		"components/Counter/client.ts":     islandClient,
+		"app/layout.gopage":                  "<head>{% assets %}</head><body>{% outlet %}</body>",
+		"app/page.gopage":                    `<Counter client="load" Label="hi" />`,
+		"components/Counter/props.go":        "package counter\n\ntype Props struct {\n\tLabel string\n}\n",
+		"components/Counter/template.gopage": `<div class="counter">{{ Label }}</div>`,
+		"components/Counter/client.ts":       islandClient,
 	}
 }
 
@@ -463,13 +463,13 @@ func TestIslandsAreBundledAndServed(t *testing.T) {
 	if !strings.Contains(page, `src="/assets/`+entry+`"`) {
 		t.Errorf("page = %q, want the hashed runtime linked", page)
 	}
-	if !strings.Contains(page, `<rill-island`) {
+	if !strings.Contains(page, `<gopage-island`) {
 		t.Errorf("page = %q", page)
 	}
 }
 
 func TestAProjectWithoutIslandsKeepsAnEmptyBundleStore(t *testing.T) {
-	dir := buildProject(t, map[string]string{"app/page.rill": "<h1>home</h1>"})
+	dir := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
 	entries, err := os.ReadDir(filepath.Join(dir, "internal", "gen", "bundles"))
 	if err != nil {
 		t.Fatalf("the store must exist so the embed compiles: %v", err)
@@ -532,8 +532,8 @@ func TestABundleThatCannotReachDistStopsTheBuild(t *testing.T) {
 
 func TestAGeneratedPageThatCannotBeWrittenStopsTheBuild(t *testing.T) {
 	dir := project(t, withModule(map[string]string{
-		"app/page.rill":         "<h1>home</h1>",
-		"app/contact/page.rill": submitPage,
+		"app/page.gopage":         "<h1>home</h1>",
+		"app/contact/page.gopage": submitPage,
 	}))
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
 		t.Fatalf("first build: %v", err)
@@ -565,8 +565,8 @@ func TestATypeFileThatCannotBeWrittenStopsTheBuild(t *testing.T) {
 func TestAComponentWithoutASchemaGetsNoTypeFile(t *testing.T) {
 	files := islandProject()
 	delete(files, "components/Counter/props.go")
-	files["app/page.rill"] = `<Counter client="load" />`
-	files["components/Counter/template.rill"] = `<div class="counter">x</div>`
+	files["app/page.gopage"] = `<Counter client="load" />`
+	files["components/Counter/template.gopage"] = `<div class="counter">x</div>`
 	dir := buildProject(t, files)
 	if _, err := os.Stat(filepath.Join(dir, "internal", "gen", "props", "Counter.ts")); !os.IsNotExist(err) {
 		t.Errorf("stat = %v, want no type file", err)
@@ -575,7 +575,7 @@ func TestAComponentWithoutASchemaGetsNoTypeFile(t *testing.T) {
 
 func TestTheClassInventoryIsWritten(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill": `<div class="card lead"><span :class="{ 'wide': true }">x</span></div>`,
+		"app/page.gopage": `<div class="card lead"><span :class="{ 'wide': true }">x</span></div>`,
 	})
 	if got := read(t, dir, paths.Inventory); got != "card\nlead\nwide\n" {
 		t.Errorf("inventory = %q", got)
@@ -583,7 +583,7 @@ func TestTheClassInventoryIsWritten(t *testing.T) {
 }
 
 func TestAnInventoryThatCannotBeWrittenStopsTheBuild(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/page.rill": `<div class="card">x</div>`}))
+	dir := project(t, withModule(map[string]string{"app/page.gopage": `<div class="card">x</div>`}))
 	if err := os.MkdirAll(filepath.Join(dir, filepath.FromSlash(paths.Inventory)), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -597,11 +597,11 @@ type Props struct {
 	Slug string
 }
 
-func Meta(ctx *rill.Ctx, p Props) rill.Meta {
-	return rill.Meta{Title: p.Slug}
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Slug}
 }
 
-func Load(ctx *rill.Ctx, params rill.Params) (Props, error) {
+func Load(ctx *gopage.Ctx, params gopage.Params) (Props, error) {
 	return Props{Slug: params["slug"]}, nil
 }
 ---
@@ -610,11 +610,11 @@ func Load(ctx *rill.Ctx, params rill.Params) (Props, error) {
 
 func TestALoaderCanTakeTheRouteParams(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":              "<h1>home</h1>",
-		"app/posts/[slug]/page.rill": paramsPage,
+		"app/page.gopage":              "<h1>home</h1>",
+		"app/posts/[slug]/page.gopage": paramsPage,
 	})
 	provider := read(t, dir, "internal/gen/posts_slug/provider.go")
-	if !strings.Contains(provider, "Load(rill.NewCtx(request, params), params)") {
+	if !strings.Contains(provider, "Load(gopage.NewCtx(request, params), params)") {
 		t.Errorf("provider = %q, want the params passed on", provider)
 	}
 	if !strings.Contains(provider, "Load(ctx, params)") {
@@ -624,11 +624,11 @@ func TestALoaderCanTakeTheRouteParams(t *testing.T) {
 
 func TestALoaderWithoutParamsIsCalledWithoutThem(t *testing.T) {
 	dir := buildProject(t, map[string]string{
-		"app/page.rill":         "<h1>home</h1>",
-		"app/contact/page.rill": submitPage,
+		"app/page.gopage":         "<h1>home</h1>",
+		"app/contact/page.gopage": submitPage,
 	})
 	provider := read(t, dir, "internal/gen/contact/provider.go")
-	if strings.Contains(provider, "Load(rill.NewCtx(request, params), params)") {
+	if strings.Contains(provider, "Load(gopage.NewCtx(request, params), params)") {
 		t.Errorf("provider = %q, want the one argument form", provider)
 	}
 }
@@ -683,7 +683,7 @@ func TestBootstrapLeavesAProjectThatCompiles(t *testing.T) {
 		"//go:embed manifest.bin",
 		"//go:embed bundles/" + assets.PreloadFile,
 		"Preload:  Preload,",
-		"func Options() rill.Options",
+		"func Options() gopage.Options",
 	} {
 		if !strings.Contains(app, want) {
 			t.Errorf("app.go is missing %q:\n%s", want, app)
@@ -720,7 +720,7 @@ func TestBootstrapNeedsAModule(t *testing.T) {
 func TestIslandTypesAreDeclaredForTheAlias(t *testing.T) {
 	dir := buildProject(t, islandProject())
 	declarations := read(t, dir, paths.PropsTypes)
-	if !strings.Contains(declarations, `declare module "rill:props/Counter"`) {
+	if !strings.Contains(declarations, `declare module "gopage:props/Counter"`) {
 		t.Errorf("props.d.ts = %q, want the alias declared", declarations)
 	}
 	if !strings.Contains(declarations, `export * from "./props/Counter"`) {
@@ -730,9 +730,9 @@ func TestIslandTypesAreDeclaredForTheAlias(t *testing.T) {
 
 func TestASingleFileIslandIsBundled(t *testing.T) {
 	files := withModule(map[string]string{
-		"app/layout.rill": "<html><body>{% outlet %}</body></html>",
-		"app/page.rill":   `<h1>x</h1><Ticker client="load" :Start="2" />`,
-		"components/Ticker.rill": `---
+		"app/layout.gopage": "<html><body>{% outlet %}</body></html>",
+		"app/page.gopage":   `<h1>x</h1><Ticker client="load" :Start="2" />`,
+		"components/Ticker.gopage": `---
 type Props struct {
 	Start int
 }
@@ -803,7 +803,7 @@ func TestBootstrapReportsAFileItCannotWrite(t *testing.T) {
 }
 
 func TestStalePackagesThatCannotBeRemovedStopTheBuild(t *testing.T) {
-	dir := project(t, withModule(map[string]string{"app/features/page.rill": loaderPage}))
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": loaderPage}))
 	stale := filepath.Join(dir, paths.GenRoot, "gone")
 	if err := os.MkdirAll(stale, 0o755); err != nil {
 		t.Fatal(err)
@@ -969,9 +969,9 @@ func (r *recordingStyles) Process(input, output, _ string) error {
 
 func TestTailwindReplacesTheStylesheet(t *testing.T) {
 	files := withModule(helloWorld())
-	files["app/layout.rill"] = "<html><head>{% assets %}</head><body>{% outlet %}</body></html>"
+	files["app/layout.gopage"] = "<html><head>{% assets %}</head><body>{% outlet %}</body></html>"
 	files["styles/app.css"] = "@import \"tailwindcss\";"
-	files["rill.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"tailwind\"}}"
+	files["gopage.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"tailwind\"}}"
 	dir := project(t, files)
 	styles := &recordingStyles{}
 	if _, err := Run(Options{Dir: dir, Styles: styles, Runner: &recorder{}}); err != nil {
@@ -1006,7 +1006,7 @@ func TestTailwindReplacesTheStylesheet(t *testing.T) {
 func TestThePlainEngineSkipsTheProcessor(t *testing.T) {
 	files := withModule(helloWorld())
 	files["styles/app.css"] = "body {\n  color: #ffffff;\n}\n"
-	files["rill.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"plain\"}}"
+	files["gopage.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"plain\"}}"
 	dir := project(t, files)
 	styles := &recordingStyles{}
 	if _, err := Run(Options{Dir: dir, Styles: styles, Runner: &recorder{}}); err != nil {
@@ -1020,7 +1020,7 @@ func TestThePlainEngineSkipsTheProcessor(t *testing.T) {
 func TestAStylesheetTheProcessorRejectsStopsTheBuild(t *testing.T) {
 	files := withModule(helloWorld())
 	files["styles/app.css"] = "@import \"tailwindcss\";"
-	files["rill.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"tailwind\"}}"
+	files["gopage.jsonc"] = "{\"app\": {\"name\": \"demo\"}, \"css\": {\"engine\": \"tailwind\"}}"
 	dir := project(t, files)
 	if _, err := Run(Options{Dir: dir, Styles: failingStyles{}, Runner: &recorder{}}); err == nil {
 		t.Error("a processor failure must stop the build")
@@ -1035,8 +1035,8 @@ func (failingStyles) Process(string, string, string) error {
 
 func TestDeferredProvidersReachTheRegistry(t *testing.T) {
 	files := withModule(map[string]string{
-		"app/layout.rill": "<html><body>{% outlet %}</body></html>",
-		"app/page.rill": `---
+		"app/layout.gopage": "<html><body>{% outlet %}</body></html>",
+		"app/page.gopage": `---
 type Row struct {
 	Name string
 }
@@ -1045,11 +1045,11 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Rows(ctx *rill.Ctx) ([]Row, error) {
+func Rows(ctx *gopage.Ctx) ([]Row, error) {
 	return nil, nil
 }
 ---
@@ -1075,9 +1075,9 @@ func Rows(ctx *rill.Ctx) ([]Row, error) {
 
 func TestGeneratedGoIsFormatted(t *testing.T) {
 	files := withModule(map[string]string{
-		"app/layout.rill":    "<html><body>{% outlet %}</body></html>",
-		"app/page.rill":      loaderPage,
-		"app/api/x/route.go": "package route\n\nimport \"github.com/apptivitypl/rill\"\n\nfunc GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {\n\treturn rill.Text(\"ok\"), nil\n}\n",
+		"app/layout.gopage":  "<html><body>{% outlet %}</body></html>",
+		"app/page.gopage":    loaderPage,
+		"app/api/x/route.go": "package route\n\nimport \"github.com/apptivitypl/gopage\"\n\nfunc GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) {\n\treturn gopage.Text(\"ok\"), nil\n}\n",
 	})
 	dir := project(t, files)
 	if _, err := Run(Options{Dir: dir, Runner: &recorder{}}); err != nil {
@@ -1148,10 +1148,10 @@ func TestBootstrapReportsGeneratedCodeItCannotWrite(t *testing.T) {
 
 func reactIslandProject() map[string]string {
 	files := islandProject()
-	files["app/page.rill"] = `<Counter client="load" Label="hi" /><Chart client="visible" Label="five" />`
+	files["app/page.gopage"] = `<Counter client="load" Label="hi" /><Chart client="visible" Label="five" />`
 	files["components/Chart/props.go"] = "package chart\n\ntype Props struct {\n\tLabel string\n}\n"
-	files["components/Chart/template.rill"] = `<div class="chart"></div>`
-	files["components/Chart/client.tsx"] = `import type { Props } from "rill:props/Chart";
+	files["components/Chart/template.gopage"] = `<div class="chart"></div>`
+	files["components/Chart/client.tsx"] = `import type { Props } from "gopage:props/Chart";
 export default function Chart(props: Props) { return <b>{props.Label}</b>; }
 `
 	files["node_modules/react/package.json"] = `{"name":"react","type":"module","exports":{".":"./index.js","./jsx-runtime":"./jsx-runtime.js"}}`

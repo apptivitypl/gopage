@@ -16,7 +16,7 @@ export function register(name: string, load: () => Promise<{ mount: Mount }>): v
 }
 
 export function hydrate(root: ParentNode = document, complete = false): void {
-	for (const element of root.querySelectorAll<HTMLElement>("rill-island")) {
+	for (const element of root.querySelectorAll<HTMLElement>("gopage-island")) {
 		const island = read(element, complete);
 		if (island) {
 			activate(island);
@@ -25,7 +25,7 @@ export function hydrate(root: ParentNode = document, complete = false): void {
 }
 
 export function release(root: ParentNode = document): void {
-	for (const element of root.querySelectorAll<HTMLElement>("rill-island")) {
+	for (const element of root.querySelectorAll<HTMLElement>("gopage-island")) {
 		const stop = mounted.get(element);
 		if (stop) {
 			stop();
@@ -168,7 +168,7 @@ export function start(): void {
 	}
 }
 
-const SLOT_ATTRIBUTE = "data-rill-slot";
+const SLOT_ATTRIBUTE = "data-gopage-slot";
 
 export function slots(root: ParentNode = document): void {
 	for (const template of root.querySelectorAll<HTMLTemplateElement>(`template[${SLOT_ATTRIBUTE}]`)) {
@@ -205,9 +205,9 @@ function sweep(): void {
 	});
 }
 
-const FRAGMENT_HEADER = "RILL-Fragment";
-const FRAGMENT_TYPE = "text/vnd.rill-fragment";
-const PULLED_ATTRIBUTE = "data-rill-pulled";
+const FRAGMENT_HEADER = "GOPAGE-Fragment";
+const FRAGMENT_TYPE = "text/vnd.gopage-fragment";
+const PULLED_ATTRIBUTE = "data-gopage-pulled";
 
 let fragments: AbortController | null = null;
 const awaited = new WeakSet<HTMLElement>();
@@ -216,7 +216,7 @@ export function pull(root: ParentNode = document): void {
 	if (typeof fetch === "undefined") {
 		return;
 	}
-	for (const slot of root.querySelectorAll<HTMLElement>("rill-slot[fetch]")) {
+	for (const slot of root.querySelectorAll<HTMLElement>("gopage-slot[fetch]")) {
 		if (slot.hasAttribute(PULLED_ATTRIBUTE) || awaited.has(slot)) {
 			continue;
 		}
@@ -277,7 +277,7 @@ function fill(template: HTMLTemplateElement): void {
 	if (!name) {
 		return;
 	}
-	const slot = document.querySelector(`rill-slot[name="${CSS.escape(name)}"]`);
+	const slot = document.querySelector(`gopage-slot[name="${CSS.escape(name)}"]`);
 	template.remove();
 	if (!slot) {
 		return;
@@ -287,10 +287,10 @@ function fill(template: HTMLTemplateElement): void {
 	hydrate(slot as ParentNode, true);
 }
 
-const PARTIAL_HEADER = "RILL-Partial";
-const PARTIAL_TYPE = "text/vnd.rill-partial";
-const LEVEL_HEADER = "RILL-Level";
-const TITLE_HEADER = "RILL-Title";
+const PARTIAL_HEADER = "GOPAGE-Partial";
+const PARTIAL_TYPE = "text/vnd.gopage-partial";
+const LEVEL_HEADER = "GOPAGE-Level";
+const TITLE_HEADER = "GOPAGE-Title";
 
 let generation = 0;
 let pending: AbortController | null = null;
@@ -321,7 +321,7 @@ function internal(link: HTMLAnchorElement): boolean {
 	if (link.target && link.target !== "_self") {
 		return false;
 	}
-	if (link.hasAttribute("download") || link.dataset.rillNav === "off") {
+	if (link.hasAttribute("download") || link.dataset.gopageNav === "off") {
 		return false;
 	}
 	const url = new URL(link.href, location.href);
@@ -384,11 +384,11 @@ function swap(level: number, html: string): boolean {
 	if (level === 0) {
 		return false;
 	}
-	const start = marker(`rill:o${level - 1}`);
+	const start = marker(`gopage:o${level - 1}`);
 	if (!start) {
 		return false;
 	}
-	const end = marker(`/rill:o${level - 1}`);
+	const end = marker(`/gopage:o${level - 1}`);
 	if (!end) {
 		return false;
 	}

@@ -1,4 +1,4 @@
-module github.com/apptivitypl/rill
+module github.com/apptivitypl/gopage
 
 go 1.26.0
 

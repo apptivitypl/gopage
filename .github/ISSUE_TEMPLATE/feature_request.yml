@@ -1,12 +1,12 @@
 name: Feature request
-description: Something rill should be able to do.
+description: Something gopage should be able to do.
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
       label: The problem
-      description: What you were trying to build, and where rill got in the way. Describe the situation rather than the feature.
+      description: What you were trying to build, and where gopage got in the way. Describe the situation rather than the feature.
     validations:
       required: true
 

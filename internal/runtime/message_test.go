@@ -3,8 +3,8 @@ package runtime
 import (
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/i18n"
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 func messageChain(count uint32) []*ir.Plan {

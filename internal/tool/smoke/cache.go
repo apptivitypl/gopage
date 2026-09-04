@@ -3,7 +3,7 @@ package smoke
 import "fmt"
 
 const (
-	CacheHeader = "RILL-Cache"
+	CacheHeader = "GOPAGE-Cache"
 	CachedPath  = "/"
 )
 

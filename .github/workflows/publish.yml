@@ -49,9 +49,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          go run ./cmd/rilltool release plan | tee -a "$GITHUB_STEP_SUMMARY"
-          go run ./cmd/rilltool release plan --json > plan.json
-          tag="v$(go run ./cmd/rilltool version)"
+          go run ./cmd/gopagetool release plan | tee -a "$GITHUB_STEP_SUMMARY"
+          go run ./cmd/gopagetool release plan --json > plan.json
+          tag="v$(go run ./cmd/gopagetool version)"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "released=true" >> "$GITHUB_OUTPUT"
@@ -121,13 +121,13 @@ jobs:
           cache: false
 
       - name: The tag has to match the manifest
-        run: go run ./cmd/rilltool version --check "$TAG"
+        run: go run ./cmd/gopagetool version --check "$TAG"
 
       - name: Install the pinned linter
         run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
       - name: Run every gate
-        run: go run ./cmd/rilltool ci
+        run: go run ./cmd/gopagetool ci
 
       - name: Install cosign, which goreleaser signs with
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
@@ -188,7 +188,7 @@ jobs:
       - name: Download the release archives
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download "$TAG" --dir archives --pattern 'rill_*'
+        run: gh release download "$TAG" --dir archives --pattern 'gopage_*'
 
       - name: Publish
         env:
@@ -197,7 +197,7 @@ jobs:
           names=$(printf '%s' "$PLAN" |
             python3 -c 'import json,sys; [print(p["name"]) for p in json.load(sys.stdin) if p["kind"] == "npm"]')
           for name in $names; do
-            go run ./cmd/rilltool release run "$name" --from archives --publish
+            go run ./cmd/gopagetool release run "$name" --from archives --publish
             echo "published $name" >> "$GITHUB_STEP_SUMMARY"
           done
 
@@ -220,7 +220,7 @@ jobs:
 
       - name: Tag every published package
         run: |
-          go run ./cmd/rilltool release tags | while read -r tag; do
+          go run ./cmd/gopagetool release tags | while read -r tag; do
             git tag "$tag"
             git push origin "$tag"
             echo "pushed $tag" >> "$GITHUB_STEP_SUMMARY"
@@ -261,7 +261,7 @@ jobs:
       id-token: write
       attestations: write
     env:
-      RILL_MODULE: ${{ needs.moved.outputs.module }}
+      GOPAGE_MODULE: ${{ needs.moved.outputs.module }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -277,7 +277,7 @@ jobs:
         run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
       - name: Run every gate
-        run: go run ./cmd/rilltool ci
+        run: go run ./cmd/gopagetool ci
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
@@ -320,9 +320,9 @@ jobs:
             --prerelease \
             --target "$GITHUB_SHA" \
             --title nightly \
-            --notes "Built from main at ${GITHUB_SHA}. This tag moves with every nightly and promises nothing; \`rill new\` from it pins ${RILL_MODULE}." \
-            dist/rill_nightly_*.tar.gz \
-            dist/rill_nightly_*.zip \
+            --notes "Built from main at ${GITHUB_SHA}. This tag moves with every nightly and promises nothing; \`gopage new\` from it pins ${GOPAGE_MODULE}." \
+            dist/gopage_nightly_*.tar.gz \
+            dist/gopage_nightly_*.zip \
             dist/*.sbom.json \
             dist/checksums.txt \
             dist/checksums.txt.pem \

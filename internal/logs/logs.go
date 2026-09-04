@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	FormatVar = "RILL_LOG"
-	LevelVar  = "RILL_LOG_LEVEL"
-	AccessVar = "RILL_ACCESS_LOG"
+	FormatVar = "GOPAGE_LOG"
+	LevelVar  = "GOPAGE_LOG_LEVEL"
+	AccessVar = "GOPAGE_ACCESS_LOG"
 	ColorVar  = "NO_COLOR"
-	DevVar    = "RILL_DEV"
+	DevVar    = "GOPAGE_DEV"
 )
 
 const (

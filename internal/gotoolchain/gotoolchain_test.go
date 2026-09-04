@@ -109,7 +109,7 @@ func TestAToolchainOnThePathIsUsedAsItIs(t *testing.T) {
 		t.Errorf("path = %q, want the one on PATH", tool.Path)
 	}
 	if tool.Env != nil {
-		t.Errorf("env = %v, want a toolchain rill did not fetch left alone", tool.Env)
+		t.Errorf("env = %v, want a toolchain gopage did not fetch left alone", tool.Env)
 	}
 }
 
@@ -133,7 +133,7 @@ func TestAMissingToolchainWithNoWayToFetchExplainsItself(t *testing.T) {
 	t.Setenv(Override, "")
 	_, err := Toolchain{CacheDir: t.TempDir(), Lookup: absent}.Resolve()
 	if err == nil {
-		t.Fatal("a toolchain rill cannot find or fetch must be reported")
+		t.Fatal("a toolchain gopage cannot find or fetch must be reported")
 	}
 	for _, want := range []string{Override, "go.dev"} {
 		if !strings.Contains(err.Error(), want) {
@@ -263,8 +263,8 @@ func TestTheCacheFallsBackToTheUserDirectory(t *testing.T) {
 	if err != nil {
 		t.Skip("this machine has no user cache directory")
 	}
-	if !strings.HasSuffix(root, filepath.Join("rill", "go", Version)) {
-		t.Errorf("root = %q, want it under the rill cache", root)
+	if !strings.HasSuffix(root, filepath.Join("gopage", "go", Version)) {
+		t.Errorf("root = %q, want it under the gopage cache", root)
 	}
 }
 

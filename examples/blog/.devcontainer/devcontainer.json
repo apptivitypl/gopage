@@ -1,5 +1,5 @@
 {
-  "name": "rill blog",
+  "name": "gopage blog",
   "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {"version": "24"}
@@ -11,10 +11,10 @@
   },
   "forwardPorts": [3000],
   "portsAttributes": {
-    "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
+    "3000": {"label": "gopage dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go install github.com/apptivitypl/rill/cmd/rill@latest && go mod download && rill css install",
-  "postAttachCommand": "rill dev --addr 0.0.0.0:3000",
+  "postCreateCommand": "go install github.com/apptivitypl/gopage/cmd/gopage@latest && go mod download && gopage css install",
+  "postAttachCommand": "gopage dev --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}
   }

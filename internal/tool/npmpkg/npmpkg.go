@@ -9,8 +9,8 @@ import (
 
 const (
 	Scope      = "@apptivitypl"
-	CLI        = Scope + "/rill"
-	Repository = "https://github.com/apptivitypl/rill"
+	CLI        = Scope + "/gopage"
+	Repository = "https://github.com/apptivitypl/gopage"
 	License    = "MIT OR Apache-2.0"
 	Engine     = ">=20"
 )
@@ -38,21 +38,21 @@ func (p Platform) Package() string {
 }
 
 func (p Platform) Command() string {
-	return fmt.Sprintf("rill-%s-%s", p.OS, p.CPU)
+	return fmt.Sprintf("gopage-%s-%s", p.OS, p.CPU)
 }
 
 func (p Platform) Binary() string {
 	if p.GOOS == "windows" {
-		return "rill.exe"
+		return "gopage.exe"
 	}
-	return "rill"
+	return "gopage"
 }
 
 func (p Platform) Archive(version string) string {
 	if p.GOOS == "windows" {
-		return fmt.Sprintf("rill_%s_%s_%s.zip", version, p.GOOS, p.GOARCH)
+		return fmt.Sprintf("gopage_%s_%s_%s.zip", version, p.GOOS, p.GOARCH)
 	}
-	return fmt.Sprintf("rill_%s_%s_%s.tar.gz", version, p.GOOS, p.GOARCH)
+	return fmt.Sprintf("gopage_%s_%s_%s.tar.gz", version, p.GOOS, p.GOARCH)
 }
 
 type manifest struct {
@@ -89,9 +89,9 @@ func Launcher(version string) ([]byte, error) {
 	for _, platform := range Platforms() {
 		optional[platform.Package()] = version
 	}
-	entry := base(CLI, version, "The rill command line, as a prebuilt binary.")
-	entry.Keywords = []string{"rill", "go", "web-framework", "cloudflare-workers"}
-	entry.Bin = map[string]string{"rill": "bin/rill.js"}
+	entry := base(CLI, version, "The gopage command line, as a prebuilt binary.")
+	entry.Keywords = []string{"gopage", "go", "web-framework", "cloudflare-workers"}
+	entry.Bin = map[string]string{"gopage": "bin/gopage.js"}
 	entry.Files = []string{"bin", "README.md"}
 	entry.Optional = optional
 	return encode(entry)
@@ -101,7 +101,7 @@ func Binary(version string, platform Platform) ([]byte, error) {
 	entry := base(
 		platform.Package(),
 		version,
-		fmt.Sprintf("The rill binary for %s %s.", platform.OS, platform.CPU),
+		fmt.Sprintf("The gopage binary for %s %s.", platform.OS, platform.CPU),
 	)
 	entry.Bin = map[string]string{platform.Command(): "bin/" + platform.Binary()}
 	entry.Files = []string{"bin"}

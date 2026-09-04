@@ -8,12 +8,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/apptivitypl/rill/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/cookie"
 )
 
 const (
 	Field      = "__csrf"
-	CookieName = "rill.csrf"
+	CookieName = "gopage.csrf"
 	size       = 32
 )
 

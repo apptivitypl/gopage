@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	FragmentHeader = "RILL-Fragment"
-	FragmentType   = "text/vnd.rill-fragment"
+	FragmentHeader = "GOPAGE-Fragment"
+	FragmentType   = "text/vnd.gopage-fragment"
 	FragmentPath   = "/"
 	FragmentName   = "Cheapest"
 	FragmentBody   = "attic on the square"
@@ -30,7 +30,7 @@ func RunFragment(client *http.Client, base string) error {
 		return fmt.Errorf("%s: fragment cache control %q, want it kept out of shared caches",
 			FragmentPath, got)
 	}
-	if strings.Contains(text, "<html") || strings.Contains(text, "rill-slot") {
+	if strings.Contains(text, "<html") || strings.Contains(text, "gopage-slot") {
 		return fmt.Errorf("%s: the fragment carries the document around it", FragmentPath)
 	}
 	if !strings.Contains(text, FragmentBody) {

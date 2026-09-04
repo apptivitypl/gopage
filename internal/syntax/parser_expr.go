@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func (p *parser) expr() (Expr, bool) {

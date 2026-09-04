@@ -1,14 +1,14 @@
 #!/bin/sh
-# Remove rill and, if you ask, everything it has cached.
+# Remove gopage and, if you ask, everything it has cached.
 #
-#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/apptivitypl/gopage/main/uninstall.sh | sh
 #   ... | sh -s -- --purge
 set -eu
 
-BINARY="rill"
-DIR="${RILL_INSTALL_DIR:-}"
-PURGE="${RILL_PURGE:-}"
-YES="${RILL_YES:-}"
+BINARY="gopage"
+DIR="${GOPAGE_INSTALL_DIR:-}"
+PURGE="${GOPAGE_PURGE:-}"
+YES="${GOPAGE_YES:-}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'uninstall: %s\n' "$*" >&2; exit 1; }
@@ -19,7 +19,7 @@ usage() {
 usage: uninstall.sh [--dir PATH] [--purge] [--yes]
 
   --dir PATH   remove the binary from here instead of searching PATH
-  --purge      also remove the cache rill downloads its toolchains into
+  --purge      also remove the cache gopage downloads its toolchains into
   --yes        do not ask
 
   Projects you created are never touched.
@@ -41,21 +41,21 @@ if [ -n "$DIR" ]; then
   [ -e "$target" ] || die "no $BINARY in $DIR"
 else
   target=$(command -v "$BINARY" 2>/dev/null || true)
-  [ -n "$target" ] || { say "rill is not on your PATH; nothing to remove"; exit 0; }
+  [ -n "$target" ] || { say "gopage is not on your PATH; nothing to remove"; exit 0; }
 fi
 
-version=$("$target" version 2>/dev/null | head -n 1 || echo "rill")
+version=$("$target" version 2>/dev/null | head -n 1 || echo "gopage")
 say "found $version at $target"
 
 if [ "${target#"$(go env GOPATH 2>/dev/null || echo /nonexistent)/bin"}" != "$target" ]; then
   say ""
   say "that copy came from 'go install'. Removing the file is enough, but"
-  say "'go install github.com/apptivitypl/rill/cmd/rill@latest' would bring it back."
+  say "'go install github.com/apptivitypl/gopage/cmd/gopage@latest' would bring it back."
 fi
 
 case "$(uname -s)" in
-  Darwin) cache="$HOME/Library/Caches/rill" ;;
-  *) cache="${XDG_CACHE_HOME:-$HOME/.cache}/rill" ;;
+  Darwin) cache="$HOME/Library/Caches/gopage" ;;
+  *) cache="${XDG_CACHE_HOME:-$HOME/.cache}/gopage" ;;
 esac
 
 if [ -z "$YES" ]; then

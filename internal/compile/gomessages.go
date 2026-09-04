@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"strconv"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const (

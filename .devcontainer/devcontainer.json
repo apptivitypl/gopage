@@ -1,5 +1,5 @@
 {
-  "name": "rill",
+  "name": "gopage",
   "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {"version": "24"}
@@ -11,10 +11,10 @@
   },
   "forwardPorts": [3000],
   "portsAttributes": {
-    "3000": {"label": "rill dev", "onAutoForward": "openPreview"}
+    "3000": {"label": "gopage dev", "onAutoForward": "openPreview"}
   },
-  "postCreateCommand": "go work init . examples/hello-world examples/blog && go mod download && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install && (cd examples/hello-world && pnpm install) && go run ./cmd/rill css install",
-  "postAttachCommand": "go run ./cmd/rill dev --dir examples/hello-world --addr 0.0.0.0:3000",
+  "postCreateCommand": "go work init . examples/hello-world examples/blog && go mod download && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install && (cd examples/hello-world && pnpm install) && go run ./cmd/gopage css install",
+  "postAttachCommand": "go run ./cmd/gopage dev --dir examples/hello-world --addr 0.0.0.0:3000",
   "customizations": {
     "vscode": {"extensions": ["golang.go"]}
   }

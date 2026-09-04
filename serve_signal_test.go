@@ -1,6 +1,6 @@
 //go:build !js && !windows
 
-package rill
+package gopage
 
 import (
 	"syscall"

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const modulePath = "github.com/apptivitypl/rill"
+const modulePath = "github.com/apptivitypl/gopage"
 
 type excludeList []string
 
@@ -20,8 +20,8 @@ func (e excludeList) IsExcluded(path string) bool {
 
 func TestParseReadsBlocks(t *testing.T) {
 	profile := "mode: atomic\n" +
-		"github.com/apptivitypl/rill/internal/ir/plan.go:12.34,15.2 3 1\n" +
-		"github.com/apptivitypl/rill/internal/ir/plan.go:17.2,19.4 2 0\n"
+		"github.com/apptivitypl/gopage/internal/ir/plan.go:12.34,15.2 3 1\n" +
+		"github.com/apptivitypl/gopage/internal/ir/plan.go:17.2,19.4 2 0\n"
 
 	blocks, err := Parse(profile)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestParseReadsBlocks(t *testing.T) {
 		t.Fatalf("got %d blocks, want 2", len(blocks))
 	}
 	want := Block{
-		File:      "github.com/apptivitypl/rill/internal/ir/plan.go",
+		File:      "github.com/apptivitypl/gopage/internal/ir/plan.go",
 		StartLine: 12,
 		EndLine:   15,
 		NumStmts:  3,
@@ -84,7 +84,7 @@ func TestPercentIsPlainArithmetic(t *testing.T) {
 }
 
 func TestRelativizeStripsModulePath(t *testing.T) {
-	got := Relativize("github.com/apptivitypl/rill/internal/ir/plan.go", modulePath)
+	got := Relativize("github.com/apptivitypl/gopage/internal/ir/plan.go", modulePath)
 	if got != "internal/ir/plan.go" {
 		t.Errorf("Relativize = %q", got)
 	}
@@ -120,10 +120,10 @@ func TestAggregateSumsBlocksWithinAPackage(t *testing.T) {
 func TestAggregateSkipsExcludedPaths(t *testing.T) {
 	blocks := []Block{
 		{File: modulePath + "/internal/ir/plan.go", NumStmts: 10, Count: 1},
-		{File: modulePath + "/cmd/rilltool/main.go", NumStmts: 100, Count: 0},
+		{File: modulePath + "/cmd/gopagetool/main.go", NumStmts: 100, Count: 0},
 	}
 	report := Aggregate(blocks, modulePath, excludeList{"cmd/"})
-	if _, ok := report.Packages["cmd/rilltool"]; ok {
+	if _, ok := report.Packages["cmd/gopagetool"]; ok {
 		t.Error("excluded package must not appear in the report")
 	}
 	if report.Total.Total != 10 {
@@ -132,7 +132,7 @@ func TestAggregateSkipsExcludedPaths(t *testing.T) {
 }
 
 func TestAggregateMeasuresTheRootPackage(t *testing.T) {
-	blocks := []Block{{File: modulePath + "/rill.go", NumStmts: 5, Count: 1}}
+	blocks := []Block{{File: modulePath + "/gopage.go", NumStmts: 5, Count: 1}}
 	report := Aggregate(blocks, modulePath, nil)
 	if got, ok := report.Packages[RootPackage]; !ok || got.Total != 5 {
 		t.Errorf("packages = %v, want the root package measured", report.Packages)

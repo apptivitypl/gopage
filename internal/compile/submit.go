@@ -5,7 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 func SubmitForm(frontmatter, file string, bag *diag.Bag) (string, bool) {
-	parsed, err := parser.ParseFile(token.NewFileSet(), file, "package rillpage\n"+frontmatter, parser.SkipObjectResolution)
+	parsed, err := parser.ParseFile(token.NewFileSet(), file, "package pagesrc\n"+frontmatter, parser.SkipObjectResolution)
 	if err != nil {
 		return "", false
 	}
@@ -26,7 +26,7 @@ func SubmitForm(frontmatter, file string, bag *diag.Bag) (string, bool) {
 		name, valid := formParameter(fn)
 		if !valid {
 			bag.Add(diag.New(diag.C312, file, diag.Span{}, "Submit has the wrong signature").
-				WithHelp("write func Submit(ctx *rill.Ctx, params rill.Params, form MyForm) (rill.Action, error)"))
+				WithHelp("write func Submit(ctx *gopage.Ctx, params gopage.Params, form MyForm) (gopage.Action, error)"))
 			return "", false
 		}
 		return name, true
@@ -70,7 +70,7 @@ func (t Template) FormType(bag *diag.Bag) string {
 const loaderFunc = "Load"
 
 func LoaderTakesParams(frontmatter, file string) bool {
-	parsed, err := parser.ParseFile(token.NewFileSet(), file, "package rillpage\n"+frontmatter, parser.SkipObjectResolution)
+	parsed, err := parser.ParseFile(token.NewFileSet(), file, "package pagesrc\n"+frontmatter, parser.SkipObjectResolution)
 	if err != nil {
 		return false
 	}

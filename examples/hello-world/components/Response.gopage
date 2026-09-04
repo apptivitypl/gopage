@@ -1,0 +1,97 @@
+---
+type Props struct {
+	Method   string
+	Endpoint string
+}
+---
+<pre class="source response"><code><span class="skeleton" style="width: 34%"></span>
+<span class="skeleton" style="width: 52%"></span>
+
+<span class="skeleton" style="width: 78%"></span>
+<span class="skeleton" style="width: 64%"></span></code></pre>
+
+<script client lang="tsx">
+import { Suspense, use, type ReactNode } from "react";
+import type { Props } from "gopage:props/Response";
+
+type Shot = { status: number; type: string; took: number; body: string };
+
+const held = new Map<string, Promise<Shot>>();
+
+function shoot(method: string, endpoint: string): Promise<Shot> {
+	const key = method + " " + endpoint;
+	let pending = held.get(key);
+	if (!pending) {
+		const started = performance.now();
+		pending = fetch(endpoint, { method })
+			.then(async (response) => ({
+				status: response.status,
+				type: response.headers.get("content-type") ?? "",
+				took: Math.round(performance.now() - started),
+				body: JSON.stringify(await response.json(), null, 2),
+			}))
+			.catch(() => ({ status: 0, type: "", took: 0, body: "" }));
+		held.set(key, pending);
+	}
+	return pending;
+}
+
+const token = /("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?)|([{}[\],])/g;
+
+function Json({ text }: { text: string }) {
+	const parts: ReactNode[] = [];
+	let last = 0;
+	for (const match of text.matchAll(token)) {
+		const [whole, str, colon, num, punct] = match;
+		const at = match.index ?? 0;
+		parts.push(text.slice(last, at));
+		if (str) {
+			parts.push(<span key={at} className={colon ? "tok-key" : "tok-str"}>{str}</span>);
+			if (colon) parts.push(colon);
+		} else if (num) {
+			parts.push(<span key={at} className="tok-num">{num}</span>);
+		} else if (punct) {
+			parts.push(<span key={at} className="tok-punct">{punct}</span>);
+		} else {
+			parts.push(whole);
+		}
+		last = at + whole.length;
+	}
+	parts.push(text.slice(last));
+	return <>{parts}</>;
+}
+
+function Skeleton() {
+	return (
+		<pre className="source response"><code>
+			<span className="skeleton" style={{ width: "34%" }} />{"\n"}
+			<span className="skeleton" style={{ width: "52%" }} />{"\n\n"}
+			<span className="skeleton" style={{ width: "78%" }} />{"\n"}
+			<span className="skeleton" style={{ width: "64%" }} />
+		</code></pre>
+	);
+}
+
+function Body({ method, endpoint }: { method: string; endpoint: string }) {
+	const shot = use(shoot(method, endpoint));
+	if (shot.status === 0) {
+		return <pre className="source response"><code><span className="tok-key">{method}</span> {endpoint}{"\n"}<span className="meta">no answer</span></code></pre>;
+	}
+	return (
+		<pre className="source response"><code>
+			<span className="tok-key">{method}</span> {endpoint}  <span className="tok-punct">{shot.status} · {shot.took} ms</span>{"\n"}
+			<span className="tok-punct">content-type:</span> <span className="tok-str">{shot.type}</span>{"\n\n"}
+			<Json text={shot.body} />
+		</code></pre>
+	);
+}
+
+export default function Response(props: Props) {
+	return (
+		<Suspense fallback={<Skeleton />}>
+			<Body method={props.Method} endpoint={props.Endpoint} />
+		</Suspense>
+	);
+}
+</script>
+

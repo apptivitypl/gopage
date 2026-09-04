@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/scaffold"
 )
 
 const Root = "examples"
@@ -31,25 +31,25 @@ func (e Example) Dir() string {
 }
 
 func (e Example) Module() string {
-	return "github.com/apptivitypl/rill/" + e.Dir()
+	return "github.com/apptivitypl/gopage/" + e.Dir()
 }
 
 func (e Example) Config(version string) scaffold.Config {
 	return scaffold.Config{
-		Module:      e.Module(),
-		Name:        e.Name,
-		Template:    e.Template,
-		RillVersion: version,
-		Locales:     e.Locales,
-		Nav:         scaffold.NavPartial,
-		CSS:         scaffold.CSSTailwind,
-		Theme:       scaffold.ThemeToggle,
-		React:       scaffold.ReactOn,
+		Module:        e.Module(),
+		Name:          e.Name,
+		Template:      e.Template,
+		GopageVersion: version,
+		Locales:       e.Locales,
+		Nav:           scaffold.NavPartial,
+		CSS:           scaffold.CSSTailwind,
+		Theme:         scaffold.ThemeToggle,
+		React:         scaffold.ReactOn,
 	}
 }
 
 func Skipped() []string {
-	return []string{"internal", "dist", ".rill", ".wrangler", "node_modules"}
+	return []string{"internal", "dist", ".gopage", ".wrangler", "node_modules"}
 }
 
 func Extras() []string {
@@ -196,6 +196,6 @@ func Render(differences []Difference) string {
 	for _, difference := range differences {
 		fmt.Fprintf(&b, "example: %s\n", difference.Message())
 	}
-	fmt.Fprintf(&b, "run `go run ./cmd/rilltool example --update` to write what the template says\n")
+	fmt.Fprintf(&b, "run `go run ./cmd/gopagetool example --update` to write what the template says\n")
 	return b.String()
 }

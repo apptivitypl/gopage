@@ -1,6 +1,6 @@
-# rill diagnostic codes
+# gopage diagnostic codes
 
-One page per code. The file name is the code: `C305.md`, `W703.md`. `rilltool diag` refuses to pass
+One page per code. The file name is the code: `C305.md`, `W703.md`. `gopagetool diag` refuses to pass
 unless every code in the registry has a page here **and** a test that produces it, so this list
 cannot drift from what the compiler actually reports.
 

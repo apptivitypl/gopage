@@ -1,12 +1,12 @@
 package route
 
 import (
-	"github.com/apptivitypl/rill"
+	"github.com/apptivitypl/gopage"
 
 	"{{.Module}}/server/hackernews"
 )
 
-func GET(ctx *rill.Ctx, params rill.Params) (rill.Response, error) {
+func GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) {
 	stories, _ := hackernews.Top(ctx.Request())
-	return rill.JSON(stories), nil
+	return gopage.JSON(stories), nil
 }

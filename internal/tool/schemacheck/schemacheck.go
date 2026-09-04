@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const Path = "schema/rill.schema.json"
+const Path = "schema/gopage.schema.json"
 
 type IssueKind string
 

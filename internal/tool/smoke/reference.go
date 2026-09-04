@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/config"
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/config"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const ReferenceTemplate = "catalog"
@@ -21,7 +21,7 @@ func ReferenceChecks() []Check {
 		{Path: "/", Status: http.StatusOK, Contains: "what is on offer", ContentType: "text/html"},
 		{Path: "/", Status: http.StatusOK, Contains: "4 listings"},
 		{Path: "/", Status: http.StatusOK, Contains: `<span class="item-price">410 000.00 PLN</span>`},
-		{Path: "/", Status: http.StatusOK, Contains: `<rill-island`},
+		{Path: "/", Status: http.StatusOK, Contains: `<gopage-island`},
 		{Path: "/", Status: http.StatusOK, Contains: `<link rel="alternate" hreflang="pl"`},
 		{Path: "/?city=krakow", Status: http.StatusOK, Contains: "2 listings"},
 		{Path: "/pl", Status: http.StatusOK, Contains: "4 oferty"},

@@ -1,8 +1,8 @@
 <p align="center">
-  <img alt="the rill mark" src="img/rill.svg" width="120" height="120">
+  <img alt="the gopage mark" src="img/gopage.svg" width="120" height="120">
 </p>
 
-<h1 align="center">rill</h1>
+<h1 align="center">gopage</h1>
 
 <p align="center">
   <b>A web framework in Go that sends HTML first.</b><br>
@@ -10,15 +10,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/apptivitypl/rill/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/apptivitypl/rill/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=ci"></a>
-  <a href="https://pkg.go.dev/github.com/apptivitypl/rill"><img alt="reference" src="https://img.shields.io/badge/go-reference-007d9c?style=flat-square&logo=go&logoColor=white"></a>
-  <a href="https://github.com/apptivitypl/rill/blob/main/go.mod"><img alt="go" src="https://img.shields.io/github/go-mod/go-version/apptivitypl/rill?style=flat-square&logo=go&logoColor=white"></a>
+  <a href="https://github.com/apptivitypl/gopage/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/apptivitypl/gopage/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=ci"></a>
+  <a href="https://pkg.go.dev/github.com/apptivitypl/gopage"><img alt="reference" src="https://img.shields.io/badge/go-reference-007d9c?style=flat-square&logo=go&logoColor=white"></a>
+  <a href="https://github.com/apptivitypl/gopage/blob/main/go.mod"><img alt="go" src="https://img.shields.io/github/go-mod/go-version/apptivitypl/gopage?style=flat-square&logo=go&logoColor=white"></a>
   <img alt="targets" src="https://img.shields.io/badge/targets-cloudflare%20workers%20%7C%20static%20binary-4c566a?style=flat-square">
   <a href="#licence"><img alt="licence" src="https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue?style=flat-square"></a>
   <img alt="status" src="https://img.shields.io/badge/status-in%20development-orange?style=flat-square">
 </p>
 
-rill compiles `.rill` templates into a flat render plan and, in production, executes the smallest
+gopage compiles `.gopage` templates into a flat render plan and, in production, executes the smallest
 part of it that answers the request: a prebuilt artifact before a render, a fragment before a page,
 a page before a whole document. The same project builds two ways: a Cloudflare Worker with static
 assets, and a single static binary. CI builds the reference application both ways and fails if the
@@ -40,11 +40,11 @@ No install, no account, no clone. Both starters are committed under [examples/](
 button opens one.
 
 <p align="center">
-  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/rill/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="32"></a>
-  <a href="https://codespaces.new/apptivitypl/rill?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
+  <a href="https://codesandbox.io/p/devbox/github/apptivitypl/gopage/tree/main/examples/hello-world"><img alt="open in codesandbox" src="https://assets.codesandbox.io/github/button-edit-lime.svg" height="32"></a>
+  <a href="https://codespaces.new/apptivitypl/gopage?quickstart=1"><img alt="open in github codespaces" src="https://github.com/codespaces/badge.svg" height="32"></a>
 </p>
 
-Both boot a machine and leave `rill dev` running, so editing a template rebuilds it and reloads the
+Both boot a machine and leave `gopage dev` running, so editing a template rebuilds it and reloads the
 page. The first boot takes a minute or two.
 
 ## Install
@@ -52,13 +52,13 @@ page. The first boot takes a minute or two.
 On Linux and macOS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/gopage/main/install.sh | sh
 ```
 
 On Windows, in PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/apptivitypl/rill/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/apptivitypl/gopage/main/install.ps1 | iex
 ```
 
 Both work out which build this machine wants, check the archive against the `checksums.txt`
@@ -71,64 +71,64 @@ update: it stops when what you have is already what the release holds. Both take
 If piping a script into a shell is not something you do, read
 [install.sh](install.sh) first, or skip it. Every release publishes an archive for Linux, macOS
 and Windows on both amd64 and arm64 on the
-[releases page](https://github.com/apptivitypl/rill/releases/latest). Unpack one and put `rill` on your
+[releases page](https://github.com/apptivitypl/gopage/releases/latest). Unpack one and put `gopage` on your
 PATH.
 
 A build from the tip of `main` is published every night under the `nightly` tag, signed the same way a
 release is:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/install.sh | sh -s -- --version nightly
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/gopage/main/install.sh | sh -s -- --version nightly
 ```
 
 That tag moves with every build and carries no compatibility promise. It is not published to npm, so
-`@apptivitypl/rill` always resolves to a real release.
+`@apptivitypl/gopage` always resolves to a real release.
 
 From source, if you have Go:
 
 ```bash
-go install github.com/apptivitypl/rill/cmd/rill@latest
+go install github.com/apptivitypl/gopage/cmd/gopage@latest
 ```
 
 The same binaries are on npm, which is the shortest route on a machine that already has node:
 
 ```bash
-pnpm dlx @apptivitypl/rill new my-site
+pnpm dlx @apptivitypl/gopage new my-site
 ```
 
 ```bash
-pnpm dlx @apptivitypl/rill dev
+pnpm dlx @apptivitypl/gopage dev
 ```
 
 The first scaffolds a project, the second runs it, neither installs anything. A project that
-already has a `package.json` can pin the version for everyone with `pnpm add -D @apptivitypl/rill`.
+already has a `package.json` can pin the version for everyone with `pnpm add -D @apptivitypl/gopage`.
 
 Nothing compiles and no install script runs: the binary for your platform arrives as an optional
 dependency.
 
-rill writes Go and then calls `go build`, so a build needs a Go toolchain. It uses the one on your
+gopage writes Go and then calls `go build`, so a build needs a Go toolchain. It uses the one on your
 PATH. When there is none it says so and fetches a pinned Go once into the same cache Tailwind uses,
-checking it against a published sha256 before unpacking it; `RILL_GO` points at a toolchain you would
-rather it used. The cache is `~/.cache/rill` on Linux, `~/Library/Caches/rill` on macOS and
-`%LocalAppData%\rill` on Windows.
+checking it against a published sha256 before unpacking it; `GOPAGE_GO` points at a toolchain you would
+rather it used. The cache is `~/.cache/gopage` on Linux, `~/Library/Caches/gopage` on macOS and
+`%LocalAppData%\gopage` on Windows.
 
 To remove it again, with `--purge` to take the Tailwind download cache with it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/apptivitypl/rill/main/uninstall.sh | sh
+curl -fsSL https://raw.githubusercontent.com/apptivitypl/gopage/main/uninstall.sh | sh
 ```
 
 ## Quick start
 
 ```bash
-rill new my-site --module example.com/my-site
+gopage new my-site --module example.com/my-site
 ```
 
 ```bash
-cd my-site && rill dev
+cd my-site && gopage dev
 ```
 
-`rill new` writes the project, runs `go mod tidy`, and installs the browser packages if the
+`gopage new` writes the project, runs `go mod tidy`, and installs the browser packages if the
 template needs them. Without `--yes` it asks for the module path, template, languages, navigation
 mode, css engine and theme.
 
@@ -136,16 +136,16 @@ Three templates ship. [`hello-world`](examples/hello-world) is one page with a l
 fetched list and a JSON route; [`blog`](examples/blog) is markdown posts with a feed; `catalog`
 carries the wider surface: filters, differential navigation, a form without javascript,
 server-sent events, and both a cached and a deferred fragment. The first two are committed under
-[examples/](examples), so you can read what `rill new` writes without running it.
+[examples/](examples), so you can read what `gopage new` writes without running it.
 
 ## Project layout
 
-`rill new` writes this. The three directories at the bottom are written by the compiler and are in
+`gopage new` writes this. The three directories at the bottom are written by the compiler and are in
 the generated `.gitignore`; everything above them is yours.
 
 ```
 my-site/
-  app/                 routes: page.rill, layout.rill, api/*/route.go
+  app/                 routes: page.gopage, layout.gopage, api/*/route.go
   components/          components, one file each
   server/              hand-written Go the loaders call
   styles/              source stylesheet
@@ -153,11 +153,11 @@ my-site/
   locales/             message catalogs, one json file per language
   cmd/server/          entry point for the binary target
   cmd/worker/          entry point for the worker target
-  rill.jsonc           configuration
+  gopage.jsonc           configuration
 
   internal/gen/        generated Go, embedded assets, the render plan
   dist/                what you deploy
-  .rill/               intermediates, never deployed
+  .gopage/               intermediates, never deployed
 ```
 
 Generated Go lives under `internal/` rather than in a directory of its own, because the go tool
@@ -168,9 +168,9 @@ constraint is the whole reason for the shape.
 
 A build has three steps that are worth knowing about.
 
-**Compile.** Every `.rill` file is parsed against a real grammar, not a regular expression. Types
+**Compile.** Every `.gopage` file is parsed against a real grammar, not a regular expression. Types
 declared in a template's Go block become the props of the component, and a mismatch is a build
-error with a code. `RILL-C318` and the other 37 have a page under [docs/errors](docs/errors).
+error with a code. `GOPAGE-C318` and the other 37 have a page under [docs/errors](docs/errors).
 
 **Lower.** The result is a flat instruction plan, not a tree walked at request time. Static runs of
 markup collapse into single byte ranges, so rendering a page is mostly copying.
@@ -181,12 +181,12 @@ one the browser already has can answer with just the fragment that changed.
 
 ## Configuration
 
-`rill.jsonc` is JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`. What
-`rill new` writes is about this long; every key not named has a default.
+`gopage.jsonc` is JSON with comments and trailing commas, the same dialect as `wrangler.jsonc`. What
+`gopage new` writes is about this long; every key not named has a default.
 
 ```jsonc
 {
-  "$schema": "https://raw.githubusercontent.com/apptivitypl/rill/main/schema/rill.schema.json",
+  "$schema": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json",
   "app": {"name": "my-site"},
   "i18n": {"mode": "path", "defaultLocale": "en", "locales": ["en", "pl"]},
   "css": {"engine": "tailwind", "inlineLimit": "4kb"},
@@ -205,7 +205,7 @@ The four that decide something worth knowing about:
 | `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead |
 
 Unknown keys are an error, not a shrug: a misspelled setting names itself and the line it is on.
-The [schema](schema/rill.schema.json) drives editor completion, and CI fails if it and the Go
+The [schema](schema/gopage.schema.json) drives editor completion, and CI fails if it and the Go
 struct ever disagree.
 
 ## Deploying
@@ -213,11 +213,11 @@ struct ever disagree.
 Two targets from one project.
 
 ```bash
-rill build --target workers && wrangler deploy
+gopage build --target workers && wrangler deploy
 ```
 
 ```bash
-rill build --target native && ./dist/server
+gopage build --target native && ./dist/server
 ```
 
 The worker build writes `wrangler.jsonc` beside the project and puts the assets where Static Assets
@@ -227,7 +227,7 @@ beside it.
 A third target exists for showing a project rather than deploying it:
 
 ```bash
-rill build --target demo && node dist/demo/server.mjs
+gopage build --target demo && node dist/demo/server.mjs
 ```
 
 `dist/demo` is a self-contained folder that serves the site anywhere node runs, with no wrangler, no
@@ -236,10 +236,10 @@ anything.
 
 ## Tooling
 
-`rill dev` watches the project, rebuilds what changed and reloads the browser. It answers on
-localhost only; `rill dev -host` puts it on every interface when you want to open it from a phone.
-`rill routes` prints
-what the compiler found. `rill check` compiles without writing anything. `rill lsp` speaks the
+`gopage dev` watches the project, rebuilds what changed and reloads the browser. It answers on
+localhost only; `gopage dev -host` puts it on every interface when you want to open it from a phone.
+`gopage routes` prints
+what the compiler found. `gopage check` compiles without writing anything. `gopage lsp` speaks the
 language server protocol on stdin and stdout, so an editor can show the same diagnostics the build
 would.
 
@@ -252,7 +252,7 @@ would.
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) first. It lists the rules CI actually enforces, and
-`go run ./cmd/rilltool ci` runs every one of them locally before you push.
+`go run ./cmd/gopagetool ci` runs every one of them locally before you push.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) explains how a request becomes bytes, and which package owns
 which part of that.
@@ -260,7 +260,7 @@ which part of that.
 ## Security
 
 Report a vulnerability privately through
-[a security advisory](https://github.com/apptivitypl/rill/security/advisories/new), never a public
+[a security advisory](https://github.com/apptivitypl/gopage/security/advisories/new), never a public
 issue. [SECURITY.md](SECURITY.md) describes what counts as a vulnerability in a framework like this
 one.
 

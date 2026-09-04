@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 func contextCode(t *testing.T, body string, want diag.Code) diag.Diagnostic {

@@ -1,7 +1,7 @@
 package smoke
 
 import (
-	"github.com/apptivitypl/rill/internal/config"
+	"github.com/apptivitypl/gopage/internal/config"
 	"net/http"
 	"strings"
 	"testing"
@@ -37,8 +37,8 @@ func TestSubdomainConfigRefusesAConfigThatDoesNotParse(t *testing.T) {
 
 func TestFingerprintSkipsGeneratedTreesAndTheConfig(t *testing.T) {
 	tree := fstest.MapFS{
-		"app/page.rill":            {Data: []byte("<h1>hello</h1>")},
-		"rill.jsonc":               {Data: []byte("mode = \"path\"")},
+		"app/page.gopage":          {Data: []byte("<h1>hello</h1>")},
+		"gopage.jsonc":             {Data: []byte("mode = \"path\"")},
 		"dist/server":              {Data: []byte("binary")},
 		"internal/gen/config.json": {Data: []byte("copy")},
 		".wrangler/s.sqlite":       {Data: []byte("state")},
@@ -51,7 +51,7 @@ func TestFingerprintSkipsGeneratedTreesAndTheConfig(t *testing.T) {
 	if len(files) != 1 {
 		t.Fatalf("files = %v, want only the template", files)
 	}
-	if _, ok := files["app/page.rill"]; !ok {
+	if _, ok := files["app/page.gopage"]; !ok {
 		t.Errorf("files = %v", files)
 	}
 }
@@ -105,7 +105,7 @@ func TestRunSubdomainFailsWhenTheLocaleHostServesTheWrongLanguage(t *testing.T) 
 
 func TestRunDevWantsTheReloadScriptAndTheGoRoutes(t *testing.T) {
 	answers := map[string]Response{
-		"/":           {Status: http.StatusOK, Body: "Rendered in Go. <rill-island " + ReloadPath, ContentType: "text/html"},
+		"/":           {Status: http.StatusOK, Body: "Rendered in Go. <gopage-island " + ReloadPath, ContentType: "text/html"},
 		"/about":      {Status: http.StatusOK, Body: "<title>what happened to this request</title>", ContentType: "text/html"},
 		"/api/health": {Status: http.StatusOK, Body: `{"runtime":"go"}`, ContentType: "application/json"},
 		"/nope":       {Status: http.StatusNotFound, Body: "<title>no route answers this address</title>"},
@@ -116,7 +116,7 @@ func TestRunDevWantsTheReloadScriptAndTheGoRoutes(t *testing.T) {
 		t.Fatalf("RunDev: %v", err)
 	}
 
-	answers["/"] = Response{Status: http.StatusOK, Body: "Rendered in Go. <rill-island", ContentType: "text/html"}
+	answers["/"] = Response{Status: http.StatusOK, Body: "Rendered in Go. <gopage-island", ContentType: "text/html"}
 	if err := RunDev(fetch, ""); err == nil {
 		t.Error("a page without the live reload script should fail the dev run")
 	}
@@ -134,7 +134,7 @@ func TestVerifyRebuildLooksForTheEditedMarkup(t *testing.T) {
 }
 
 func TestOverlaidRecognisesTheDevOverlay(t *testing.T) {
-	overlay := Response{Status: http.StatusInternalServerError, Body: "rill: the project does not compile"}
+	overlay := Response{Status: http.StatusInternalServerError, Body: "gopage: the project does not compile"}
 	if !Overlaid(overlay) {
 		t.Error("the overlay was not recognised")
 	}

@@ -27,12 +27,12 @@ func TestEveryPlatformGoreleaserBuildsIsCovered(t *testing.T) {
 	}
 	for _, platform := range platforms {
 		if platform.GOOS == "windows" {
-			if platform.Binary() != "rill.exe" || !strings.HasSuffix(platform.Archive("0.1.0"), ".zip") {
+			if platform.Binary() != "gopage.exe" || !strings.HasSuffix(platform.Archive("0.1.0"), ".zip") {
 				t.Errorf("windows carries %q in %q", platform.Binary(), platform.Archive("0.1.0"))
 			}
 			continue
 		}
-		if platform.Binary() != "rill" || !strings.HasSuffix(platform.Archive("0.1.0"), ".tar.gz") {
+		if platform.Binary() != "gopage" || !strings.HasSuffix(platform.Archive("0.1.0"), ".tar.gz") {
 			t.Errorf("%s carries %q in %q", platform.GOOS, platform.Binary(), platform.Archive("0.1.0"))
 		}
 	}
@@ -40,10 +40,10 @@ func TestEveryPlatformGoreleaserBuildsIsCovered(t *testing.T) {
 
 func TestArchiveNamesMatchTheGoreleaserTemplate(t *testing.T) {
 	platform := Platform{GOOS: "darwin", GOARCH: "arm64", OS: "darwin", CPU: "arm64"}
-	if got := platform.Archive("0.1.0"); got != "rill_0.1.0_darwin_arm64.tar.gz" {
+	if got := platform.Archive("0.1.0"); got != "gopage_0.1.0_darwin_arm64.tar.gz" {
 		t.Errorf("Archive = %q", got)
 	}
-	if got := platform.Package(); got != "@apptivitypl/rill-darwin-arm64" {
+	if got := platform.Package(); got != "@apptivitypl/gopage-darwin-arm64" {
 		t.Errorf("Package = %q", got)
 	}
 }
@@ -62,7 +62,7 @@ func TestTheLauncherAsksForEveryPlatformOptionally(t *testing.T) {
 	if _, ok := entry["dependencies"]; ok {
 		t.Error("the launcher must not depend on anything that has to resolve")
 	}
-	if entry["bin"].(map[string]any)["rill"] != "bin/rill.js" {
+	if entry["bin"].(map[string]any)["gopage"] != "bin/gopage.js" {
 		t.Errorf("bin = %v", entry["bin"])
 	}
 }
@@ -71,7 +71,7 @@ func TestABinaryPackageIsPinnedToItsPlatform(t *testing.T) {
 	entry := decode(t, func() ([]byte, error) {
 		return Binary("0.1.0", Platform{GOOS: "windows", GOARCH: "arm64", OS: "win32", CPU: "arm64"})
 	})
-	if entry["name"] != "@apptivitypl/rill-win32-arm64" {
+	if entry["name"] != "@apptivitypl/gopage-win32-arm64" {
 		t.Errorf("name = %v", entry["name"])
 	}
 	if !slices.Contains(entry["os"].([]any), any("win32")) {
@@ -80,7 +80,7 @@ func TestABinaryPackageIsPinnedToItsPlatform(t *testing.T) {
 	if !slices.Contains(entry["cpu"].([]any), any("arm64")) {
 		t.Errorf("cpu = %v", entry["cpu"])
 	}
-	if entry["bin"].(map[string]any)["rill-win32-arm64"] != "bin/rill.exe" {
+	if entry["bin"].(map[string]any)["gopage-win32-arm64"] != "bin/gopage.exe" {
 		t.Errorf("bin = %v", entry["bin"])
 	}
 }
@@ -95,7 +95,7 @@ func TestManifestPicksTheRightShape(t *testing.T) {
 			t.Errorf("Manifest(%q) = %v", name, entry)
 		}
 	}
-	if _, err := Manifest("@apptivitypl/rill-plan9-mips", "0.1.0"); err == nil {
+	if _, err := Manifest("@apptivitypl/gopage-plan9-mips", "0.1.0"); err == nil {
 		t.Error("Manifest should refuse a package it does not know")
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/apptivitypl/rill/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/cookie"
 )
 
 type failingSource struct{}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/tool/shell"
+	"github.com/apptivitypl/gopage/internal/tool/shell"
 )
 
 const registryHost = "https://registry.npmjs.org"

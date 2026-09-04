@@ -68,8 +68,8 @@ func TestRunAgainstAServerThatSatisfiesEveryCheck(t *testing.T) {
 		switch r.URL.Path {
 		case "/":
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.Header().Set("Vary", "RILL-Fragment, RILL-Partial")
-			_, _ = w.Write([]byte(`<link rel="stylesheet" href="/assets/app.ABC.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="preload" href="/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin><title>Rendered in Go. Interactive in React.</title><h1>Rendered in Go. Interactive in React.</h1><link rel="canonical" href="http://x/"><span class="mark"></span><rill-island style="display:contents" name="Ticker"></rill-island><span class="ln"> 1</span><span class="panel-pill"></span><label class="panel-mode"></label><svg class="hacker-news-logo"></svg><div class="foot-row"></div><h3 class="hacker-news-title"></h3><rill-island style="display:contents" name="Stars" strategy="idle"></rill-island><rill-island style="display:contents" name="Response"></rill-island><link rel="modulepreload" href="/assets/island.HELPER.js"><script type="module" async src="/assets/rill.client.ABC.js"></script><!--rill:o0-->the head was already flushed<main>`))
+			w.Header().Set("Vary", "GOPAGE-Fragment, GOPAGE-Partial")
+			_, _ = w.Write([]byte(`<link rel="stylesheet" href="/assets/app.ABC.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="preload" href="/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin><title>Rendered in Go. Interactive in React.</title><h1>Rendered in Go. Interactive in React.</h1><link rel="canonical" href="http://x/"><span class="mark"></span><gopage-island style="display:contents" name="Ticker"></gopage-island><span class="ln"> 1</span><span class="panel-pill"></span><label class="panel-mode"></label><svg class="hacker-news-logo"></svg><div class="foot-row"></div><h3 class="hacker-news-title"></h3><gopage-island style="display:contents" name="Stars" strategy="idle"></gopage-island><gopage-island style="display:contents" name="Response"></gopage-island><link rel="modulepreload" href="/assets/island.HELPER.js"><script type="module" async src="/assets/gopage.client.ABC.js"></script><!--gopage:o0-->the head was already flushed<main>`))
 		case "/api/health":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"status":"ok","runtime":"go"}`))
@@ -129,8 +129,8 @@ func TestRunFailsWhenTheApiIsServedByTheWrongThing(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
-		w.Header().Set("RILL-Cache", "hit")
-		_, _ = w.Write([]byte(`<link rel="stylesheet" href="/assets/app.ABC.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="preload" href="/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin><title>Rendered in Go. Interactive in React.</title><h1>Rendered in Go. Interactive in React.</h1><link rel="canonical" href="http://x/"><span class="mark"></span><rill-island style="display:contents" name="Ticker"></rill-island><span class="ln"> 1</span><rill-island style="display:contents" name="HackerNews"></rill-island><script type="module" async src="/assets/rill.client.ABC.js"></script><!--rill:o0-->the head was already flushed<main>`))
+		w.Header().Set("GOPAGE-Cache", "hit")
+		_, _ = w.Write([]byte(`<link rel="stylesheet" href="/assets/app.ABC.css"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="preload" href="/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin><title>Rendered in Go. Interactive in React.</title><h1>Rendered in Go. Interactive in React.</h1><link rel="canonical" href="http://x/"><span class="mark"></span><gopage-island style="display:contents" name="Ticker"></gopage-island><span class="ln"> 1</span><gopage-island style="display:contents" name="HackerNews"></gopage-island><script type="module" async src="/assets/gopage.client.ABC.js"></script><!--gopage:o0-->the head was already flushed<main>`))
 	}))
 	defer server.Close()
 

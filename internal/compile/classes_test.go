@@ -6,13 +6,13 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
 func classesOf(t *testing.T, page string) (Result, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(page)}}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(page)}}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -87,9 +87,9 @@ type Props struct {
 func TestAWarningPointsAtTheComponentThatCausedIt(t *testing.T) {
 	var bag diag.Bag
 	_, err := Compile(fstest.MapFS{
-		"components/Badge/props.go":      &fstest.MapFile{Data: []byte("package badge\n\ntype Props struct {\n\tTone string\n}\n")},
-		"components/Badge/template.rill": &fstest.MapFile{Data: []byte(`<span class="badge badge-{{ Tone }}">x</span>`)},
-		"app/page.rill":                  &fstest.MapFile{Data: []byte(`<Badge Tone="ok" /><Badge Tone="warn" />`)},
+		"components/Badge/props.go":        &fstest.MapFile{Data: []byte("package badge\n\ntype Props struct {\n\tTone string\n}\n")},
+		"components/Badge/template.gopage": &fstest.MapFile{Data: []byte(`<span class="badge badge-{{ Tone }}">x</span>`)},
+		"app/page.gopage":                  &fstest.MapFile{Data: []byte(`<Badge Tone="ok" /><Badge Tone="warn" />`)},
 	}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -98,7 +98,7 @@ func TestAWarningPointsAtTheComponentThatCausedIt(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("diagnostics = %v, want one warning for one bad line", items)
 	}
-	if items[0].File != "components/Badge/template.rill" {
+	if items[0].File != "components/Badge/template.gopage" {
 		t.Errorf("file = %q, want the component that owns the line", items[0].File)
 	}
 }

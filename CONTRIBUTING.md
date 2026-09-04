@@ -15,28 +15,28 @@ These are not style preferences. Every one of them fails a build.
    `dev.jsonc`; the parser refuses an exemption that is not signed.
 3. **Tests need nothing installed.** No network, no database, no Docker. A test that reaches the
    internet is a test that fails on someone else's machine.
-4. **No Makefile and no shell scripts.** The tooling is Go, in `cmd/rilltool`. A contributor who
+4. **No Makefile and no shell scripts.** The tooling is Go, in `cmd/gopagetool`. A contributor who
    has Go has the whole toolchain.
 5. **A new diagnostic code needs a page and a test.** Every code in the registry must have
    `docs/errors/<code>.md`, an entry in that directory's index, and a test that actually produces
-   it. `rilltool diag` fails otherwise.
-6. **The config schema and the Go struct move together.** `schema/rill.schema.json` is checked
+   it. `gopagetool diag` fails otherwise.
+6. **The config schema and the Go struct move together.** `schema/gopage.schema.json` is checked
    against `internal/config` by reflection; a field added to one and not the other fails the build.
-7. **The committed examples are the templates' output.** `rilltool example` regenerates
+7. **The committed examples are the templates' output.** `gopagetool example` regenerates
    `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
-   template and running `rilltool example --update`, never by editing the example. They require a
-   published rill, so to build one against your checkout write a workspace first:
-   `rilltool example --workspace`. It names the version the manifest asks for, so a bump makes it
+   template and running `gopagetool example --update`, never by editing the example. They require a
+   published gopage, so to build one against your checkout write a workspace first:
+   `gopagetool example --workspace`. It names the version the manifest asks for, so a bump makes it
    stale; `--update` rewrites it, and `GOWORK=off` runs the tool while it is broken.
 8. **Every publishable artifact carries its own version.** See Releases below.
-9. **A regression is a bug until it is explained.** `rilltool bench --check` compares against the
+9. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
    in the pull request why the cost buys something worth more.
 
 ## Before you push
 
 ```bash
-go run ./cmd/rilltool ci
+go run ./cmd/gopagetool ci
 ```
 
 That runs the same gates CI does, in the same order: gofmt, `go vet`, golangci-lint, the tests, the
@@ -46,11 +46,11 @@ PATH; the version CI pins is in `.github/workflows/ci.yml`.
 Two gates it does not run, because they are slower:
 
 ```bash
-go run ./cmd/rilltool bench --check
+go run ./cmd/gopagetool bench --check
 ```
 
 ```bash
-PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/rilltool smoke --reference
+PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/gopagetool smoke --reference
 ```
 
 The second builds the reference application for both targets and checks that they answer with the
@@ -59,16 +59,16 @@ same documents. It needs `pnpm install` first.
 ## Layout
 
 ```
-cmd/rill/            the CLI a user installs
-cmd/rilltool/        the gates; never shipped
-internal/syntax/     lexer and parser for .rill
+cmd/gopage/            the CLI a user installs
+cmd/gopagetool/        the gates; never shipped
+internal/syntax/     lexer and parser for .gopage
 internal/compile/    the compiler frontend, and every diagnostic
 internal/ir/         the render plan and its codec
 internal/runtime/    the plan interpreter
 internal/server/     routing, caching, fragments, the HTTP surface
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
-internal/scaffold/   the templates rill new writes
+internal/scaffold/   the templates gopage new writes
 internal/demo/       the node server the demo target ships
 examples/            the templates' output, committed and checked
 npm/                 the hand-written half of the npm packages
@@ -87,12 +87,12 @@ commit that only says what the diff already shows is a wasted commit message.
 ## Releases
 
 Every artifact this repository publishes has its own entry and its own version in
-[versions.jsonc](versions.jsonc). A release is a version bump there, not a tag: `rilltool release
+[versions.jsonc](versions.jsonc). A release is a version bump there, not a tag: `gopagetool release
 plan` asks each registry whether that version already exists and publishes only what is missing, so
 running the workflow twice publishes nothing the second time. Tags are written afterwards, because
 Go modules resolve through them.
 
-`rilltool release check`, which `rilltool ci` runs, refuses a change that touches a package whose
+`gopagetool release check`, which `gopagetool ci` runs, refuses a change that touches a package whose
 version is already published without raising it. Say `"unreleased": true` on the package when that
 is deliberate.
 
@@ -100,7 +100,7 @@ For the Go module, goreleaser builds the archives, cosign signs the checksums ag
 own identity, and the release carries an SBOM and a provenance attestation for every artifact.
 
 The npm packages are assembled from those archives, never built separately:
-`rilltool release run @apptivitypl/rill --from <archives>` writes `dist/npm`, generating every
+`gopagetool release run @apptivitypl/gopage --from <archives>` writes `dist/npm`, generating every
 `package.json` from the manifest so a version can never drift. With no package name it assembles
 everything the plan says is missing. Without `--publish` it stops at the folder and prints the
 `npm publish` line it would have run.
@@ -115,7 +115,7 @@ pointing at `publish.yml`, so the workflow authenticates over OIDC. The publish 
 reads as authentication, and the OIDC exchange never happens.
 
 npm refuses to configure a trusted publisher for a name it has never seen, so a new package has to be
-published once by hand and then passed to `rilltool release trust`, which needs 2FA on the account
+published once by hand and then passed to `gopagetool release trust`, which needs 2FA on the account
 and a browser login. Weigh that before adding one.
 
 ## Licence

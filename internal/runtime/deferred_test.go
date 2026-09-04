@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apptivitypl/rill/internal/ir"
+	"github.com/apptivitypl/gopage/internal/ir"
 )
 
 type stubDeferred struct {
@@ -96,7 +96,7 @@ func TestInOrderStreamingWaitsAndFlushesAroundTheFragment(t *testing.T) {
 func TestOutOfOrderStreamingLeavesASlot(t *testing.T) {
 	hook := &stubDeferred{props: map[string]Accessible{"Reviews": leaf("late")}}
 	html := renderDeferred(t, hook, NoWait)
-	if !strings.Contains(html, `<rill-slot name="Reviews">`) || !strings.Contains(html, "</rill-slot>") {
+	if !strings.Contains(html, `<gopage-slot name="Reviews">`) || !strings.Contains(html, "</gopage-slot>") {
 		t.Errorf("html = %q, want a slot in place of the fragment", html)
 	}
 	if strings.Contains(html, "late") {
@@ -165,10 +165,10 @@ func TestRenderFragmentIgnoresAFragmentThatIsNotInThePlan(t *testing.T) {
 }
 
 func TestSlotMarkupIsStable(t *testing.T) {
-	if SlotOpen("Reviews", false, "") != `<rill-slot name="Reviews">` || SlotClose() != "</rill-slot>" {
+	if SlotOpen("Reviews", false, "") != `<gopage-slot name="Reviews">` || SlotClose() != "</gopage-slot>" {
 		t.Error("the slot markup changed; the client runtime matches on it")
 	}
-	if TemplateOpen("Reviews") != `<template data-rill-slot="Reviews">` || TemplateClose() != "</template>" {
+	if TemplateOpen("Reviews") != `<template data-gopage-slot="Reviews">` || TemplateClose() != "</template>" {
 		t.Error("the template markup changed; the client runtime matches on it")
 	}
 }
@@ -232,7 +232,7 @@ func TestABudgetRendersALoaderThatFinishedInTime(t *testing.T) {
 func TestABudgetLeavesASlotForALoaderThatRanLong(t *testing.T) {
 	hook := &stubDeferred{props: map[string]Accessible{"Reviews": leaf("slow")}}
 	html := renderDeferred(t, hook, Budget(time.Millisecond))
-	if !strings.Contains(html, `<rill-slot name="Reviews">`) {
+	if !strings.Contains(html, `<gopage-slot name="Reviews">`) {
 		t.Errorf("html = %q, want a slot once the budget ran out", html)
 	}
 	if strings.Contains(html, "slow") {
@@ -283,7 +283,7 @@ func renderHeld(t *testing.T, hook *stubDeferred, budget Budget) string {
 func TestAPlaceholderFillsTheSlot(t *testing.T) {
 	hook := &stubDeferred{props: map[string]Accessible{"Reviews": leaf("late")}}
 	html := renderHeld(t, hook, NoWait)
-	if !strings.Contains(html, `<rill-slot name="Reviews" fetch><i>hold</i></rill-slot>`) {
+	if !strings.Contains(html, `<gopage-slot name="Reviews" fetch><i>hold</i></gopage-slot>`) {
 		t.Errorf("html = %q, want the placeholder inside the slot", html)
 	}
 	if strings.Contains(html, "late") {
@@ -322,10 +322,10 @@ func TestRenderFragmentStopsAtTheBodyEnd(t *testing.T) {
 }
 
 func TestASlotSaysWhetherTheClientShouldFetchIt(t *testing.T) {
-	if SlotOpen("Reviews", true, "") != `<rill-slot name="Reviews" fetch>` {
+	if SlotOpen("Reviews", true, "") != `<gopage-slot name="Reviews" fetch>` {
 		t.Error("a fetched slot carries the attribute the client matches on")
 	}
-	if SlotOpen("Reviews", false, "") != `<rill-slot name="Reviews">` {
+	if SlotOpen("Reviews", false, "") != `<gopage-slot name="Reviews">` {
 		t.Error("a tail slot carries no attribute")
 	}
 }
@@ -346,9 +346,9 @@ func TestAPlaceholderThatCannotRenderFailsThePage(t *testing.T) {
 
 func TestASlotAdvertisesTheStrategyThatWillFetchIt(t *testing.T) {
 	cases := map[string]string{
-		SlotOpen("Latest", true, "visible"):  `<rill-slot name="Latest" fetch="visible">`,
-		SlotOpen("Latest", true, ""):         `<rill-slot name="Latest" fetch>`,
-		SlotOpen("Latest", false, "visible"): `<rill-slot name="Latest">`,
+		SlotOpen("Latest", true, "visible"):  `<gopage-slot name="Latest" fetch="visible">`,
+		SlotOpen("Latest", true, ""):         `<gopage-slot name="Latest" fetch>`,
+		SlotOpen("Latest", false, "visible"): `<gopage-slot name="Latest">`,
 	}
 	for got, want := range cases {
 		if got != want {

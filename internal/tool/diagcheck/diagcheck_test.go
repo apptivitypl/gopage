@@ -32,7 +32,7 @@ func TestIsCodeRecognizesTheShape(t *testing.T) {
 }
 
 func TestCodesInIgnoresSurroundingPunctuation(t *testing.T) {
-	got := CodesIn("error[RILL-C107]: broken; see W703 and \"C503\"")
+	got := CodesIn("error[GOPAGE-C107]: broken; see W703 and \"C503\"")
 	if !reflect.DeepEqual(got, set("C107", "C503", "W703")) {
 		t.Errorf("CodesIn = %v", got)
 	}

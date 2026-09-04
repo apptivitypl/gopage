@@ -11,16 +11,16 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 
-	"github.com/apptivitypl/rill/internal/paths"
+	"github.com/apptivitypl/gopage/internal/paths"
 )
 
 const (
-	PropsPrefix   = "rill:props/"
-	RuntimePrefix = "rill.client."
+	PropsPrefix   = "gopage:props/"
+	RuntimePrefix = "gopage.client."
 	IslandPrefix  = "island."
-	entryName     = "rill-entry.ts"
-	runtimeName   = "rill-runtime.ts"
-	outDir        = "rill-bundle"
+	entryName     = "gopage-entry.ts"
+	runtimeName   = "gopage-runtime.ts"
+	outDir        = "gopage-bundle"
 	workDir       = paths.CacheDir
 	islandDir     = "islands"
 )
@@ -28,7 +28,7 @@ const (
 const (
 	EngineReact  = "react"
 	EnginePreact = "preact"
-	ReactPrefix  = "rill:react"
+	ReactPrefix  = "gopage:react"
 	mountSuffix  = ".mount.ts"
 )
 
@@ -96,7 +96,7 @@ func Build(opts Options) (Output, error) {
 		Write:             false,
 		Metafile:          true,
 		Outdir:            outDir,
-		EntryNames:        "rill.client.[hash]",
+		EntryNames:        "gopage.client.[hash]",
 		PublicPath:        "/assets/",
 		ChunkNames:        "island.[hash]",
 		JSX:               api.JSXAutomatic,
@@ -147,7 +147,7 @@ func aliases(engine string) map[string]string {
 	}
 }
 
-const reactNamespace = "rill-react"
+const reactNamespace = "gopage-react"
 
 const reactAdapter = `import { createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -176,13 +176,13 @@ func reactPlugin(dir string) api.Plugin {
 	}
 }
 
-const propsNamespace = "rill-props"
+const propsNamespace = "gopage-props"
 
 func propsPlugin() api.Plugin {
 	return api.Plugin{
-		Name: "rill-props",
+		Name: "gopage-props",
 		Setup: func(build api.PluginBuild) {
-			build.OnResolve(api.OnResolveOptions{Filter: "^rill:props/"}, func(args api.OnResolveArgs) (api.OnResolveResult, error) {
+			build.OnResolve(api.OnResolveOptions{Filter: "^gopage:props/"}, func(args api.OnResolveArgs) (api.OnResolveResult, error) {
 				name := strings.TrimPrefix(args.Path, PropsPrefix)
 				if name == "" || strings.ContainsAny(name, `/\.`) {
 					return api.OnResolveResult{}, fmt.Errorf("%s is not a component name", args.Path)

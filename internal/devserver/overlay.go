@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/apptivitypl/rill/internal/diag"
+	"github.com/apptivitypl/gopage/internal/diag"
 )
 
-const OverlayTitle = "rill: the project does not compile"
+const OverlayTitle = "gopage: the project does not compile"
 
 func OverlayFailure(w http.ResponseWriter, message string) {
 	var b strings.Builder

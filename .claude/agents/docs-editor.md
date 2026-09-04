@@ -10,7 +10,7 @@ You write the prose in this repository. Only markdown; leave code and configurat
 
 ## Who each file is for
 
-`README.md` is for someone deciding whether to use rill. `CONTRIBUTING.md` is for someone about to
+`README.md` is for someone deciding whether to use gopage. `CONTRIBUTING.md` is for someone about to
 open a pull request. `examples/*/README.md` is for someone who just opened that folder in an online
 editor and wants to know what the application does and which file to read first. A file for a reader
 carries nothing that only a maintainer needs; if a warning about a generated folder has to be there,

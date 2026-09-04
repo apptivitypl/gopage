@@ -91,7 +91,7 @@ func TestExclusionsMatchPaths(t *testing.T) {
 		path string
 		want bool
 	}{
-		{"cmd/rilltool/main.go", true},
+		{"cmd/gopagetool/main.go", true},
 		{"internal/assets/shell.go", true},
 		{"internal/ir/plan.go", false},
 	}

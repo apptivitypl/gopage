@@ -4,15 +4,15 @@ import (
 	"log"
 	"os"
 
-	"github.com/apptivitypl/rill"
+	"github.com/apptivitypl/gopage"
 
-	"github.com/apptivitypl/rill/examples/blog/internal/gen"
+	"github.com/apptivitypl/gopage/examples/blog/internal/gen"
 )
 
 func main() {
 	options := gen.Options()
 	options.CacheBytes = 32 << 20
-	app, err := rill.New(options)
+	app, err := gopage.New(options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,5 +20,5 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	log.Fatal(rill.Serve(addr, app))
+	log.Fatal(gopage.Serve(addr, app))
 }

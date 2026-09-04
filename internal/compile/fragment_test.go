@@ -5,9 +5,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/apptivitypl/rill/internal/diag"
-	"github.com/apptivitypl/rill/internal/ir"
-	"github.com/apptivitypl/rill/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
 const fragmentPage = `---
@@ -24,7 +24,7 @@ type Props struct {
 func compilePage(t *testing.T, source string) (Result, *diag.Bag) {
 	t.Helper()
 	var bag diag.Bag
-	result, err := Compile(fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(source)}}, &bag)
+	result, err := Compile(fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(source)}}, &bag)
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
@@ -226,7 +226,7 @@ func TestABodyStillRendersWhenTheFragmentIsRejected(t *testing.T) {
 }
 
 func deferredProject(page string) fstest.MapFS {
-	return fstest.MapFS{"app/page.rill": &fstest.MapFile{Data: []byte(page)}}
+	return fstest.MapFS{"app/page.gopage": &fstest.MapFile{Data: []byte(page)}}
 }
 
 const deferredPage = `---
@@ -238,11 +238,11 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ---
@@ -274,7 +274,7 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 ---
@@ -299,11 +299,11 @@ type Props struct {
 	Rows []Review
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ---
@@ -328,11 +328,11 @@ type Props struct {
 	Ready bool
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ---
@@ -356,11 +356,11 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ---
@@ -398,7 +398,7 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 ---
@@ -423,11 +423,11 @@ type Props struct {
 	Heading string
 }
 
-func Load(ctx *rill.Ctx) (Props, error) {
+func Load(ctx *gopage.Ctx) (Props, error) {
 	return Props{}, nil
 }
 
-func Reviews(ctx *rill.Ctx) ([]Review, error) {
+func Reviews(ctx *gopage.Ctx) ([]Review, error) {
 	return nil, nil
 }
 ---
@@ -449,8 +449,8 @@ func TestAFragmentStrategyIsCheckedAgainstTheDeliveryMode(t *testing.T) {
 	}
 	for name, want := range cases {
 		files := fstest.MapFS{
-			"rill.jsonc":    &fstest.MapFile{Data: []byte(`{"fragments": {"deferred": "` + want.mode + `"}}`)},
-			"app/page.rill": &fstest.MapFile{Data: []byte(strategyPage(want.directive))},
+			"gopage.jsonc":    &fstest.MapFile{Data: []byte(`{"fragments": {"deferred": "` + want.mode + `"}}`)},
+			"app/page.gopage": &fstest.MapFile{Data: []byte(strategyPage(want.directive))},
 		}
 		var bag diag.Bag
 		if _, err := Compile(files, &bag); err != nil {
@@ -464,8 +464,8 @@ func TestAFragmentStrategyIsCheckedAgainstTheDeliveryMode(t *testing.T) {
 
 func TestTheStrategyReachesThePlan(t *testing.T) {
 	files := fstest.MapFS{
-		"rill.jsonc":    &fstest.MapFile{Data: []byte("{\"fragments\": {\"deferred\": \"fetch\"}}")},
-		"app/page.rill": &fstest.MapFile{Data: []byte(strategyPage(`defer="visible"`))},
+		"gopage.jsonc":    &fstest.MapFile{Data: []byte("{\"fragments\": {\"deferred\": \"fetch\"}}")},
+		"app/page.gopage": &fstest.MapFile{Data: []byte(strategyPage(`defer="visible"`))},
 	}
 	var bag diag.Bag
 	result, err := Compile(files, &bag)
