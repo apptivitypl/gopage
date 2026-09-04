@@ -2,7 +2,7 @@
   "packages": {
     "gopage": {
       "kind": "go",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "tag": "v{version}",
       "release": "goreleaser",
       "paths": [
@@ -25,7 +25,7 @@
 
     "@apptivitypl/gopage": {
       "kind": "npm",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dir": "npm/gopage",
       "needs": ["gopage"],
       "paths": [

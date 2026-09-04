@@ -14,8 +14,6 @@ import (
 	"github.com/apptivitypl/gopage/internal/tool/shell"
 )
 
-const exampleModule = "github.com/apptivitypl/gopage"
-
 var workspaceEnv = []string{"GOWORK="}
 
 var outsideEnv = []string{"GOWORK=off"}
@@ -37,7 +35,7 @@ func exampleCmd(args []string) error {
 		return verifyExamples(root)
 	}
 	if workspace {
-		version, err := pinnedVersion(root, examplecheck.Examples()[0])
+		version, err := examplecheck.Examples()[0].PinnedVersion(root)
 		if err != nil {
 			return err
 		}
@@ -56,7 +54,7 @@ func exampleCmd(args []string) error {
 		differences = append(differences, found...)
 	}
 	if update {
-		version, err := pinnedVersion(root, examplecheck.Examples()[0])
+		version, err := examplecheck.Examples()[0].PinnedVersion(root)
 		if err != nil {
 			return err
 		}
@@ -77,7 +75,7 @@ func exampleVersion(root string, example examplecheck.Example, update bool) (str
 	if update {
 		return releasedVersion()
 	}
-	return pinnedVersion(root, example)
+	return example.PinnedVersion(root)
 }
 
 func releasedVersion() (string, error) {
@@ -90,21 +88,6 @@ func releasedVersion() (string, error) {
 		}
 	}
 	return requiredVersion()
-}
-
-func pinnedVersion(root string, example examplecheck.Example) (string, error) {
-	path := filepath.Join(root, filepath.FromSlash(example.Dir()), "go.mod")
-	text, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	for _, line := range strings.Split(string(text), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) == 2 && fields[0] == exampleModule {
-			return fields[1], nil
-		}
-	}
-	return "", fmt.Errorf("%s does not require %s", path, exampleModule)
 }
 
 func requiredVersion() (string, error) {
@@ -244,11 +227,11 @@ func writeWorkspace(root, version string) error {
 	if err := runner.Run(build.Command{Dir: root, Env: workspaceEnv, Name: "go", Args: uses}); err != nil {
 		return err
 	}
-	replacement := fmt.Sprintf("%s@%s=.", exampleModule, version)
+	replacement := fmt.Sprintf("%s@%s=.", examplecheck.Module, version)
 	edit := []string{"work", "edit", "-replace", replacement}
 	if err := runner.Run(build.Command{Dir: root, Env: workspaceEnv, Name: "go", Args: edit}); err != nil {
 		return err
 	}
-	fmt.Printf("example: go.work points %s %s at this checkout\n", exampleModule, version)
+	fmt.Printf("example: go.work points %s %s at this checkout\n", examplecheck.Module, version)
 	return nil
 }

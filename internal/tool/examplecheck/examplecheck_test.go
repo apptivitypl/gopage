@@ -115,11 +115,14 @@ func TestRenderSaysWhatToRun(t *testing.T) {
 }
 
 func TestTheCommittedExamplesMatchTheTemplates(t *testing.T) {
-	version := requiredVersion(t)
 	for _, example := range Examples() {
 		committed := filepath.Join(repoRoot, filepath.FromSlash(example.Dir()))
 		if _, err := os.Stat(committed); err != nil {
 			t.Fatalf("%s is not committed: %v", example.Dir(), err)
+		}
+		version, err := example.PinnedVersion(repoRoot)
+		if err != nil {
+			t.Fatalf("PinnedVersion %s: %v", example.Name, err)
 		}
 		config := example.Config(version)
 		config.Dir = filepath.Join(t.TempDir(), example.Name)
@@ -134,22 +137,6 @@ func TestTheCommittedExamplesMatchTheTemplates(t *testing.T) {
 			t.Errorf("%s", Render(differences))
 		}
 	}
-}
-
-func requiredVersion(t *testing.T) string {
-	t.Helper()
-	data, err := os.ReadFile(filepath.Join(repoRoot, "versions.jsonc"))
-	if err != nil {
-		t.Fatalf("read versions.jsonc: %v", err)
-	}
-	for line := range strings.SplitSeq(string(data), "\n") {
-		if strings.Contains(line, `"version"`) {
-			_, value, _ := strings.Cut(line, ":")
-			return "v" + strings.Trim(strings.TrimSpace(value), `",`)
-		}
-	}
-	t.Fatal("versions.jsonc names no version")
-	return ""
 }
 
 func keys(sums map[string][32]byte) []string {
@@ -191,5 +178,48 @@ require (
 	bumped := []byte(strings.Replace(string(template), "v0.33.0", "v0.34.0", 1))
 	if string(direct(bumped)) == string(direct(template)) {
 		t.Error("a changed direct requirement must still be a difference")
+	}
+}
+
+func TestThePinIsReadFromTheCommittedExample(t *testing.T) {
+	root := t.TempDir()
+	example := Examples()[0]
+	dir := filepath.Join(root, filepath.FromSlash(example.Dir()))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	text := "module " + example.Module() + "\n\ngo 1.26.0\n\nrequire (\n\t" +
+		Module + " v0.4.2\n\tgithub.com/syumai/workers v0.33.0\n)\n"
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(text), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	got, err := example.PinnedVersion(root)
+	if err != nil {
+		t.Fatalf("PinnedVersion: %v", err)
+	}
+	if got != "v0.4.2" {
+		t.Errorf("PinnedVersion = %q, want what the example requires, not what versions.jsonc holds", got)
+	}
+}
+
+func TestTheModuleLineIsNotMistakenForThePin(t *testing.T) {
+	root := t.TempDir()
+	example := Examples()[0]
+	dir := filepath.Join(root, filepath.FromSlash(example.Dir()))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	text := "module " + example.Module() + "\n\ngo 1.26.0\n"
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(text), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, err := example.PinnedVersion(root); err == nil {
+		t.Error("an example that requires nothing must not report a pin")
+	}
+}
+
+func TestAnExampleWithoutAGoModSaysSo(t *testing.T) {
+	if _, err := Examples()[0].PinnedVersion(t.TempDir()); !os.IsNotExist(err) {
+		t.Errorf("err = %v, want a not-exist error", err)
 	}
 }

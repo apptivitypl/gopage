@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -12,6 +14,8 @@ import (
 )
 
 const Root = "examples"
+
+const Module = "github.com/apptivitypl/gopage"
 
 type Example struct {
 	Name     string
@@ -31,7 +35,22 @@ func (e Example) Dir() string {
 }
 
 func (e Example) Module() string {
-	return "github.com/apptivitypl/gopage/" + e.Dir()
+	return Module + "/" + e.Dir()
+}
+
+func (e Example) PinnedVersion(root string) (string, error) {
+	path := filepath.Join(root, filepath.FromSlash(e.Dir()), "go.mod")
+	text, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	for _, line := range strings.Split(string(text), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[0] == Module {
+			return fields[1], nil
+		}
+	}
+	return "", fmt.Errorf("%s does not require %s", path, Module)
 }
 
 func (e Example) Config(version string) scaffold.Config {
