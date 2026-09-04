@@ -195,10 +195,11 @@ func measure(root, profilePath string) error {
 	if err := os.MkdirAll(filepath.Dir(profilePath), 0o755); err != nil {
 		return err
 	}
-	if err := shell.Run("go", "test", "./...", "-covermode=atomic", "-coverprofile="+profilePath); err != nil {
+	if _, err := shell.Run("go", "test", "./...", "-covermode=atomic", "-coverprofile="+profilePath); err != nil {
 		return err
 	}
-	return shell.Run("go", "tool", "cover", "-html="+profilePath, "-o="+filepath.Join(root, coverageDir, htmlName))
+	_, err := shell.Run("go", "tool", "cover", "-html="+profilePath, "-o="+filepath.Join(root, coverageDir, htmlName))
+	return err
 }
 
 func diffGate(report covprofile.Report, cfg *config.Config, base string) (string, error) {
@@ -234,7 +235,7 @@ func ci() error {
 		{"go", "test", "./..."},
 	}
 	for _, step := range steps {
-		if err := shell.Run(step[0], step[1:]...); err != nil {
+		if _, err := shell.Run(step[0], step[1:]...); err != nil {
 			return err
 		}
 	}

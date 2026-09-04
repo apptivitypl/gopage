@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apptivitypl/rill/internal/tool/npmpkg"
 	"github.com/apptivitypl/rill/internal/tool/release"
@@ -178,42 +179,40 @@ func runOne(root string, pkg release.Package, from, out string, publish bool) er
 	if pkg.Kind != release.KindNPM {
 		return fmt.Errorf("nothing here knows how to publish a %s package", pkg.Kind)
 	}
-	for _, member := range npmMembers(pkg.Name) {
-		if publish {
-			done, err := release.OnRegistry(member, pkg.Version)
-			if err != nil {
-				return err
-			}
-			if done {
-				fmt.Printf("%s %s is already on the registry\n", member, pkg.Version)
-				continue
-			}
-		}
-		dir, err := assembleNPM(root, member, pkg.Version, from, resolveOut(root, out))
-		if err != nil {
-			return err
-		}
-		fmt.Printf("assembled %s %s in %s\n", member, pkg.Version, dir)
-		if !publish {
-			fmt.Printf("  npm publish %s --access public\n", dir)
-			continue
-		}
-		if err := shell.Run("npm", "publish", dir, "--access", "public"); err != nil {
-			return err
-		}
+	target := resolveOut(root, out)
+	job := npmRelease{
+		version: pkg.Version,
+		assemble: func(member string) (string, error) {
+			return assembleNPM(root, member, pkg.Version, from, target)
+		},
+		present:  func(member string) (bool, error) { return release.OnRegistry(member, pkg.Version) },
+		publish:  func(dir string) (string, error) { return shell.Run("npm", "publish", dir, "--access", "public") },
+		pause:    time.Sleep,
+		out:      os.Stdout,
+		verify:   true,
+		patience: reviewPatience,
+		interval: reviewInterval,
 	}
-	return nil
+	if !publish {
+		job.present = func(string) (bool, error) { return false, nil }
+		job.publish = func(dir string) (string, error) {
+			fmt.Printf("  npm publish %s --access public\n", dir)
+			return "", nil
+		}
+		job.verify = false
+	}
+	return job.run(npmMembers(pkg.Name))
 }
 
 func npmMembers(name string) []string {
 	if name != npmpkg.CLI {
 		return []string{name}
 	}
-	members := []string{npmpkg.CLI}
+	var members []string
 	for _, platform := range npmpkg.Platforms() {
 		members = append(members, platform.Package())
 	}
-	return members
+	return append(members, npmpkg.CLI)
 }
 
 func resolveOut(root, out string) string {
@@ -247,11 +246,12 @@ func trustOne(name string) error {
 		fmt.Printf("%s already trusts %s through %s\n", name, trustRepository, trustWorkflow)
 		return nil
 	}
-	return shell.Run("npm", "trust", "github", name,
+	_, err = shell.Run("npm", "trust", "github", name,
 		"--repo", trustRepository,
 		"--file", trustWorkflow,
 		"--allow-publish",
 		"--yes")
+	return err
 }
 
 func releaseTags() error {

@@ -2,21 +2,23 @@ package shell
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-func Run(name string, args ...string) error {
+func Run(name string, args ...string) (string, error) {
 	fmt.Fprintf(os.Stderr, "$ %s %s\n", name, strings.Join(args, " "))
+	var output strings.Builder
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.MultiWriter(os.Stdout, &output)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &output)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
+		return output.String(), fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
 	}
-	return nil
+	return output.String(), nil
 }
 
 func Capture(name string, args ...string) (string, error) {
