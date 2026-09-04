@@ -109,3 +109,20 @@ func TestNamesListsEveryPublishedPackage(t *testing.T) {
 		t.Errorf("names = %v, want them sorted", names)
 	}
 }
+
+func TestTheRepositoryNeedsNoCorrectionFromNpm(t *testing.T) {
+	for _, entry := range []map[string]any{
+		decode(t, func() ([]byte, error) { return Launcher("0.1.0") }),
+		decode(t, func() ([]byte, error) {
+			return Binary("0.1.0", Platform{GOOS: "linux", GOARCH: "amd64", OS: "linux", CPU: "x64"})
+		}),
+	} {
+		held, ok := entry["repository"].(map[string]any)
+		if !ok {
+			t.Fatalf("repository = %v, want the object form npm stores", entry["repository"])
+		}
+		if held["type"] != "git" || held["url"] != "git+https://github.com/apptivitypl/gopage.git" {
+			t.Errorf("repository = %v", held)
+		}
+	}
+}

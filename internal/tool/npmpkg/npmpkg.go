@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	Scope      = "@apptivitypl"
-	CLI        = Scope + "/gopage"
-	Repository = "https://github.com/apptivitypl/gopage"
-	License    = "MIT OR Apache-2.0"
-	Engine     = ">=20"
+	Scope         = "@apptivitypl"
+	CLI           = Scope + "/gopage"
+	Repository    = "https://github.com/apptivitypl/gopage"
+	RepositoryGit = "git+" + Repository + ".git"
+	License       = "MIT OR Apache-2.0"
+	Engine        = ">=20"
 )
 
 type Platform struct {
@@ -55,12 +56,17 @@ func (p Platform) Archive(version string) string {
 	return fmt.Sprintf("gopage_%s_%s_%s.tar.gz", version, p.GOOS, p.GOARCH)
 }
 
+type repository struct {
+	Type string `json:"type"`
+	URL  string `json:"url"`
+}
+
 type manifest struct {
 	Name         string            `json:"name"`
 	Version      string            `json:"version"`
 	Description  string            `json:"description"`
 	License      string            `json:"license"`
-	Repository   string            `json:"repository"`
+	Repository   repository        `json:"repository"`
 	Homepage     string            `json:"homepage"`
 	Keywords     []string          `json:"keywords,omitempty"`
 	Engines      map[string]string `json:"engines"`
@@ -78,7 +84,7 @@ func base(name, version, description string) manifest {
 		Version:     version,
 		Description: description,
 		License:     License,
-		Repository:  Repository,
+		Repository:  repository{Type: "git", URL: RepositoryGit},
 		Homepage:    Repository,
 		Engines:     map[string]string{"node": Engine},
 	}
