@@ -1,0 +1,15 @@
+---
+type Props struct {
+	Heading string
+}
+
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Heading, Robots: "noindex"}
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Heading: "page not found"}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+<p>No route answers this address. <a href="/">Back to the start.</a></p>

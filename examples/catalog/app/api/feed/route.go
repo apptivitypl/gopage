@@ -1,0 +1,27 @@
+package route
+
+import (
+	"github.com/apptivitypl/gopage"
+
+	"github.com/apptivitypl/gopage/examples/catalog/catalog"
+)
+
+type Entry struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	City  string `json:"city"`
+	Price int64  `json:"price"`
+}
+
+func GET(ctx *gopage.Ctx, params gopage.Params) (gopage.Response, error) {
+	request := ctx.Request()
+	return gopage.Events(request, func(out *gopage.Stream) error {
+		for _, item := range catalog.All("") {
+			entry := Entry{ID: item.ID, Name: item.Name, City: item.City, Price: item.Price}
+			if err := out.Send("item", entry); err != nil {
+				return err
+			}
+		}
+		return out.Send("done", nil)
+	}), nil
+}

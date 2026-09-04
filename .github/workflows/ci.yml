@@ -280,6 +280,7 @@ jobs:
         run: go run ./cmd/gopagetool example
 
       - run: pnpm --dir examples/hello-world install --no-frozen-lockfile
+      - run: pnpm --dir examples/catalog install --no-frozen-lockfile
 
       - name: Build the examples the way someone outside this repo does
         run: go run ./cmd/gopagetool example --verify

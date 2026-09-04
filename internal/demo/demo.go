@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
+
+	"github.com/apptivitypl/gopage/internal/npmname"
 )
 
 //go:embed serve.mjs
@@ -43,15 +43,8 @@ type manifest struct {
 	Scripts map[string]string `json:"scripts"`
 }
 
-var unsafeName = regexp.MustCompile(`[^a-z0-9._-]+`)
-
 func PackageName(name string) string {
-	cleaned := unsafeName.ReplaceAllString(strings.ToLower(name), "-")
-	cleaned = strings.Trim(cleaned, "-._")
-	if cleaned == "" {
-		cleaned = "gopage"
-	}
-	return cleaned + "-demo"
+	return npmname.Clean(name) + "-demo"
 }
 
 func Write(dir string, meta Meta) error {

@@ -1,5 +1,5 @@
 {
-  "name": "hello-world",
+  "name": "catalog",
   "private": true,
   "scripts": {
     "dev": "gopage dev",

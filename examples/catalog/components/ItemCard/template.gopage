@@ -1,0 +1,6 @@
+<a class="item" href="/items/{{ Item.ID }}">
+    <span class="item-name">{{ Item.Name }}</span>
+    <span class="item-price">{{ Item.Price | money("PLN") }}</span>
+    <span class="item-meta">{{ Item.City }} · {{ Item.Area }} m2</span>
+    <span class="item-summary">{{ Item.Summary | truncate(70) }}</span>
+</a>

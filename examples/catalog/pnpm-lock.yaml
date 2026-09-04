@@ -1,0 +1,146 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      react:
+        specifier: ^19.1.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@apptivitypl/gopage':
+        specifier: 0.2.1
+        version: 0.2.1
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.1.0
+        version: 19.2.7(@types/react@19.2.18)
+
+packages:
+
+  '@apptivitypl/gopage-darwin-arm64@0.2.1':
+    resolution: {integrity: sha512-S317qlYDWLZEChtiMMAxY7qB7QWrH/K4BoGp7+LNseGZEAhorAITRZitgMqZgxXvq1O6vbQvUsFA9YywBDVgnw==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [darwin]
+    hasBin: true
+
+  '@apptivitypl/gopage-darwin-x64@0.2.1':
+    resolution: {integrity: sha512-5ihLMlYAc9mTIWln47dF0MCDWtlIEnlm2hjTghIpjGrOWvkn8XkXc7T5ZAS5iFofLlThkSjyAIIS4f4xg069IA==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [darwin]
+    hasBin: true
+
+  '@apptivitypl/gopage-linux-arm64@0.2.1':
+    resolution: {integrity: sha512-OFKZJ/yK0rn+ScpVyFxFaMTtLgrlxjYlL1ZAE/mJs+01Ve4D1XZdr/XQ0Pho3mbCucuNLMZ1AJJ+Glv8AfJNcg==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [linux]
+    hasBin: true
+
+  '@apptivitypl/gopage-linux-x64@0.2.1':
+    resolution: {integrity: sha512-MHH9RdEGbAECFw+/9AtKS1XapYLPsB8kqEvWMe0MKe3KD9Y/W5lWOaflf7LlZpeScxHnFDSaiXFzbQ0LP3n2qQ==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [linux]
+    hasBin: true
+
+  '@apptivitypl/gopage-win32-arm64@0.2.1':
+    resolution: {integrity: sha512-WWNpUs+vJxA0RLSOj+LJGeo6yJ5pdwFJ1/0xd51Oc4v6uE/f+LyassmAgcE8amPJ3kkO7L0WTgDTWQkEsRF51g==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [win32]
+    hasBin: true
+
+  '@apptivitypl/gopage-win32-x64@0.2.1':
+    resolution: {integrity: sha512-1C+rgMqHo7Z45s4N5guCUFfWkCo/tK6DDCH1np22rc1WK4zx4a4aX3sEbd8x8Q9DH94gm1AP4eJOcICIxSiNcw==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [win32]
+    hasBin: true
+
+  '@apptivitypl/gopage@0.2.1':
+    resolution: {integrity: sha512-5655nIqmcEosLBizDqwkRk7GmH54EFU+cu0EykvDhDZKKav9fCf1JW/meU6v22QhNyTM7CVGa0KXgM0srsb0XA==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  '@types/react-dom@19.2.7':
+    resolution: {integrity: sha512-I8bPpDLcHBv1qiIiXDCy71Rt8eQDKJP0sMSWJphDdAcdqiJ1sGpZamavoEIRZmYzjia9LuEb2HlYdDpmoENpvQ==}
+    peerDependencies:
+      '@types/react': ^19.2.0
+
+  '@types/react@19.2.18':
+    resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
+
+  csstype@3.2.3:
+    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  react-dom@19.2.8:
+    resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
+    peerDependencies:
+      react: ^19.2.8
+
+  react@19.2.8:
+    resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
+    engines: {node: '>=0.10.0'}
+
+  scheduler@0.27.0:
+    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+
+snapshots:
+
+  '@apptivitypl/gopage-darwin-arm64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage-darwin-x64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage-linux-arm64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage-linux-x64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage-win32-arm64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage-win32-x64@0.2.1':
+    optional: true
+
+  '@apptivitypl/gopage@0.2.1':
+    optionalDependencies:
+      '@apptivitypl/gopage-darwin-arm64': 0.2.1
+      '@apptivitypl/gopage-darwin-x64': 0.2.1
+      '@apptivitypl/gopage-linux-arm64': 0.2.1
+      '@apptivitypl/gopage-linux-x64': 0.2.1
+      '@apptivitypl/gopage-win32-arm64': 0.2.1
+      '@apptivitypl/gopage-win32-x64': 0.2.1
+
+  '@types/react-dom@19.2.7(@types/react@19.2.18)':
+    dependencies:
+      '@types/react': 19.2.18
+
+  '@types/react@19.2.18':
+    dependencies:
+      csstype: 3.2.3
+
+  csstype@3.2.3: {}
+
+  react-dom@19.2.8(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      scheduler: 0.27.0
+
+  react@19.2.8: {}
+
+  scheduler@0.27.0: {}

@@ -1,0 +1,21 @@
+{
+  "name": "gopage catalog",
+  "image": "mcr.microsoft.com/devcontainers/go:1-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {"version": "24"}
+  },
+  "containerEnv": {
+    "GOTOOLCHAIN": "auto",
+    "CGO_ENABLED": "0",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {"label": "gopage dev", "onAutoForward": "openPreview"}
+  },
+  "postCreateCommand": "go install github.com/apptivitypl/gopage/cmd/gopage@$(go list -m -f '{{.Version}}' github.com/apptivitypl/gopage) && go mod download && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install",
+  "postAttachCommand": "gopage dev --addr 0.0.0.0:3000",
+  "customizations": {
+    "vscode": {"extensions": ["golang.go"]}
+  }
+}

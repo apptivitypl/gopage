@@ -1,0 +1,10 @@
+<form class="filter" method="get" action="/">
+    <label for="city">city</label>
+    <select id="city" name="city">
+        <option value="">all</option>
+        {% for city in Cities %}
+            <option value="{{ city }}">{{ city }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">filter</button>
+</form>

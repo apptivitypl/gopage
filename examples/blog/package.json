@@ -1,0 +1,11 @@
+{
+  "name": "blog",
+  "private": true,
+  "scripts": {
+    "dev": "gopage dev",
+    "build": "gopage build"
+  },
+  "devDependencies": {
+    "@apptivitypl/gopage": "0.2.1"
+  }
+}

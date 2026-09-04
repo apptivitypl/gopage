@@ -1,0 +1,5 @@
+/internal/gen
+/dist
+/.gopage
+/.wrangler
+node_modules/

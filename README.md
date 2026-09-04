@@ -133,10 +133,10 @@ template needs them. Without `--yes` it asks for the module path, template, lang
 mode, css engine and theme.
 
 Three templates ship. [`hello-world`](examples/hello-world) is one page with a live component, a
-fetched list and a JSON route; [`blog`](examples/blog) is markdown posts with a feed; `catalog`
-carries the wider surface: filters, differential navigation, a form without javascript,
-server-sent events, and both a cached and a deferred fragment. The first two are committed under
-[examples/](examples), so you can read what `gopage new` writes without running it.
+fetched list and a JSON route; [`blog`](examples/blog) is markdown posts with a feed;
+[`catalog`](examples/catalog) carries the wider surface: filters, differential navigation, a form
+without javascript, server-sent events, and both a cached and a deferred fragment. All three are
+committed under [examples/](examples), so you can read what `gopage new` writes without running it.
 
 ## Project layout
 

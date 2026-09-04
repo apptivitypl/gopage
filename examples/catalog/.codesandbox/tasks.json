@@ -1,0 +1,20 @@
+{
+  "$schema": "https://codesandbox.io/schemas/tasks.json",
+  "setupTasks": [
+    {"name": "Install gopage", "command": "go install github.com/apptivitypl/gopage/cmd/gopage@$(go list -m -f '{{.Version}}' github.com/apptivitypl/gopage)"},
+    {"name": "Download the go modules", "command": "go mod download"},
+    {"name": "Install the browser packages", "command": "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install"}
+  ],
+  "tasks": {
+    "dev": {
+      "name": "gopage dev",
+      "command": "gopage dev --addr 0.0.0.0:3000",
+      "runAtStart": true,
+      "preview": {"port": 3000}
+    },
+    "build": {
+      "name": "gopage build",
+      "command": "gopage build"
+    }
+  }
+}

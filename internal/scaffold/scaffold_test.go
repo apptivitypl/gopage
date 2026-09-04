@@ -464,8 +464,12 @@ func TestTheStarterIsOnePageInOneLanguage(t *testing.T) {
 
 func TestReactCanBeSwitchedOffOrSwappedForPreact(t *testing.T) {
 	off := create(t, Config{Module: "example.com/demo", React: ReactOff})
-	if _, err := os.Stat(filepath.Join(off, "package.json")); err == nil {
-		t.Error("a starter without react has no package.json")
+	plainManifest := read(t, off, "package.json")
+	if !strings.Contains(plainManifest, `"dev": "gopage dev"`) {
+		t.Error("every starter carries the scripts, so pnpm dev works without a global install")
+	}
+	if strings.Contains(plainManifest, `"dependencies"`) {
+		t.Error("a starter without react fetches nothing for the browser")
 	}
 	for _, name := range []string{"components/Ticker.gopage", "components/Stars.gopage", "components/Response.gopage"} {
 		plain := read(t, off, name)

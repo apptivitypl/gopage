@@ -1,0 +1,107 @@
+---
+import (
+	"time"
+
+	"github.com/apptivitypl/gopage/examples/catalog/catalog"
+)
+
+type Status string
+
+const (
+	StatusActive   Status = "active"
+	StatusPaused   Status = "paused"
+	StatusArchived Status = "archived"
+)
+
+type Item struct {
+	ID      string
+	Name    string
+	City    string
+	Price   int64
+	Area    int64
+	Status  Status
+	Summary string
+}
+
+type Props struct {
+	Heading string
+	City    string
+	Cities  []string
+	Items   []Item
+}
+
+func (p Props) Total() int {
+	return len(p.Items)
+}
+
+func Cheapest(ctx *gopage.Ctx) ([]Item, error) {
+	stored := catalog.All("")
+	rows := make([]Item, 0, 2)
+	for _, item := range stored {
+		if len(rows) == cap(rows) {
+			break
+		}
+		rows = append(rows, Item{
+			ID: item.ID, Name: item.Name, City: item.City, Price: item.Price,
+			Area: item.Area, Status: Status(item.Status), Summary: item.Summary,
+		})
+	}
+	return rows, nil
+}
+
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Heading, Description: "everything on offer, cheapest first", Robots: "index"}
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	city := ctx.Query("city")
+	if !catalog.Known(city) {
+		city = ""
+	}
+	stored := catalog.All(city)
+	items := make([]Item, 0, len(stored))
+	for _, item := range stored {
+		items = append(items, Item{
+			ID: item.ID, Name: item.Name, City: item.City, Price: item.Price,
+			Area: item.Area, Status: Status(item.Status), Summary: item.Summary,
+		})
+	}
+	ctx.Cache().TTL(time.Minute).Stale(time.Hour).Tag("items")
+	return Props{Heading: "what is on offer", City: city, Cities: catalog.Cities(), Items: items}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+<p>{{ t("items.count", count = Total) }}</p>
+
+<Filter client="idle" :Cities="Cities" :Selected="City" />
+
+{% fragment "items" cache="5m" %}
+<ul class="items">
+{% for item in Items %}
+    <li>
+        <ItemCard :Item="item" />
+        {% match item.Status %}
+            {% when StatusActive %}<Badge :Label="t('status.active')" Tone="ok" />
+            {% when StatusPaused %}<Badge :Label="t('status.paused')" Tone="" />
+            {% when StatusArchived %}<Badge :Label="t('status.archived')" Tone="" />
+        {% endmatch %}
+    </li>
+{% else %}
+    <li>{{ t("items.empty") }}</li>
+{% endfor %}
+</ul>
+{% endfragment %}
+
+<h2>{{ t("items.cheapest") }}</h2>
+{% fragment "Cheapest" defer %}
+<ul class="items">
+{% for item in Cheapest %}
+    <li><ItemCard :Item="item" /></li>
+{% endfor %}
+</ul>
+{% placeholder %}
+<ul class="items" aria-hidden="true">
+    <li class="hold"></li>
+    <li class="hold"></li>
+</ul>
+{% endfragment %}

@@ -119,7 +119,7 @@ func verifyExamples(root string) error {
 			return fmt.Errorf("example: %s does not build without the workspace: %w", example.Dir(), err)
 		}
 	}
-	fmt.Println("example: both build from the registry, without the workspace")
+	fmt.Println("example: every committed example builds from the registry, without the workspace")
 	return nil
 }
 

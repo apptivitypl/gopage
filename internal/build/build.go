@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -97,6 +98,7 @@ func Run(opts Options) (Report, error) {
 		return Report{}, err
 	}
 	opts.Dir = dir
+	opts.Go.Env = slices.Concat(opts.Go.Env, OutsideWorkspace(opts.Dir, opts.Go.Command()))
 	if opts.Target == "" {
 		opts.Target = TargetNative
 	}
@@ -461,7 +463,8 @@ func assetPath(pattern string) string {
 }
 
 func Tidy(dir string, tool gotoolchain.Resolved, runner Runner) error {
-	return runner.Run(Command{Dir: dir, Env: tool.Env, Name: tool.Command(), Args: []string{"mod", "tidy"}})
+	env := slices.Concat(tool.Env, OutsideWorkspace(dir, tool.Command()))
+	return runner.Run(Command{Dir: dir, Env: env, Name: tool.Command(), Args: []string{"mod", "tidy"}})
 }
 
 var packageManagers = []struct {

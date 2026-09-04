@@ -198,6 +198,7 @@ func newProject(args []string) error {
 		cfg = answered
 	}
 	out := console(os.Stderr)
+	warnAboutTheTree(cfg.Dir, out)
 	if cfg.GopageVersion == "" && cfg.GopagePath == "" {
 		out.note("this build carries no released version, so the project will require " +
 			scaffold.DefaultGopageVersion + ", which no proxy serves; pass --gopage-version or --gopage-path")
@@ -227,8 +228,27 @@ func newProject(args []string) error {
 			return err
 		}
 	}
-	out.hint("cd " + cfg.Dir + " && gopage dev")
+	out.hint("cd " + cfg.Dir + " && " + firstCommand())
 	return nil
+}
+
+func firstCommand() string {
+	if _, err := exec.LookPath("gopage"); err == nil {
+		return "gopage dev"
+	}
+	return "pnpm install && pnpm dev"
+}
+
+func warnAboutTheTree(dir string, out *printer) {
+	command, err := exec.LookPath("go")
+	if err == nil && len(build.OutsideWorkspace(dir, command)) > 0 {
+		out.note("this directory sits inside a go workspace that does not list it; gopage builds " +
+			"the project with GOWORK=off, but a plain go command run there will not")
+	}
+	if held := build.EnclosingModule(dir); held != "" {
+		out.note("this directory sits inside the module rooted at " + held +
+			"; the project keeps its own go.mod and is not part of it")
+	}
 }
 
 func installPackages(cfg scaffold.Config, out *printer) error {

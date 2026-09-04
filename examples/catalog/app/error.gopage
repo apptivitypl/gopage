@@ -1,0 +1,15 @@
+---
+type Props struct {
+	Heading string
+}
+
+func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {
+	return gopage.Meta{Title: p.Heading, Robots: "noindex"}
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Heading: "something went wrong"}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+<p>The page could not be rendered. <a href="/">Back to the start.</a></p>

@@ -21,12 +21,14 @@ type Example struct {
 	Name     string
 	Template string
 	Locales  []string
+	React    string
 }
 
 func Examples() []Example {
 	return []Example{
 		{Name: "hello-world", Template: "hello-world", Locales: []string{"en"}},
-		{Name: "blog", Template: "blog", Locales: []string{"en"}},
+		{Name: "blog", Template: "blog", Locales: []string{"en"}, React: scaffold.ReactOff},
+		{Name: "catalog", Template: "catalog", Locales: []string{"en", "pl"}},
 	}
 }
 
@@ -54,6 +56,10 @@ func (e Example) PinnedVersion(root string) (string, error) {
 }
 
 func (e Example) Config(version string) scaffold.Config {
+	react := e.React
+	if react == "" {
+		react = scaffold.ReactOn
+	}
 	return scaffold.Config{
 		Module:        e.Module(),
 		Name:          e.Name,
@@ -63,7 +69,7 @@ func (e Example) Config(version string) scaffold.Config {
 		Nav:           scaffold.NavPartial,
 		CSS:           scaffold.CSSTailwind,
 		Theme:         scaffold.ThemeToggle,
-		React:         scaffold.ReactOn,
+		React:         react,
 	}
 }
 

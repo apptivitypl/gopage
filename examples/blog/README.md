@@ -41,7 +41,8 @@ Drop a markdown file into `content/posts`. The front matter it expects is in `he
 gopage dev
 ```
 
-No `pnpm install`: there is nothing from npm to fetch.
+Nothing here runs in the browser, so npm carries only the command line itself. If you would rather
+not install it separately, `pnpm install && pnpm dev` fetches it into this folder instead.
 
 ## Deploying it
 

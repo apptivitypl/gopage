@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"github.com/apptivitypl/gopage/internal/npmname"
 )
 
 //go:embed all:templates
@@ -114,6 +116,8 @@ type data struct {
 	Forced        string
 	React         bool
 	Engine        string
+	PackageName   string
+	NpmVersion    string
 }
 
 func Themes() []string {
@@ -192,6 +196,8 @@ func Create(cfg Config) error {
 		Forced:        forcedTheme(cfg.Theme),
 		React:         cfg.UsesReact(),
 		Engine:        cfg.React,
+		PackageName:   npmname.Clean(cfg.Name),
+		NpmVersion:    npmVersion(cfg),
 	}
 	source := filepath.ToSlash(filepath.Join(root, cfg.Template))
 	return fs.WalkDir(templates, source, func(path string, entry fs.DirEntry, err error) error {
@@ -208,7 +214,17 @@ func Create(cfg Config) error {
 
 var optional = map[string]func(data) bool{
 	"components/ThemeToggle.gopage": func(values data) bool { return values.Toggle },
-	"package.json.tmpl":             func(values data) bool { return values.React },
+}
+
+func npmVersion(cfg Config) string {
+	if cfg.GopagePath != "" {
+		return ""
+	}
+	trimmed := strings.TrimPrefix(cfg.GopageVersion, "v")
+	if trimmed == "" || trimmed == strings.TrimPrefix(DefaultGopageVersion, "v") {
+		return ""
+	}
+	return trimmed
 }
 
 func skipped(relative string, values data) bool {
