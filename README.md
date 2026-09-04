@@ -2,7 +2,7 @@
   <img alt="the gopage mark" src="img/gopage.svg" width="120" height="120">
 </p>
 
-<h1 align="center">gopage</h1>
+<h1 align="center">GoPage</h1>
 
 <p align="center">
   <b>A web framework in Go that sends HTML first.</b><br>
@@ -18,7 +18,7 @@
   <img alt="status" src="https://img.shields.io/badge/status-in%20development-orange?style=flat-square">
 </p>
 
-gopage compiles `.gopage` templates into a flat render plan and, in production, executes the smallest
+GoPage compiles `.gopage` templates into a flat render plan and, in production, executes the smallest
 part of it that answers the request: a prebuilt artifact before a render, a fragment before a page,
 a page before a whole document. The same project builds two ways: a Cloudflare Worker with static
 assets, and a single static binary. CI builds the reference application both ways and fails if the
@@ -187,22 +187,26 @@ one the browser already has can answer with just the fragment that changed.
 ```jsonc
 {
   "$schema": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json",
-  "app": {"name": "my-site"},
-  "i18n": {"mode": "path", "defaultLocale": "en", "locales": ["en", "pl"]},
-  "css": {"engine": "tailwind", "inlineLimit": "4kb"},
-  "nav": {"mode": "partial"},
-  "security": {"maxBodySize": "8mb", "trustedOrigins": [], "maxConnections": 0}
+  "app": { "name": "my-site" },
+  "i18n": { "mode": "path", "defaultLocale": "en", "locales": ["en", "pl"] },
+  "css": { "engine": "tailwind", "inlineLimit": "4kb" },
+  "nav": { "mode": "partial" },
+  "security": {
+    "maxBodySize": "8mb",
+    "trustedOrigins": [],
+    "maxConnections": 0,
+  },
 }
 ```
 
 The four that decide something worth knowing about:
 
-| key | |
-| --- | --- |
-| `i18n.mode` | `path` puts every locale but the default behind a prefix, `subdomain` maps hosts to languages, `single` turns the whole thing off |
-| `css.inlineLimit` | a stylesheet under this size is written into the document, a larger one is served as its own cached file; `0` links every sheet. Inlined sheets are written before linked ones, so a full sheet still overrides a small critical one |
-| `nav.mode` | `partial` sends only the part of the document that changed |
-| `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead |
+| key                       |                                                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `i18n.mode`               | `path` puts every locale but the default behind a prefix, `subdomain` maps hosts to languages, `single` turns the whole thing off                                                                                                    |
+| `css.inlineLimit`         | a stylesheet under this size is written into the document, a larger one is served as its own cached file; `0` links every sheet. Inlined sheets are written before linked ones, so a full sheet still overrides a small critical one |
+| `nav.mode`                | `partial` sends only the part of the document that changed                                                                                                                                                                           |
+| `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead                                                                                                                              |
 
 Unknown keys are an error, not a shrug: a misspelled setting names itself and the line it is on.
 The [schema](schema/gopage.schema.json) drives editor completion, and CI fails if it and the Go
