@@ -49,7 +49,9 @@ type Lookup func(Artifact) (bool, error)
 
 type Status struct {
 	Artifact
-	Published bool `json:"published"`
+	Version   string `json:"version"`
+	Tag       string `json:"tag"`
+	Published bool   `json:"-"`
 }
 
 func Plan(version string, published Lookup) ([]Status, error) {
@@ -62,16 +64,21 @@ func Plan(version string, published Lookup) ([]Status, error) {
 		if err != nil {
 			return nil, err
 		}
-		statuses = append(statuses, Status{Artifact: artifact, Published: out})
+		statuses = append(statuses, Status{
+			Artifact:  artifact,
+			Version:   version,
+			Tag:       artifact.Tag(version),
+			Published: out,
+		})
 	}
 	return statuses, nil
 }
 
-func Pending(statuses []Status) []Artifact {
-	pending := make([]Artifact, 0, len(statuses))
+func Pending(statuses []Status) []Status {
+	pending := make([]Status, 0, len(statuses))
 	for _, status := range statuses {
 		if !status.Published {
-			pending = append(pending, status.Artifact)
+			pending = append(pending, status)
 		}
 	}
 	return pending

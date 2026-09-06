@@ -16,6 +16,10 @@ on:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: publish
   cancel-in-progress: false

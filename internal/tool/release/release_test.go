@@ -1,6 +1,7 @@
 package release
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -80,5 +81,33 @@ func TestRenderNamesEveryArtifactAndItsState(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("Render = %q, want it to mention %q", out, want)
 		}
+	}
+}
+
+func TestThePlanCarriesEveryFieldTheWorkflowReads(t *testing.T) {
+	statuses, err := Plan("0.3.0", func(Artifact) (bool, error) { return false, nil })
+	if err != nil {
+		t.Fatalf("Plan: %v", err)
+	}
+	encoded, err := json.Marshal(Pending(statuses))
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(encoded, &rows); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %v, want one per artifact", rows)
+	}
+	for _, row := range rows {
+		for _, field := range []string{"name", "kind", "tag", "version"} {
+			if row[field] == "" || row[field] == nil {
+				t.Errorf("%v has no %q; publish.yml reads it and a missing key fails the job", row, field)
+			}
+		}
+	}
+	if rows[0]["tag"] != "v0.3.0" {
+		t.Errorf("go tag = %v, want the ref the release job checks out", rows[0]["tag"])
 	}
 }
