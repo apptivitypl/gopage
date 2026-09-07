@@ -25,10 +25,40 @@ func TestAValueInAScriptBodyIsRejected(t *testing.T) {
 	if !strings.Contains(item.Help, "island") {
 		t.Errorf("help = %q, want the island route offered", item.Help)
 	}
+	if !strings.Contains(item.Help, "{% raw value %}") {
+		t.Errorf("help = %q, want the raw directive offered", item.Help)
+	}
+}
+
+func TestARawBlockIsAllowedInAScriptBody(t *testing.T) {
+	accepts(t, `<script type="application/ld+json">{% raw Title %}</script>`)
+}
+
+func TestARawBlockIsAllowedInAStyleBody(t *testing.T) {
+	accepts(t, `<style>{% raw Title %}</style>`)
+}
+
+func TestARawBlockDoesNotExcuseANeighbouringValue(t *testing.T) {
+	contextCode(t, `<script>{% raw Title %}{{ Title }}</script>`, diag.C321)
+}
+
+func TestTheAttributeChecksDoNotOfferRaw(t *testing.T) {
+	for _, item := range []diag.Diagnostic{
+		contextCode(t, `<div :style="Title">x</div>`, diag.C322),
+		contextCode(t, `<button :onclick="Title">x</button>`, diag.C323),
+		contextCode(t, `<iframe :srcdoc="Title"></iframe>`, diag.C324),
+	} {
+		if strings.Contains(item.Help, "raw") {
+			t.Errorf("help = %q, a directive cannot appear inside an attribute", item.Help)
+		}
+	}
 }
 
 func TestAValueInAStyleBodyIsRejected(t *testing.T) {
-	contextCode(t, `<style>.hero { color: {{ Title }} }</style>`, diag.C322)
+	item := contextCode(t, `<style>.hero { color: {{ Title }} }</style>`, diag.C322)
+	if !strings.Contains(item.Help, "{% raw value %}") {
+		t.Errorf("help = %q, want the raw directive offered", item.Help)
+	}
 }
 
 func TestAValueInAStyleAttributeIsRejected(t *testing.T) {

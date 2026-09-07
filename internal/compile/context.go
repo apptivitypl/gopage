@@ -76,12 +76,14 @@ func reportRaw(raw string, span diag.Span, file string, bag *diag.Bag) {
 		bag.Add(diag.New(diag.C321, file, span,
 			"a value is interpolated into a <script> body").
 			WithHelp("the escaper writes html entities, which javascript does not read as text; " +
-				"pass the value to an island instead, or put it in a data- attribute and read it from there"))
+				"pass the value to an island instead, or put it in a data- attribute and read it from there; " +
+				"for a payload this project produced, such as ld+json, write {% raw value %} and own the bytes"))
 	case StyleElement:
 		bag.Add(diag.New(diag.C322, file, span,
 			"a value is interpolated into a <style> body").
 			WithHelp("the escaper writes html entities, which css does not read as text; " +
-				"set a custom property on an element and use var() in the stylesheet"))
+				"set a custom property on an element and use var() in the stylesheet, " +
+				"or write {% raw value %} to emit the css verbatim"))
 	}
 }
 

@@ -34,12 +34,15 @@ func (a Alternates) At(index int) Value {
 
 const AlternatesField = "Alternates"
 
+const HeadField = "Head"
+
 type Meta struct {
 	Title       string
 	Description string
 	Canonical   string
 	Image       string
 	Robots      string
+	Head        string
 	Alternates  Alternates
 }
 
@@ -58,6 +61,8 @@ func (m Meta) Get(path []string) (Value, bool) {
 		return String(m.Image), true
 	case "Robots":
 		return String(m.Robots), true
+	case HeadField:
+		return String(m.Head), true
 	case AlternatesField:
 		return Seq(m.Alternates), true
 	default:

@@ -115,6 +115,8 @@ func (b *builder) node(node syntax.Node) {
 		b.static(n.Value)
 	case *syntax.Interpolation:
 		b.emit(ir.Op{Kind: ir.OpText, A: b.expr(n.Expr)})
+	case *syntax.Raw:
+		b.emit(ir.Op{Kind: ir.OpRaw, A: b.expr(n.Expr)})
 	case *syntax.ClientScript:
 		b.clientScript(n)
 	case *syntax.Outlet:
@@ -353,7 +355,12 @@ func (b *builder) filterCall(node *syntax.FilterCall) uint32 {
 	return b.emitExpr(ir.ExprNode{Kind: ir.ExprFilter, Op: uint8(id), A: input, B: argument})
 }
 
+var escapeFilters = []string{"raw", "safe", "html", "unescape"}
+
 func (b *builder) filterHelp(name string) string {
+	if slices.Contains(escapeFilters, name) {
+		return "escaping is not a filter here; write {% raw value %} on its own line"
+	}
 	names := runtime.FilterNames()
 	if suggestion := schema.Suggest(name, names); suggestion != "" {
 		return fmt.Sprintf("did you mean %s?", suggestion)

@@ -1,5 +1,7 @@
 ---
 import (
+	"encoding/json"
+	"strconv"
 	"time"
 
 	"<<.Module>>/catalog"
@@ -11,6 +13,41 @@ type Props struct {
 	Price   int64
 	Area    int64
 	Summary string
+	JSONLD  string
+}
+
+type listing struct {
+	Context     string       `json:"@context"`
+	Type        string       `json:"@type"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Offers      listingOffer `json:"offers"`
+}
+
+type listingOffer struct {
+	Type     string `json:"@type"`
+	Price    string `json:"price"`
+	Currency string `json:"priceCurrency"`
+	Area     string `json:"floorSize"`
+}
+
+func structuredData(item catalog.Item) string {
+	payload, err := json.Marshal(listing{
+		Context:     "https://schema.org",
+		Type:        "Product",
+		Name:        item.Name,
+		Description: item.Summary,
+		Offers: listingOffer{
+			Type:     "Offer",
+			Price:    strconv.FormatInt(item.Price, 10),
+			Currency: "PLN",
+			Area:     strconv.FormatInt(item.Area, 10),
+		},
+	})
+	if err != nil {
+		return ""
+	}
+	return string(payload)
 }
 
 func (p Props) PricePerM2() int64 {
@@ -41,10 +78,14 @@ func Load(ctx *gopage.Ctx, params gopage.Params) (Props, error) {
 		return Props{}, gopage.ErrNotFound
 	}
 	ctx.Cache().TTL(time.Hour).Tag("items", "item:"+item.ID)
-	return Props{Name: item.Name, City: item.City, Price: item.Price, Area: item.Area, Summary: item.Summary}, nil
+	return Props{
+		Name: item.Name, City: item.City, Price: item.Price, Area: item.Area, Summary: item.Summary,
+		JSONLD: structuredData(item),
+	}, nil
 }
 ---
 <article class="detail">
+    <script type="application/ld+json">{% raw JSONLD %}</script>
     <h1>{{ Name }}</h1>
     <p class="price">{{ Price | money("PLN") }}</p>
     <p class="meta">{{ City }} · {{ Area }} m2 · {{ PricePerM2 | money("PLN") }} {{ t("items.per_m2") }}</p>

@@ -21,7 +21,10 @@ crosses a boundary it should not.
   into an attribute, URL or `<script>` context in a way the escaper did not account for. The
   compiler refuses an interpolation in the four contexts HTML escaping cannot hold, which are a
   `<script>` or `<style>` body, an `on*` handler and `srcdoc`, and it filters the scheme of a URL
-  attribute, so a value that reaches any of them anyway is a bug in that machinery.
+  attribute, so a value that reaches any of them anyway is a bug in that machinery. `{% raw %}` is
+  outside that machinery by design: it writes bytes verbatim and gopage validates nothing about the
+  payload. A value reaching the document unescaped **without** a `{% raw %}` in the template is a
+  vulnerability; a `{% raw %}` block emitting what it was handed is not.
 - **Cache boundaries.** A response cached under one key that is served for another: a per-user
   value reaching a shared fragment, a locale bleeding across hosts, a cached page answering a
   request whose loader would have returned something else. The `I2` invariant test exists for
@@ -42,6 +45,10 @@ crosses a boundary it should not.
 - A denial of service from a request that is expensive by construction, such as a loader you wrote
   that is slow. gopage bounds its cache, not your code.
 - Anything that needs write access to the project's own source. A template can already run Go.
+- Anything a `{% raw %}` block emitted. The directive is a documented escape hatch for payloads the
+  project produced — structured data, an import map, a stylesheet built in Go. What goes into it is
+  the project's responsibility, the same as the Go a loader runs. `grep -rn '{% raw' app/ components/`
+  lists every one of them.
 - Vulnerabilities in a dependency that gopage does not reach. `govulncheck` runs daily and reports
   what is actually called; a finding in an unreached path is not one of ours to fix, though a
   report of it is still welcome.

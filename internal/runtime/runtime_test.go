@@ -267,3 +267,39 @@ func TestWithRootPlacesAValueBesideTheProps(t *testing.T) {
 		t.Error("a nil props layer answers nothing")
 	}
 }
+
+func TestRawWritesTheValueUnescaped(t *testing.T) {
+	plan := planOf("", []ir.Op{{Kind: ir.OpRaw, A: 0}}, [][]string{{"Payload"}})
+	props := Map{"Payload": String(`<script>"&"</script>`)}
+	if got := render(t, []*ir.Plan{plan}, props); got != `<script>"&"</script>` {
+		t.Errorf("out = %q", got)
+	}
+}
+
+func TestRawWritesTheTextOfEveryKind(t *testing.T) {
+	cases := []struct {
+		value Value
+		want  string
+	}{
+		{Nil(), ""},
+		{Int(42), "42"},
+		{Bool(true), "true"},
+		{Float(1.5), "1.5"},
+		{Object(Map{"a": String("b")}), ""},
+		{Seq(Values{String("a")}), ""},
+	}
+	for _, c := range cases {
+		plan := planOf("", []ir.Op{{Kind: ir.OpRaw, A: 0}}, [][]string{{"Payload"}})
+		if got := render(t, []*ir.Plan{plan}, Map{"Payload": c.value}); got != c.want {
+			t.Errorf("%v = %q, want %q", c.value.Kind, got, c.want)
+		}
+	}
+}
+
+func TestRawRejectsADanglingExpression(t *testing.T) {
+	plan := planOf("", []ir.Op{{Kind: ir.OpRaw, A: 7}}, nil)
+	err := Render([]*ir.Plan{plan}, Map{}, NewBuffer(8))
+	if err == nil || !strings.Contains(err.Error(), "not in the plan") {
+		t.Errorf("err = %v", err)
+	}
+}

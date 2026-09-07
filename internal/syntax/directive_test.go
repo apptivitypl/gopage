@@ -520,7 +520,8 @@ func TestWalkExprsReachesEveryPosition(t *testing.T) {
 		`{% for x in Four %}{% endfor %}{% match Five %}{% when A %}{% endmatch %}` +
 		`<p :title="Six" class="{{ Seven }}" :class="{ 'x': Eight }">y</p>` +
 		`<Badge :label="Nine">{{ Ten }}</Badge>` +
-		`{{ Eleven | default(Twelve) }}{{ -Thirteen }}{{ Fourteen[Fifteen] }}`
+		`{{ Eleven | default(Twelve) }}{{ -Thirteen }}{{ Fourteen[Fifteen] }}` +
+		`{% raw Sixteen %}`
 	doc := parseClean(t, source)
 	found := map[string]bool{}
 	WalkExprs(doc.Nodes, func(expr Expr) {
@@ -529,9 +530,61 @@ func TestWalkExprsReachesEveryPosition(t *testing.T) {
 		}
 	})
 	for _, want := range []string{"One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
-		"Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen"} {
+		"Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen"} {
 		if !found[want] {
 			t.Errorf("%s was never visited", want)
 		}
+	}
+}
+
+func TestRawDirectiveCarriesAnExpression(t *testing.T) {
+	doc := parseClean(t, "{% raw Payload %}")
+	node, ok := doc.Nodes[0].(*Raw)
+	if !ok {
+		t.Fatalf("node = %#v", doc.Nodes[0])
+	}
+	if render(node.Expr) != "Payload" {
+		t.Errorf("expression = %s", render(node.Expr))
+	}
+	if node.NodeSpan().Start != 0 || node.NodeSpan().End == 0 {
+		t.Errorf("span = %+v", node.NodeSpan())
+	}
+}
+
+func TestRawDirectiveTakesAnyExpression(t *testing.T) {
+	for _, source := range []string{
+		"{% raw Payload | upper %}",
+		"{% raw One ~ Two %}",
+		"{% raw meta.Head %}",
+		"{% raw Items[0] %}",
+	} {
+		doc := parseClean(t, source)
+		if _, ok := doc.Nodes[0].(*Raw); !ok {
+			t.Errorf("%s: node = %#v", source, doc.Nodes[0])
+		}
+	}
+}
+
+func TestRawDirectiveNeedsAValue(t *testing.T) {
+	_, bag := parse(t, "{% raw %}")
+	if !hasCode(bag, diag.C201) {
+		t.Errorf("codes = %v, want C201", codesOf(bag))
+	}
+}
+
+func TestRawDirectiveTakesOneValue(t *testing.T) {
+	_, bag := parse(t, "{% raw Payload extra %}")
+	if !hasCode(bag, diag.C005) {
+		t.Errorf("codes = %v, want C005", codesOf(bag))
+	}
+}
+
+func TestAnUnknownDirectiveSuggestsRaw(t *testing.T) {
+	_, bag := parse(t, "{% ra %}")
+	if !hasCode(bag, diag.C004) {
+		t.Fatalf("codes = %v, want C004", codesOf(bag))
+	}
+	if !strings.Contains(bag.Items()[0].Help, "raw") {
+		t.Errorf("help = %q, want raw suggested", bag.Items()[0].Help)
 	}
 }

@@ -8,7 +8,8 @@ import (
 	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
-var metaFields = []string{"Title", "Description", "Canonical", "Image", "Robots", runtime.AlternatesField}
+var metaFields = []string{"Title", "Description", "Canonical", "Image", "Robots",
+	runtime.HeadField, runtime.AlternatesField}
 
 var formSections = []string{"Values", "Errors"}
 

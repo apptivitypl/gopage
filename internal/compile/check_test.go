@@ -76,9 +76,21 @@ func TestKnownPathsAreAccepted(t *testing.T) {
 		"{% for c in Cards %}{{ c.Price + Count }}{% endfor %}",
 		"{% for tag in Tags %}{{ tag }}{% endfor %}",
 		"{% let n = Count %}{{ n }}",
+		"{% raw Title %}",
+		"{% raw meta.Head %}",
+		"{% raw Listing.Owner.Name %}",
+		"{% for c in Cards %}{% raw c.Title %}{% endfor %}",
 	} {
 		accepts(t, body)
 	}
+}
+
+func TestAnUnknownPathInARawBlockIsRejected(t *testing.T) {
+	d := rejects(t, "{% raw Missing %}")
+	if !strings.Contains(d.Message, "Props has no field Missing") {
+		t.Errorf("message = %q", d.Message)
+	}
+	rejects(t, "{% raw meta.Nope %}")
 }
 
 func TestUnknownPropsFieldIsRejected(t *testing.T) {
