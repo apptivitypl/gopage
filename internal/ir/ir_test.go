@@ -40,6 +40,9 @@ func TestOpKindNames(t *testing.T) {
 	if OpStatic.String() != "static" || OpText.String() != "text" || OpOutlet.String() != "outlet" {
 		t.Error("op names are wrong")
 	}
+	if OpRaw.String() != "raw" || OpURL.String() != "url" {
+		t.Error("op names are wrong")
+	}
 	if OpKind(99).String() != "unknown op" {
 		t.Errorf("unknown op = %q", OpKind(99))
 	}
@@ -328,5 +331,24 @@ func TestIslandUsesSurviveTheCodec(t *testing.T) {
 	}
 	if decoded.Plans[0].Ops[0].Kind != OpPreload {
 		t.Errorf("op = %v, want the preload op kept", decoded.Plans[0].Ops[0].Kind)
+	}
+}
+
+func TestARawOpSurvivesTheRoundTrip(t *testing.T) {
+	manifest := &Manifest{
+		Version: Version,
+		Plans: []Plan{{
+			Ops:   []Op{{Kind: OpRaw, A: 0, B: 2, C: 3}},
+			Exprs: []ExprNode{{Kind: ExprPath, A: 0}},
+			Paths: [][]string{{"JSONLD"}},
+		}},
+		Routes: []Route{{Pattern: "/", Name: "home", Class: ClassStatic}},
+	}
+	decoded, err := Decode(Encode(manifest))
+	if err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.Plans[0].Ops, manifest.Plans[0].Ops) {
+		t.Errorf("ops = %+v, want %+v", decoded.Plans[0].Ops, manifest.Plans[0].Ops)
 	}
 }

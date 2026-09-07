@@ -9,9 +9,10 @@ func TestMetaFields(t *testing.T) {
 		Canonical:   "c",
 		Image:       "i",
 		Robots:      "r",
+		Head:        "h",
 	}
 	cases := map[string]string{
-		"Title": "t", "Description": "d", "Canonical": "c", "Image": "i", "Robots": "r",
+		"Title": "t", "Description": "d", "Canonical": "c", "Image": "i", "Robots": "r", "Head": "h",
 	}
 	for field, want := range cases {
 		value, ok := meta.Get([]string{field})

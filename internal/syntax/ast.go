@@ -30,6 +30,13 @@ type Interpolation struct {
 
 func (i *Interpolation) NodeSpan() diag.Span { return i.Span }
 
+type Raw struct {
+	Span diag.Span
+	Expr Expr
+}
+
+func (r *Raw) NodeSpan() diag.Span { return r.Span }
+
 type ClientScript struct {
 	Span diag.Span
 	Code string
@@ -265,6 +272,8 @@ func WalkExprs(nodes []Node, visit func(Expr)) {
 	Walk(nodes, func(node Node) {
 		switch n := node.(type) {
 		case *Interpolation:
+			walkExpr(n.Expr, visit)
+		case *Raw:
 			walkExpr(n.Expr, visit)
 		case *If:
 			for _, branch := range n.Branches {

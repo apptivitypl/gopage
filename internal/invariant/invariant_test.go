@@ -202,6 +202,29 @@ func TestI2APrivateValueCannotEnterACachedFragment(t *testing.T) {
 	}
 }
 
+func TestI2APrivateValueCannotEnterACachedFragmentThroughRaw(t *testing.T) {
+	fsys := project()
+	fsys["app/private/page.gopage"] = &fstest.MapFile{Data: []byte(
+		strings.Replace(privatePage, "<p>{{ Viewer.Email }}</p>",
+			`{% fragment "leak" cache="5m" %}<p>{% raw Viewer.Email %}</p>{% endfragment %}`, 1))}
+	var bag diag.Bag
+	if _, err := compile.Compile(fsys, &bag); err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	found := false
+	for _, item := range bag.Sorted() {
+		if item.Code == diag.C503 {
+			found = true
+			if item.Span.Start == item.Span.End {
+				t.Errorf("span = %+v, want the read pointed at", item.Span)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %v, want C503", bag.Sorted())
+	}
+}
+
 func TestI1TheCacheStaysInsideItsBudget(t *testing.T) {
 	limit := int64(64 << 10)
 	store := cache.New(cache.Options{Limit: limit})

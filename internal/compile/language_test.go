@@ -327,3 +327,38 @@ func TestConstantsAreDeduplicated(t *testing.T) {
 		t.Errorf("constants = %d, want x and y once each", got)
 	}
 }
+
+func TestARawBlockWritesTheBytesUnescaped(t *testing.T) {
+	props := runtime.Map{"Payload": runtime.String(`{"@type":"JobPosting"}`)}
+	if got := mustRender(t, "{% raw Payload %}", props); got != `{"@type":"JobPosting"}` {
+		t.Errorf("raw = %q", got)
+	}
+	if got := mustRender(t, "{{ Payload }}", props); got != `{&#34;@type&#34;:&#34;JobPosting&#34;}` {
+		t.Errorf("escaped = %q", got)
+	}
+}
+
+func TestARawBlockSurvivesTheScriptContext(t *testing.T) {
+	body := `<script type="application/ld+json">{% raw Payload %}</script>`
+	props := runtime.Map{"Payload": runtime.String(`{"a":1}`)}
+	want := `<script type="application/ld+json">{"a":1}</script>`
+	if got := mustRender(t, body, props); got != want {
+		t.Errorf("out = %q, want %q", got, want)
+	}
+}
+
+func TestARawBlockReadsLocals(t *testing.T) {
+	cases := map[string]string{
+		"{% let x = Payload %}{% raw x %}":                       "<b>",
+		"{% for item in Items %}{% raw item.Body %}{% endfor %}": "<i><u>",
+	}
+	props := runtime.Map{
+		"Payload": runtime.String("<b>"),
+		"Items":   rows(runtime.Map{"Body": runtime.String("<i>")}, runtime.Map{"Body": runtime.String("<u>")}),
+	}
+	for body, want := range cases {
+		if got := mustRender(t, body, props); got != want {
+			t.Errorf("%s = %q, want %q", body, got, want)
+		}
+	}
+}

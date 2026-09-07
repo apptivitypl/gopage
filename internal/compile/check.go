@@ -46,6 +46,8 @@ func (c *checker) node(node syntax.Node) {
 	switch n := node.(type) {
 	case *syntax.Interpolation:
 		c.expr(n.Expr)
+	case *syntax.Raw:
+		c.expr(n.Expr)
 	case *syntax.Let:
 		c.expr(n.Value)
 		typ, known := c.typeOf(n.Value)

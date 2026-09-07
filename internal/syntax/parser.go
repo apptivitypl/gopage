@@ -181,7 +181,7 @@ func (p *parser) endDirective(name string, span diag.Span) bool {
 	return true
 }
 
-var knownDirectives = []string{"outlet", "children", "slot", "meta", "assets", "if", "elif", "else", "endif",
+var knownDirectives = []string{"outlet", "children", "slot", "meta", "assets", "raw", "if", "elif", "else", "endif",
 	"for", "endfor", "let", "match", "when", "endmatch", "fragment", "placeholder", "endfragment"}
 
 func (p *parser) directive(name string, span diag.Span) Node {
@@ -206,6 +206,8 @@ func (p *parser) directive(name string, span diag.Span) Node {
 			return nil
 		}
 		return &AssetsBlock{Span: span}
+	case "raw":
+		return p.rawDirective(span)
 	case "slot":
 		return p.slotDirective(span)
 	case "if":
@@ -439,6 +441,17 @@ func (p *parser) fragmentDirective(span diag.Span) Node {
 		node.Placeholder, stop, stopSpan = p.block([]string{"endfragment"})
 	}
 	return p.closeBlock(node, "fragment", stop, "endfragment", stopSpan)
+}
+
+func (p *parser) rawDirective(span diag.Span) Node {
+	value, ok := p.expr()
+	if !ok {
+		return nil
+	}
+	if !p.endDirective("raw", span) {
+		return nil
+	}
+	return &Raw{Span: span, Expr: value}
 }
 
 func (p *parser) letDirective(span diag.Span) Node {

@@ -77,8 +77,21 @@ lands in, so this costs nothing per request:
   [C322](docs/errors/C322.md) for css, [C323](docs/errors/C323.md) for an event handler and
   [C324](docs/errors/C324.md) for `srcdoc`.
 
-There is deliberately no `raw`, `unsafe` or `html` filter to reach for. The filter table is closed
-and an unknown name is a hard error, so there is no escape hatch to audit.
+- A `{% raw value %}` block lowers to `OpRaw`, which writes `Value.Text()` into the buffer with no
+  escaper at all. It is the one path by which a value reaches the document unchanged.
+
+There is deliberately no `raw`, `unsafe` or `html` *filter*. The filter table is closed and an
+unknown name is a hard error, and it stays that way because a filter is legal in an attribute value,
+a condition and the middle of a chain — positions where unescaped bytes are meaningless or actively
+dangerous.
+
+The escape hatch is a statement instead. `{% raw value %}` exists for payloads the project produced,
+where the bytes already are the program and every escaping rule is wrong for them: `application/ld+json`
+structured data, an import map, a speculation-rules block, a stylesheet assembled in Go. It can only
+stand where a node can stand, so it cannot land in an attribute, a condition or a filter chain; it is
+visible in the template rather than hidden in the Go behind a marker type; and `grep -rn '{% raw'`
+over `app/` and `components/` is the complete audit. What goes into it is the project's
+responsibility, not the compiler's — gopage validates nothing about the payload.
 
 ## Two targets, one project
 

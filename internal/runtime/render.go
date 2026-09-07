@@ -189,6 +189,13 @@ func runRange(chain []*ir.Plan, planIndex int, state *scope, out *Buffer, opts *
 			}
 			out.WriteURL(value)
 			pc++
+		case ir.OpRaw:
+			value, err := state.text(op.A)
+			if err != nil {
+				return err
+			}
+			out.WriteString(value)
+			pc++
 		case ir.OpOutlet:
 			if opts.Markers {
 				out.Write(openMarker(planIndex))

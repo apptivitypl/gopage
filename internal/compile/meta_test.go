@@ -88,3 +88,34 @@ func TestMetaDirectiveNeedsNoArguments(t *testing.T) {
 		t.Error("meta takes no arguments")
 	}
 }
+
+func TestMetaDoesNotEmitTheHeadPayload(t *testing.T) {
+	got := renderMeta(t, runtime.Meta{Title: "Chair", Head: "<script>leak</script>"})
+	if strings.Contains(got, "leak") {
+		t.Errorf("meta = %q, the head payload lands where the layout writes a raw block", got)
+	}
+}
+
+func TestALayoutPlacesTheHeadPayloadItself(t *testing.T) {
+	var bag diag.Bag
+	result, err := Compile(fstest.MapFS{
+		"app/layout.gopage": file("<head>{% meta %}{% raw meta.Head %}</head>{% outlet %}"),
+		"app/page.gopage":   file("body"),
+	}, &bag)
+	if err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	if bag.HasErrors() {
+		t.Fatalf("diagnostics: %+v", bag.Items())
+	}
+	route, _ := result.Manifest.Lookup("/")
+	out := runtime.NewBuffer(512)
+	payload := `<script type="application/ld+json">{"@type":"JobPosting"}</script>`
+	props := runtime.WithMeta(runtime.Map{}, runtime.Meta{Title: "Chair", Head: payload})
+	if err := runtime.Render(result.Manifest.Chain(route), props, out); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if !strings.Contains(out.String(), payload) {
+		t.Errorf("out = %q, want the payload verbatim", out.String())
+	}
+}

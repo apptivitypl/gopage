@@ -247,7 +247,7 @@ func FuzzParse(f *testing.F) {
 
 func TestDirectivesAreListed(t *testing.T) {
 	names := Directives()
-	for _, want := range []string{"outlet", "if", "for", "fragment", "meta", "assets"} {
+	for _, want := range []string{"outlet", "if", "for", "fragment", "meta", "assets", "raw"} {
 		if !slices.Contains(names, want) {
 			t.Errorf("directives = %v, want %q", names, want)
 		}

@@ -17,6 +17,7 @@ const (
 	OpJSON
 	OpPreload
 	OpURL
+	OpRaw
 )
 
 var opNames = map[OpKind]string{
@@ -26,6 +27,7 @@ var opNames = map[OpKind]string{
 	OpFragment:    "fragment",
 	OpJSON:        "json",
 	OpURL:         "url",
+	OpRaw:         "raw",
 	OpPreload:     "preload",
 	OpJumpIfFalse: "jump-if-false",
 	OpJump:        "jump",
@@ -249,7 +251,7 @@ type Manifest struct {
 	Fallbacks []Fallback
 }
 
-const Version uint32 = 7
+const Version uint32 = 8
 
 func (m *Manifest) Catalog(locale string) (*Catalog, bool) {
 	for i := range m.Catalogs {
