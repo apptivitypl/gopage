@@ -7,9 +7,9 @@ cannot drift from what the compiler actually reports.
 | Range | Area |
 |---|---|
 | C0xx | template syntax |
-| C1xx | routes, links, route handlers |
+| C1xx | routes, links, route handlers, built-in endpoints, layouts |
 | C2xx | expressions |
-| C3xx | props, components, islands, images, filters, fragments |
+| C3xx | props, components, islands, images, filters, fragments, route hooks |
 | C5xx | cache and what may enter it |
 | C6xx | catalogs and plurals |
 | Wxxx | warnings |
@@ -31,6 +31,7 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C105](C105.md) | malformed route handler |
 | [C111](C111.md) | link points at no route |
 | [C112](C112.md) | route claims a built-in endpoint |
+| [C113](C113.md) | standalone outside a layout |
 | [C201](C201.md) | malformed expression |
 | [C202](C202.md) | unclosed group |
 | [C301](C301.md) | unreadable go block |
@@ -68,3 +69,4 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C604](C604.md) | message argument mismatch |
 | [W703](W703.md) | class built at request time |
 | [W704](W704.md) | seo rule points at no route |
+| [W705](W705.md) | standalone layout without a head |

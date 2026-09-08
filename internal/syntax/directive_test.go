@@ -622,3 +622,27 @@ func TestAMalformedCaseIsReported(t *testing.T) {
 		t.Error("else takes no argument")
 	}
 }
+
+func TestStandaloneMarksTheDocument(t *testing.T) {
+	doc := parseClean(t, "{% standalone %}<main>{% outlet %}</main>")
+	if !doc.Standalone || len(doc.Standalones) != 1 {
+		t.Errorf("document = %+v", doc.Standalone)
+	}
+	plainNodes := parseClean(t, "<main>{% outlet %}</main>")
+	if len(doc.Nodes) != len(plainNodes.Nodes) {
+		t.Errorf("nodes = %d, want the directive to emit nothing", len(doc.Nodes))
+	}
+	twice := parseClean(t, "{% standalone %}{% standalone %}<main>{% outlet %}</main>")
+	if !twice.Standalone || len(twice.Standalones) != 2 {
+		t.Errorf("repeating it is not an error: %+v", twice.Standalones)
+	}
+	if plainNodes.Standalone {
+		t.Error("a document without the directive stands in a chain")
+	}
+}
+
+func TestStandaloneTakesNoArgument(t *testing.T) {
+	if _, bag := parse(t, "{% standalone auth %}"); !bag.HasErrors() {
+		t.Error("an argument was accepted")
+	}
+}

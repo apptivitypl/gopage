@@ -2,7 +2,7 @@
 
 This is what `gopage new my-site --template catalog` writes: a listing that filters without a page
 reload, in English and Polish, with a single interactive component. It is the widest of the three
-examples, and the one CI builds twice — once as a native binary, once as a Cloudflare Worker — to
+examples, and the one CI builds twice, once as a native binary and once as a Cloudflare Worker, to
 prove both answer with the same document.
 
 <p>
@@ -51,5 +51,5 @@ gopage build --target native && ./dist/server
 
 ---
 
-Generated from the `catalog` template. Change the template rather than this folder; see
-[CONTRIBUTING](../../CONTRIBUTING.md).
+Everything here but this page is generated from the `catalog` template. Change the template
+rather than the folder; see [CONTRIBUTING](../../CONTRIBUTING.md).

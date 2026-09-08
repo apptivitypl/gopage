@@ -27,8 +27,10 @@ crosses a boundary it should not.
   vulnerability; a `{% raw %}` block emitting what it was handed is not.
 - **Cache boundaries.** A response cached under one key that is served for another: a per-user
   value reaching a shared fragment, a locale bleeding across hosts, a cached page answering a
-  request whose loader would have returned something else. The `I2` invariant test exists for
-  exactly this class.
+  request whose loader would have returned something else. A response is personal, and so never
+  stored, when the request carries a cookie named in `security.privateCookies`, when a loader reads
+  a cookie that is there, or when a loader sets one; a personal response that lands in the cache
+  anyway belongs here. The `I2` invariant test exists for exactly this class.
 - **Path traversal.** A request that reads outside `public/`, or a build that writes outside the
   project directory.
 - **Forms.** A submission accepted without its CSRF token, or a token that is valid across
@@ -37,6 +39,11 @@ crosses a boundary it should not.
 - **The compiler as an attack surface.** A `.gopage` file that makes the compiler write outside the
   project, execute something, or loop forever. Templates are trusted input in most projects, so
   this is lower severity, but it is still a bug worth reporting.
+- **The built-in endpoints.** The image endpoint reads a remote source only from a host named in
+  `images.hosts`, and refuses a source larger than 24 MB or an image over 40 megapixels; a request
+  that makes it fetch elsewhere, or exhaust the process, is one of these. The invalidation endpoint
+  drops cache entries and is served only when a bearer token is configured; dropping an entry
+  without that token is too.
 - **Generated projects.** A default in a scaffolded project that is unsafe in production, such as
   a header, a cache directive, or a trusted-proxy setting that takes a header at face value.
 
@@ -46,7 +53,7 @@ crosses a boundary it should not.
   that is slow. gopage bounds its cache, not your code.
 - Anything that needs write access to the project's own source. A template can already run Go.
 - Anything a `{% raw %}` block emitted. The directive is a documented escape hatch for payloads the
-  project produced — structured data, an import map, a stylesheet built in Go. What goes into it is
+  project produced: structured data, an import map, a stylesheet built in Go. What goes into it is
   the project's responsibility, the same as the Go a loader runs. `grep -rn '{% raw' app/ components/`
   lists every one of them.
 - Vulnerabilities in a dependency that gopage does not reach. `govulncheck` runs daily and reports

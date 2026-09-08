@@ -52,6 +52,8 @@ const (
 	C327 Code = "C327"
 	C328 Code = "C328"
 	C604 Code = "C604"
+	C113 Code = "C113"
+	W705 Code = "W705"
 )
 
 var titles = map[Code]string{
@@ -104,6 +106,8 @@ var titles = map[Code]string{
 	C327: "boolean attribute bound to a value",
 	C328: "loader in a layout",
 	C604: "message argument mismatch",
+	C113: "standalone outside a layout",
+	W705: "standalone layout without a head",
 }
 
 func (c Code) Title() string {

@@ -9,6 +9,8 @@ type Node interface {
 type Document struct {
 	Frontmatter *Frontmatter
 	Nodes       []Node
+	Standalone  bool
+	Standalones []diag.Span
 }
 
 type Frontmatter struct {

@@ -281,6 +281,7 @@ func (s *state) compileTemplate(file string) {
 	model := s.model(template)
 	Check(template.Document, file, model, s.bag)
 	CheckContexts(template.Document, file, s.bag)
+	CheckStandalone(template.Document, file, template.IsLayout, s.bag)
 	CheckFragments(template.Document, file, model, s.bag)
 	CheckIslands(template.Document, file, model, s.components, s.islandNames(), s.bag)
 	s.linker().Check(template.Document, file, s.bag)
@@ -380,12 +381,21 @@ func manifestPhase(s *state) error {
 
 func (s *state) chainOf(layouts []string) []uint32 {
 	chain := make([]uint32, 0, len(layouts))
-	for _, layout := range layouts {
+	for _, layout := range s.standing(layouts) {
 		if index, ok := s.planOf[layout]; ok {
 			chain = append(chain, index)
 		}
 	}
 	return chain
+}
+
+func (s *state) standing(layouts []string) []string {
+	for index := len(layouts) - 1; index >= 0; index-- {
+		if s.templates[layouts[index]].Document.Standalone {
+			return layouts[index:]
+		}
+	}
+	return layouts
 }
 
 func (s *state) classOf(route Route) ir.RouteClass {

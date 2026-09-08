@@ -34,7 +34,8 @@ request is being handled, so it arrives as HTML with everything else.
 | `components/Ticker.gopage` | markup, then `<script client>`: that attribute is the whole opt-in |
 | `components/Response.gopage` | a React island, typed against `gopage:props/Response` |
 | `server/hackernews/` | ordinary Go the loader calls, split by build tag for the worker |
-| `gopage.jsonc` | languages, reserved prefixes, css engine, navigation mode |
+| `gopage.jsonc` | languages, reserved prefixes, css engine, nav mode, and blocks to uncomment |
+| `public/llms.txt` | what a model reading the site is told; served from the root as a public file |
 
 ## Running it
 
@@ -70,5 +71,5 @@ a built-in list instead, so the page still renders. That is the intended behavio
 
 ---
 
-Generated from the `hello-world` template. Change the template rather than this folder; see
-[CONTRIBUTING](../../CONTRIBUTING.md).
+Everything here but this page is generated from the `hello-world` template. Change the template
+rather than the folder; see [CONTRIBUTING](../../CONTRIBUTING.md).

@@ -9,10 +9,11 @@ import (
 )
 
 type parser struct {
-	lexer *Lexer
-	file  string
-	bag   *diag.Bag
-	tok   Token
+	lexer       *Lexer
+	file        string
+	bag         *diag.Bag
+	tok         Token
+	standalones []diag.Span
 }
 
 func ClientScriptOf(document *Document) (*ClientScript, bool) {
@@ -57,6 +58,8 @@ func (p *parser) document() *Document {
 	}
 
 	doc.Nodes, _, _ = p.block(nil)
+	doc.Standalones = p.standalones
+	doc.Standalone = len(p.standalones) > 0
 	return doc
 }
 
@@ -206,6 +209,12 @@ func (p *parser) directive(name string, span diag.Span) Node {
 			return nil
 		}
 		return &AssetsBlock{Span: span}
+	case "standalone":
+		if !p.endDirective(name, span) {
+			return nil
+		}
+		p.standalones = append(p.standalones, span)
+		return nil
 	case "raw":
 		return p.rawDirective(span)
 	case "slot":

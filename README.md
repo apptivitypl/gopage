@@ -164,13 +164,20 @@ Generated Go lives under `internal/` rather than in a directory of its own, beca
 skips anything beginning with a dot and `go:embed` cannot reach outside its own package. That
 constraint is the whole reason for the shape.
 
+A `layout.gopage` wraps every page below it, and a nested one wraps the pages below that. A layout
+that opens with `{% standalone %}` starts the chain at itself, so nothing above it wraps those
+pages: that is how a login screen, a print view or an embed gets a document of its own. A directory
+in brackets groups routes without appearing in the address, so `app/(auth)/login/page.gopage`
+answers `/login`.
+
 ## How it works
 
 A build has three steps that are worth knowing about.
 
 **Compile.** Every `.gopage` file is parsed against a real grammar, not a regular expression. Types
-declared in a template's Go block become the props of the component, and a mismatch is a build
-error with a code. Every code has a page under [docs/errors](docs/errors).
+declared in a template's Go block become the props of the component, as do types it imports from the
+project's own packages, and a mismatch is a build error with a code. Every code has a page under
+[docs/errors](docs/errors).
 
 **Lower.** The result is a flat instruction plan, not a tree walked at request time. Static runs of
 markup collapse into single byte ranges, so rendering a page is mostly copying.
@@ -188,18 +195,15 @@ one the browser already has can answer with just the fragment that changed.
 {
   "$schema": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json",
   "app": { "name": "my-site" },
-  "i18n": { "mode": "path", "defaultLocale": "en", "locales": ["en", "pl"] },
+  "i18n": { "mode": "path", "defaultLocale": "en", "locales": ["en", "pl"], "prefixDefault": false },
+  "routing": { "reserved": ["/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/favicon.ico"] },
   "css": { "engine": "tailwind", "inlineLimit": "4kb" },
   "nav": { "mode": "partial" },
-  "security": {
-    "maxBodySize": "8mb",
-    "trustedOrigins": [],
-    "maxConnections": 0,
-  },
+  "fragments": { "deferred": "fetch" },
 }
 ```
 
-The four that decide something worth knowing about:
+The keys that decide something worth knowing about:
 
 | key                       |                                                                                                                                                                                                                                      |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -207,10 +211,63 @@ The four that decide something worth knowing about:
 | `css.inlineLimit`         | a stylesheet under this size is written into the document, a larger one is served as its own cached file; `0` links every sheet. Inlined sheets are written before linked ones, so a full sheet still overrides a small critical one |
 | `nav.mode`                | `partial` sends only the part of the document that changed                                                                                                                                                                           |
 | `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead                                                                                                                              |
+| `security.privateCookies` | names the cookies that make a response personal. A request carrying one is never cached                                                                                                                                              |
+| `routing.aliases`         | the segment each locale uses in public addresses, so one route answers `/jobs`, `/pl/praca` and `/de/arbeit`                                                                                                                          |
+| `seo`                     | the built-in `/sitemap.xml` and `/robots.txt`: crawler rules, extra sitemaps, and `mode: "off"` on either when a route of yours answers the path                                                                                      |
+| `images`                  | `mode: "on"` serves `/_gopage/image` and points `<Image>` at it, resizing and re-encoding on the way out                                                                                                                              |
 
 Unknown keys are an error, not a shrug: a misspelled setting names itself and the line it is on.
 The [schema](schema/gopage.schema.json) drives editor completion, and CI fails if it and the Go
 struct ever disagree.
+
+## Sitemap, images and sessions
+
+What a public site needs is built in. Each of these is a setting or a hook, not a library to wire
+up.
+
+**Sitemap and robots.** `/sitemap.xml` and `/robots.txt` are served without configuration. Routes
+without parameters are listed once per locale, with reciprocal `hreflang` and `x-default`. A route
+with parameters lists itself:
+
+```go
+func Sitemap(ctx *gopage.Ctx) (gopage.SitemapSeq, error) {
+	return gopage.SitemapOf([]gopage.SitemapEntry{{Path: "/jobs/warszawa", LastMod: updated}}), nil
+}
+```
+
+For a route without parameters the sitemap asks its `Meta`: a `Canonical` becomes the address it
+lists, and `noindex` in `Robots` keeps the page out. To answer either path yourself, set
+`seo.sitemap.mode` or `seo.robots.mode` to `"off"`; claiming the path while the generator is on is
+`GOPAGE-C112` at build time rather than a panic at startup.
+
+**Images.** With `images.mode: "on"`, `<Image>` points at `/_gopage/image` and emits a `srcset` from
+the widths you configure, so a phone downloads a phone-sized file. The endpoint decodes, scales and
+re-encodes with the standard library, caches the result as immutable, and reads remote sources only
+from `images.hosts`. WebP and AVIF are yours to add through `Options.Encoders`.
+
+**Sessions.** A loader can read and write the response:
+
+```go
+if held, ok := ctx.Cookie("session"); ok {
+	user = verify(held.Value)
+}
+ctx.Header().Set("X-Robots-Tag", "noindex, follow")
+ctx.Status(http.StatusGone)
+```
+
+A request carrying a cookie named in `security.privateCookies` is never cached, and neither is a
+response that sets a cookie. A request without one is still shared, so the same page stays fast for
+readers who are not signed in.
+
+**Localised addresses.** `routing.aliases` gives one route a different segment per locale. The
+canonical form redirects to the public one, so a page has a single address, and `canonical` and
+`hreflang` follow without a second table to maintain. `routing.normalize` folds trailing slashes,
+case and diacritics onto one spelling.
+
+**Dates and messages.** `time.Time` is a props type. `{{ Posted | date('date') }}` formats it, and
+`{{ Posted | relative }}` reads `time.days_ago` and its siblings from your catalogs, so a missing
+translation is a build error rather than English on a Polish page. Messages take named arguments:
+`t("jobs.in_city", city = City)`, checked against the placeholders in every catalog.
 
 ## Deploying
 
@@ -242,10 +299,11 @@ anything.
 
 `gopage dev` watches the project, rebuilds what changed and reloads the browser. It answers on
 localhost only; `gopage dev -host` puts it on every interface when you want to open it from a phone.
-`gopage routes` prints
-what the compiler found. `gopage check` compiles without writing anything. `gopage lsp` speaks the
-language server protocol on stdin and stdout, so an editor can show the same diagnostics the build
-would.
+`gopage routes` prints what the compiler found, with the address each locale publishes when the
+project renames segments. `gopage check` compiles without writing anything. `gopage css install`
+fetches the Tailwind binary this project pins, which the build does on its own when it is missing.
+`gopage lsp` speaks the language server protocol on stdin and stdout, so an editor can show the same
+diagnostics the build would, and `gopage version` prints the version the binary was built from.
 
 ## What is not there yet
 
@@ -273,4 +331,6 @@ one.
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option.
 
 The starter ships JetBrains Mono under the SIL Open Font License; its licence travels with the font
-in the generated project.
+in the generated project. `gopage.OpenGraph` draws its card with the Go font, which is BSD licensed,
+so that licence travels with any binary that calls it. Nothing else links the font: it costs about
+60 KB of type information in a binary that never draws a card, and 50 KB more in one that does.

@@ -48,7 +48,10 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
   render is considered.
 - **The cache.** `internal/cache` is bounded by bytes, not entries, and evicts by least recent use.
   A cache key carries everything that changes the answer — route, locale, host, and the loader's
-  own declared inputs. What may not enter a key is the point of the `I2` invariant test.
+  own declared inputs. What may not enter a key is the point of the `I2` invariant test. A response
+  that belongs to one visitor never becomes an entry at all: a request carrying a cookie named in
+  `security.privateCookies`, a loader that reads a cookie which is there, and a loader that sets one
+  are each enough to keep it out.
 - **Partial navigation.** When the browser sends the partial header, the server compares the chain
   of layouts it holds against the one this route needs and sends only the suffix that differs. A
   missing or malformed header is not an error; it answers with the whole document.
@@ -57,6 +60,9 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
   even when the body is not, which is why the mode exists.
 - **Render.** `internal/runtime` interprets the plan. It writes into a pooled buffer and escapes on
   the way out; there is no intermediate string.
+- **The rest of the answer.** `internal/vocab` turns a canonical path into the address a locale
+  publishes and back, `internal/reply` carries the status, headers and cookies a loader asked for,
+  and `internal/seo` answers `/sitemap.xml` and `/robots.txt` from the same route table.
 
 ## Where a value is allowed to land
 
@@ -72,6 +78,9 @@ lands in, so this costs nothing per request:
   of `OpText`. It filters the scheme the way a browser reads it, stripping the control characters
   that would otherwise hide `java\tscript:`, and writes nothing when the scheme is not one a link
   may carry.
+- A value the compiler writes into a query string, which today means the source of an optimised
+  image, lowers to `OpQuery` and is percent-encoded. A path with an ampersand in it can then not
+  smuggle a second parameter into the endpoint's own address.
 - The four contexts an escaper cannot rescue are refused at compile time, with a code that says
   which one and what to do instead: [C321](docs/errors/C321.md) for a script body,
   [C322](docs/errors/C322.md) for css, [C323](docs/errors/C323.md) for an event handler and
