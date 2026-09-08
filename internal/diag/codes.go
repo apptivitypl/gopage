@@ -45,6 +45,9 @@ const (
 	C322 Code = "C322"
 	C323 Code = "C323"
 	C324 Code = "C324"
+	C325 Code = "C325"
+	C112 Code = "C112"
+	W704 Code = "W704"
 )
 
 var titles = map[Code]string{
@@ -90,6 +93,9 @@ var titles = map[Code]string{
 	C105: "malformed route handler",
 	C111: "link points at no route",
 	C603: "catalog in the old toml format",
+	C325: "malformed sitemap hook",
+	C112: "route claims a built-in endpoint",
+	W704: "seo rule points at no route",
 }
 
 func (c Code) Title() string {

@@ -9,9 +9,14 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/compile"
+	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/diag"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/reply"
+	"github.com/apptivitypl/gopage/internal/server"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 func build(t *testing.T, files fstest.MapFS) []byte {
@@ -133,6 +138,140 @@ func TestRenderStaticByName(t *testing.T) {
 func TestValueHelpersAreExported(t *testing.T) {
 	if String("a").Text() != "a" || Int(2).Text() != "2" || Bool(true).Text() != "true" {
 		t.Error("the exported value helpers changed behaviour")
+	}
+}
+
+func ctxWithRecorders(t *testing.T) (*Ctx, *reply.Recorder, *cache.Recorder) {
+	t.Helper()
+	answer, policy := reply.NewRecorder(), cache.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.AddCookie(&http.Cookie{Name: "session", Value: "abc"})
+	ctx := reply.WithRecorder(cache.WithRecorder(request.Context(), policy), answer)
+	return NewCtx(request.WithContext(ctx), Params{}), answer, policy
+}
+
+func TestTheResponseSurfaceReachesTheRecorder(t *testing.T) {
+	ctx, answer, _ := ctxWithRecorders(t)
+	ctx.Status(http.StatusGone)
+	ctx.Header().Set("X-Robots-Tag", "noindex")
+	ctx.Vary("Accept-Language")
+	if answer.Code() != http.StatusGone {
+		t.Errorf("status = %d", answer.Code())
+	}
+	headers := answer.Headers()
+	if headers.Get("X-Robots-Tag") != "noindex" || !strings.Contains(headers.Get(reply.VaryHeader), "Accept-Language") {
+		t.Errorf("headers = %v", headers)
+	}
+}
+
+func TestReadingAPresentCookieMakesTheResponsePersonal(t *testing.T) {
+	ctx, answer, policy := ctxWithRecorders(t)
+	held, ok := ctx.Cookie("session")
+	if !ok || held.Value != "abc" {
+		t.Fatalf("cookie = %+v, ok = %v", held, ok)
+	}
+	if policy.Shared() {
+		t.Error("a request carrying the cookie is personal")
+	}
+	if !strings.Contains(answer.Headers().Get(reply.VaryHeader), reply.CookieVary) {
+		t.Errorf("vary = %v", answer.Headers())
+	}
+}
+
+func TestReadingAnAbsentCookieLeavesTheResponseShared(t *testing.T) {
+	ctx, answer, policy := ctxWithRecorders(t)
+	if _, ok := ctx.Cookie("cart"); ok {
+		t.Fatal("the cookie is not there")
+	}
+	if !policy.Shared() || answer.Headers() != nil {
+		t.Error("an absent cookie is no dependency")
+	}
+	if _, ok := NewCtx(nil, Params{}).Cookie("session"); ok {
+		t.Error("a context without a request carries no cookies")
+	}
+}
+
+func TestSettingACookieMakesTheResponsePersonal(t *testing.T) {
+	ctx, answer, policy := ctxWithRecorders(t)
+	ctx.SetCookie(&http.Cookie{Name: "theme", Value: "dark"})
+	if policy.Shared() {
+		t.Error("a response that sets a cookie is personal")
+	}
+	response := httptest.NewRecorder()
+	answer.Deliver(response, httptest.NewRequest(http.MethodGet, "/", nil), false)
+	if got := response.Header().Get("Set-Cookie"); !strings.Contains(got, "theme=dark") {
+		t.Errorf("set-cookie = %q", got)
+	}
+}
+
+func TestRequestValuesTravelByType(t *testing.T) {
+	type user struct{ Name string }
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := NewCtx(request.WithContext(WithValue(request.Context(), user{Name: "ada"})), Params{})
+	held, ok := ValueOf[user](ctx)
+	if !ok || held.Name != "ada" {
+		t.Errorf("value = %+v, ok = %v", held, ok)
+	}
+	if _, ok := ValueOf[int](ctx); ok {
+		t.Error("a type nobody stored is missing")
+	}
+}
+
+func TestPathsAreBuiltForTheCurrentLocale(t *testing.T) {
+	settings, err := config.Parse(`{
+		"i18n": {"locales": ["en", "pl"]},
+		"routing": {"aliases": {"pl": {"listings": "oferty"}}}
+	}`)
+	if err != nil {
+		t.Fatalf("config: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := NewCtx(request.WithContext(vocab.With(request.Context(), vocab.New(settings))), Params{})
+
+	got, err := PathFor(ctx, "pl", "/listings/[id]", Params{"id": "7"})
+	if err != nil || got != "/pl/oferty/7" {
+		t.Errorf("path = %q, err = %v", got, err)
+	}
+	if got, err := PathFor(ctx, "en", "/listings/[id]", Params{"id": "7"}); err != nil || got != "/listings/7" {
+		t.Errorf("path = %q, err = %v", got, err)
+	}
+	if _, err := Path(ctx, "/listings/[id]", nil); err == nil {
+		t.Error("a missing parameter is an error")
+	}
+}
+
+func TestARedirectErrorNamesItsTarget(t *testing.T) {
+	err := RedirectError(http.StatusMovedPermanently, "/jobs")
+	if err == nil || !strings.Contains(err.Error(), "/jobs") {
+		t.Errorf("error = %v", err)
+	}
+}
+
+func TestLocalsAreReadByType(t *testing.T) {
+	type deps struct{ Name string }
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	ctx := NewCtx(request.WithContext(server.WithLocals(request.Context(), deps{Name: "es"})), Params{})
+	held, ok := LocalsOf[deps](ctx)
+	if !ok || held.Name != "es" {
+		t.Errorf("locals = %+v, ok = %v", held, ok)
+	}
+	if _, ok := LocalsOf[int](ctx); ok {
+		t.Error("another type is missing")
+	}
+}
+
+func TestSitemapEntriesAreExported(t *testing.T) {
+	var seen []SitemapEntry
+	for entry, err := range SitemapOf([]SitemapEntry{
+		{Path: "/a", Alternates: []SitemapAlternate{{Lang: "pl", Href: "/pl/a"}}},
+	}) {
+		if err != nil {
+			t.Fatalf("sequence: %v", err)
+		}
+		seen = append(seen, entry)
+	}
+	if len(seen) != 1 || seen[0].Path != "/a" || seen[0].Alternates[0].Href != "/pl/a" {
+		t.Errorf("entries = %+v", seen)
 	}
 }
 

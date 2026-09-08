@@ -277,9 +277,9 @@ func TestFill(t *testing.T) {
 		{"/[[...slug]]", nil, "/"},
 	}
 	for _, c := range cases {
-		got, err := fill(c.pattern, c.params)
+		got, err := Fill(c.pattern, c.params)
 		if err != nil || got != c.want {
-			t.Errorf("fill(%q) = %q, %v, want %q", c.pattern, got, err, c.want)
+			t.Errorf("Fill(%q) = %q, %v, want %q", c.pattern, got, err, c.want)
 		}
 	}
 }

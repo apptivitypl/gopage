@@ -99,6 +99,7 @@ func TestRunAgainstAServerThatSatisfiesEveryCheck(t *testing.T) {
 			http.Redirect(w, r, "/about", http.StatusMovedPermanently)
 		case "/sitemap.xml":
 			w.Header().Set("Content-Type", "application/xml")
+			w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 			_, _ = w.Write([]byte(`<loc>http://x/</loc><xhtml:link hreflang="pl"/>`))
 		case "/llms.txt":
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")

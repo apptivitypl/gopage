@@ -7,7 +7,7 @@ import (
 
 const contextType = "Ctx"
 
-var reservedLoaders = map[string]bool{"Load": true, "Meta": true, "Submit": true}
+var reservedLoaders = map[string]bool{"Load": true, "Meta": true, "Submit": true, "Sitemap": true}
 
 func readDeferred(file *ast.File) []Field {
 	var found []Field

@@ -8,6 +8,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/seo"
 )
 
 func metaChain() *ir.Manifest {
@@ -28,7 +29,7 @@ func seoApp(t *testing.T, text string) *App {
 func metaOf(t *testing.T, app *App, target string) runtime.Meta {
 	t.Helper()
 	request := httptest.NewRequest(http.MethodGet, target, nil)
-	locale, rest := app.splitLocale(request.URL.Path)
+	locale, rest, _ := app.route(request.URL.Path)
 	request = withLocale(withPath(request, rest), locale)
 	route, params, ok := app.router.Match(rest)
 	if !ok {
@@ -96,8 +97,8 @@ func TestAlternatesAreReciprocal(t *testing.T) {
 		if seen["en"] != "http://example.com/" || seen["pl"] != "http://example.com/pl" {
 			t.Errorf("%s: alternates = %v", target, seen)
 		}
-		if seen[defaultHreflang] != seen["en"] {
-			t.Errorf("%s: x-default = %q, want the default locale", target, seen[defaultHreflang])
+		if seen[seo.DefaultHreflang] != seen["en"] {
+			t.Errorf("%s: x-default = %q, want the default locale", target, seen[seo.DefaultHreflang])
 		}
 	}
 }
@@ -108,10 +109,17 @@ func TestOneLocaleNeedsNoAlternates(t *testing.T) {
 	}
 }
 
-func TestADynamicRouteGetsNoAlternates(t *testing.T) {
+func TestADynamicRouteGetsTheSameClusterAsAStaticOne(t *testing.T) {
 	app := seoApp(t, "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}")
-	if meta := metaOf(t, app, "/listings/7"); len(meta.Alternates) != 0 {
-		t.Errorf("alternates = %+v, want none for a route with parameters", meta.Alternates)
+	seen := map[string]string{}
+	for _, alternate := range metaOf(t, app, "/listings/7").Alternates {
+		seen[alternate.Lang] = alternate.Href
+	}
+	if seen["en"] != "http://example.com/listings/7" || seen["pl"] != "http://example.com/pl/listings/7" {
+		t.Errorf("alternates = %v", seen)
+	}
+	if seen[seo.DefaultHreflang] != seen["en"] {
+		t.Errorf("x-default = %q", seen[seo.DefaultHreflang])
 	}
 }
 
@@ -158,7 +166,7 @@ func TestTheSchemeCanBeForced(t *testing.T) {
 func TestReservedPathsGetNoSeo(t *testing.T) {
 	app := seoApp(t, "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}")
 	request := httptest.NewRequest(http.MethodGet, "/api/health", nil)
-	meta := app.seo(runtime.Meta{}, request, ir.Route{Pattern: "/api/health"})
+	meta := app.seo(runtime.Meta{}, request)
 	if meta.Canonical != "" || len(meta.Alternates) != 0 {
 		t.Errorf("meta = %+v, want the api namespace left alone", meta)
 	}

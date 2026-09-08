@@ -5,6 +5,7 @@ import (
 
 	"errors"
 	"github.com/apptivitypl/gopage/internal/logs"
+	"github.com/apptivitypl/gopage/internal/reply"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -145,4 +146,45 @@ func TestContentCarriesItsOwnType(t *testing.T) {
 	if recorder.Body.String() != "<rss/>" {
 		t.Errorf("body = %q", recorder.Body.String())
 	}
+}
+
+func TestAHandlerSetsCookiesAndStatusThroughTheRecorder(t *testing.T) {
+	handler := Mux(map[string]Handler{
+		http.MethodPost: func(r *http.Request) (Response, error) {
+			answer := reply.From(r.Context())
+			answer.SetCookie(&http.Cookie{Name: "session", Value: "abc", HttpOnly: true})
+			answer.Header().Set("X-Robots-Tag", "noindex")
+			answer.Status(http.StatusCreated)
+			return JSON(map[string]bool{"ok": true}), nil
+		},
+	})
+	recorder := call(t, handler, http.MethodPost, "/api/session")
+	if recorder.Code != http.StatusCreated {
+		t.Errorf("status = %d", recorder.Code)
+	}
+	if got := recorder.Header().Get("Set-Cookie"); !strings.Contains(got, "session=abc") {
+		t.Errorf("set-cookie = %q", got)
+	}
+	if got := recorder.Header().Get("X-Robots-Tag"); got != "noindex" {
+		t.Errorf("x-robots-tag = %q", got)
+	}
+}
+
+func TestAResponseThatCarriesNoStatusKeepsItsOwn(t *testing.T) {
+	handler := Mux(map[string]Handler{
+		http.MethodGet: func(r *http.Request) (Response, error) {
+			reply.From(r.Context()).Status(http.StatusGone)
+			return plain{}, nil
+		},
+	})
+	if recorder := call(t, handler, http.MethodGet, "/api/x"); recorder.Code != http.StatusOK {
+		t.Errorf("status = %d, want the response to keep its own", recorder.Code)
+	}
+}
+
+type plain struct{}
+
+func (plain) Respond(w http.ResponseWriter) error {
+	w.WriteHeader(http.StatusOK)
+	return nil
 }

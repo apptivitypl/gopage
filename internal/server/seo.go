@@ -5,15 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/config"
-	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
 )
 
-const defaultHreflang = "x-default"
-
-func (a *App) seo(meta runtime.Meta, r *http.Request, route ir.Route) runtime.Meta {
+func (a *App) seo(meta runtime.Meta, r *http.Request) runtime.Meta {
 	if a.config.Reserves(r.URL.Path) {
 		return meta
 	}
@@ -23,25 +21,22 @@ func (a *App) seo(meta runtime.Meta, r *http.Request, route ir.Route) runtime.Me
 	}
 	origin := a.origin(r)
 	if meta.Canonical == "" {
-		meta.Canonical = origin + a.localised(r.URL.Path, LocaleOf(r))
+		meta.Canonical = a.hrefFor(r.URL.Path, LocaleOf(r), origin, a.scheme(r))
 	}
 	if len(locales) < 2 || len(meta.Alternates) > 0 {
 		return meta
 	}
-	meta.Alternates = a.alternates(r.URL.Path, route, origin, a.scheme(r))
+	meta.Alternates = a.alternates(r.URL.Path, origin, a.scheme(r))
 	return meta
 }
 
-func (a *App) alternates(path string, route ir.Route, origin, scheme string) runtime.Alternates {
-	if len(ParamsOf(route.Pattern)) > 0 {
-		return nil
-	}
+func (a *App) alternates(path, origin, scheme string) runtime.Alternates {
 	list := make(runtime.Alternates, 0, len(a.config.I18n.Locales)+1)
 	for _, locale := range a.config.I18n.Locales {
 		list = append(list, runtime.Alternate{Lang: locale, Href: a.hrefFor(path, locale, origin, scheme)})
 	}
 	list = append(list, runtime.Alternate{
-		Lang: defaultHreflang,
+		Lang: seo.DefaultHreflang,
 		Href: a.hrefFor(path, a.config.I18n.DefaultLocale, origin, scheme),
 	})
 	return list
@@ -49,22 +44,9 @@ func (a *App) alternates(path string, route ir.Route, origin, scheme string) run
 
 func (a *App) hrefFor(path, locale, origin, scheme string) string {
 	if a.config.I18n.Mode == config.ModeSubdomain {
-		return a.hostFor(locale, origin, scheme) + path
+		return a.hostFor(locale, origin, scheme) + a.vocab.Public(locale, path)
 	}
-	return origin + a.localised(path, locale)
-}
-
-func (a *App) localised(path, locale string) string {
-	if a.config.I18n.Mode != config.ModePath {
-		return path
-	}
-	if locale == a.config.I18n.DefaultLocale && !a.config.I18n.PrefixDefault {
-		return path
-	}
-	if path == "/" {
-		return "/" + locale
-	}
-	return "/" + locale + path
+	return origin + a.vocab.Localise(locale, path)
 }
 
 func (a *App) hostFor(locale, origin, scheme string) string {
@@ -128,16 +110,11 @@ func ParamsOf(pattern string) []string {
 	return names
 }
 
-func (a *App) sitemap(w http.ResponseWriter, r *http.Request) {
-	pages := seo.Pages(a.manifest.Routes, a.config, a.origin(r))
-	a.writeText(w, r, seo.SitemapType, seo.Sitemap(pages))
-}
-
-func (a *App) robots(w http.ResponseWriter, r *http.Request) {
-	a.writeText(w, r, seo.RobotsType, seo.Robots(a.origin(r)))
-}
-
-func (a *App) writeText(w http.ResponseWriter, r *http.Request, contentType string, body []byte) {
+func (a *App) writeText(w http.ResponseWriter, r *http.Request, contentType string, body []byte,
+	status cache.Status, policy cache.Policy,
+) {
+	w.Header().Set(CacheHeader, status.String())
+	w.Header().Set("Cache-Control", Freshness(policy))
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(http.StatusOK)

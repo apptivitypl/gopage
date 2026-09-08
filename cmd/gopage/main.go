@@ -20,6 +20,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/build"
 	"github.com/apptivitypl/gopage/internal/compile"
+	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/css"
 	"github.com/apptivitypl/gopage/internal/demo"
 	"github.com/apptivitypl/gopage/internal/devserver"
@@ -30,6 +31,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/lsp"
 	"github.com/apptivitypl/gopage/internal/paths"
 	"github.com/apptivitypl/gopage/internal/scaffold"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 func main() {
@@ -503,12 +505,23 @@ func routes(args []string) error {
 	if err != nil {
 		return err
 	}
+	settings, err := config.Load(os.DirFS(dir))
+	if err != nil {
+		return err
+	}
+	words := vocab.New(settings)
 	for _, route := range discovered {
 		kind := "page"
 		if route.Kind == compile.RouteAPI {
 			kind = "api"
 		}
 		fmt.Printf("%-6s %-28s %-20s %s\n", kind, route.Pattern, route.Name, route.File)
+		if kind == "api" || !words.Localises() {
+			continue
+		}
+		for _, locale := range settings.I18n.Locales {
+			fmt.Printf("%-6s %-28s %s\n", "", words.Localise(locale, route.Pattern), locale)
+		}
 	}
 	return nil
 }

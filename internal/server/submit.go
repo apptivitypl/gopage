@@ -10,6 +10,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/csrf"
 	"github.com/apptivitypl/gopage/internal/form"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
@@ -23,7 +24,8 @@ func (a *App) submitPage(w http.ResponseWriter, r *http.Request, route ir.Route,
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	r = r.WithContext(WithTranslator(r.Context(), a.translator(r)))
+	answer := reply.NewRecorder()
+	r = r.WithContext(reply.WithRecorder(WithTranslator(r.Context(), a.translator(r)), answer))
 	if err := readSubmission(r); err != nil {
 		var tooBig *http.MaxBytesError
 		if errors.As(err, &tooBig) {
@@ -46,6 +48,8 @@ func (a *App) submitPage(w http.ResponseWriter, r *http.Request, route ir.Route,
 		a.fail(w, r, ir.FallbackError, http.StatusInternalServerError)
 		return
 	}
+	answer.Deliver(w, r, a.secureCookies())
+	reply.Apply(w, answer.Headers())
 	if act != nil {
 		if err := act.Apply(w, r, a.resolve); err != nil {
 			a.logger.Error("action failed", "route", route.Name, "error", err)
@@ -94,13 +98,13 @@ func (a *App) rerender(w http.ResponseWriter, r *http.Request, route ir.Route, p
 func (a *App) resolve(name string, params map[string]string) (string, error) {
 	for _, route := range a.manifest.Routes {
 		if route.Name == name {
-			return fill(route.Pattern, params)
+			return Fill(route.Pattern, params)
 		}
 	}
 	return "", fmt.Errorf("no route named %q", name)
 }
 
-func fill(pattern string, params map[string]string) (string, error) {
+func Fill(pattern string, params map[string]string) (string, error) {
 	var parts []string
 	for segment := range strings.SplitSeq(strings.Trim(pattern, "/"), "/") {
 		switch {

@@ -16,8 +16,11 @@ import (
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/redirect"
+	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/seo"
 	"github.com/apptivitypl/gopage/internal/server"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 type (
@@ -26,6 +29,7 @@ type (
 	PropsProvider    = server.PropsProvider
 	DeferredProvider = server.DeferredProvider
 	MetaProvider     = server.MetaProvider
+	SitemapProvider  = server.SitemapProvider
 	SubmitProvider   = server.SubmitProvider
 	Value            = runtime.Value
 )
@@ -36,9 +40,24 @@ var (
 	Bool   = runtime.Bool
 )
 
+type (
+	SitemapEntry     = seo.Entry
+	SitemapAlternate = seo.Alternate
+	SitemapSeq       = seo.Seq
+)
+
+func SitemapOf(entries []SitemapEntry) SitemapSeq {
+	return seo.Of(entries)
+}
+
 type Props = runtime.Map
 
 type Meta = runtime.Meta
+
+type (
+	Alternate  = runtime.Alternate
+	Alternates = runtime.Alternates
+)
 
 func NewMeta(title string) Meta {
 	return Meta{Title: title}
@@ -63,10 +82,12 @@ type Options struct {
 	Props      map[string]PropsProvider
 	Deferred   map[string]DeferredProvider
 	Meta       map[string]MetaProvider
+	Sitemap    map[string]SitemapProvider
 	Submit     map[string]SubmitProvider
 	API        map[string]http.Handler
 	Middleware []Middleware
 	Logger     *slog.Logger
+	Locals     any
 }
 
 type App struct {
@@ -119,9 +140,11 @@ func New(opts Options) (*App, error) {
 			Props:      opts.Props,
 			Deferred:   opts.Deferred,
 			Meta:       opts.Meta,
+			Sitemap:    opts.Sitemap,
 			Submit:     opts.Submit,
 			API:        opts.API,
 			Middleware: opts.Middleware,
+			Locals:     opts.Locals,
 			Logger:     logger,
 			AccessLog:  logs.Access(),
 			Preloads:   sidecar.IslandChunks(),
@@ -223,6 +246,27 @@ func Redirect(route string) *action.Redirect {
 
 func RedirectTo(location string) *action.Redirect {
 	return action.To(location)
+}
+
+func Path(c *Ctx, route string, params Params) (string, error) {
+	return PathFor(c, c.Locale(), route, params)
+}
+
+func PathFor(c *Ctx, locale, route string, params Params) (string, error) {
+	filled, err := server.Fill(route, params)
+	if err != nil {
+		return "", err
+	}
+	return vocab.From(c.Context()).Localise(locale, filled), nil
+}
+
+func RedirectError(status int, location string) error {
+	return redirect.Fail(status, location)
+}
+
+func LocalsOf[T any](c *Ctx) (T, bool) {
+	value, ok := server.LocalsFrom(c.Context()).(T)
+	return value, ok
 }
 
 func SafeRedirect(target, fallback string, allowed ...string) string {
@@ -383,6 +427,51 @@ func (c *Ctx) T(key string) string {
 func (c *Ctx) Count(key string, count int) string {
 	return server.TranslatorFrom(c.Context())(key, count, true)
 }
+
+func (c *Ctx) Status(code int) {
+	reply.From(c.Context()).Status(code)
+}
+
+func (c *Ctx) Header() http.Header {
+	return reply.From(c.Context()).Header()
+}
+
+func (c *Ctx) Vary(headers ...string) {
+	reply.From(c.Context()).Vary(headers...)
+}
+
+func (c *Ctx) Cookie(name string) (*http.Cookie, bool) {
+	if c.request == nil {
+		return nil, false
+	}
+	held, err := c.request.Cookie(name)
+	if err != nil {
+		return nil, false
+	}
+	c.personal()
+	return held, true
+}
+
+func (c *Ctx) SetCookie(held *http.Cookie) {
+	reply.From(c.Context()).SetCookie(held)
+	c.personal()
+}
+
+func (c *Ctx) personal() {
+	c.Cache().Private()
+	reply.From(c.Context()).Vary(reply.CookieVary)
+}
+
+func WithValue[T any](ctx context.Context, value T) context.Context {
+	return context.WithValue(ctx, valueKey[T]{}, value)
+}
+
+func ValueOf[T any](c *Ctx) (T, bool) {
+	value, ok := c.Context().Value(valueKey[T]{}).(T)
+	return value, ok
+}
+
+type valueKey[T any] struct{}
 
 func (c *Ctx) Query(name string) string {
 	if c.request == nil {

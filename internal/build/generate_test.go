@@ -1,6 +1,7 @@
 package build
 
 import (
+	"errors"
 	"go/parser"
 	"go/token"
 	"os"
@@ -292,5 +293,80 @@ func TestNoMetaProviderWithoutAMetaFunction(t *testing.T) {
 	registry := read(t, dir, "internal/gen/registry.go")
 	if !strings.Contains(registry, "func Meta() map[string]gopage.MetaProvider") {
 		t.Errorf("the registry always declares Meta:\n%s", registry)
+	}
+}
+
+const sitemapPage = `---
+type Props struct {
+	Title string
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Title: "hello"}, nil
+}
+
+func Sitemap(ctx *gopage.Ctx) (gopage.SitemapSeq, error) {
+	return gopage.SitemapOf([]gopage.SitemapEntry{{Path: "/features/one"}}), nil
+}
+---
+<h1>{{ Title }}</h1>
+`
+
+func TestASitemapHookReachesTheRegistry(t *testing.T) {
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": sitemapPage})
+
+	provider := read(t, dir, "internal/gen/features/provider.go")
+	mustParse(t, provider)
+	for _, want := range []string{
+		"func SitemapProvider(request *http.Request) (gopage.SitemapSeq, error)",
+		"return Sitemap(gopage.NewCtx(request, nil))",
+	} {
+		if !strings.Contains(provider, want) {
+			t.Errorf("provider is missing %s:\n%s", want, provider)
+		}
+	}
+	registry := read(t, dir, "internal/gen/registry.go")
+	mustParse(t, registry)
+	for _, want := range []string{
+		"func Sitemap() map[string]gopage.SitemapProvider {",
+		"features.Route: features.SitemapProvider,",
+	} {
+		if !strings.Contains(registry, want) {
+			t.Errorf("registry is missing %s:\n%s", want, registry)
+		}
+	}
+	if app := read(t, dir, "internal/gen/app.go"); !strings.Contains(app, "Sitemap:  Sitemap(),") {
+		t.Errorf("options are missing the sitemap map:\n%s", app)
+	}
+}
+
+func TestASitemapHookIsNotADeferredProp(t *testing.T) {
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": sitemapPage})
+	page := read(t, dir, "internal/gen/features/page.go")
+	mustParse(t, page)
+	if strings.Contains(page, "deferredSitemap") {
+		t.Errorf("Sitemap is a hook, not a deferred prop:\n%s", page)
+	}
+}
+
+func TestAPageWithOnlyASitemapHookIsGenerated(t *testing.T) {
+	source := "---\ntype Props struct{}\n\n" +
+		"func Sitemap(ctx *gopage.Ctx) (gopage.SitemapSeq, error) { return nil, nil }\n---\n<h1>static</h1>\n"
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": source})
+	provider := read(t, dir, "internal/gen/features/provider.go")
+	mustParse(t, provider)
+	if !strings.Contains(provider, "SitemapProvider") {
+		t.Errorf("provider = %q", provider)
+	}
+}
+
+func TestABrokenSitemapHookStopsTheBuild(t *testing.T) {
+	source := "---\ntype Props struct{}\n\n" +
+		"func Sitemap(ctx *gopage.Ctx) error { return nil }\n---\n<h1>static</h1>\n"
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": source}))
+	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
+	var failure *Error
+	if !errors.As(err, &failure) || !strings.Contains(failure.Render(), "C325") {
+		t.Fatalf("Run: %v, want C325", err)
 	}
 }

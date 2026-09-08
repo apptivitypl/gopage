@@ -11,6 +11,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/schema"
 	"github.com/apptivitypl/gopage/internal/seo"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 type Phase struct {
@@ -46,6 +47,7 @@ var phases = []Phase{
 	{Name: "discover routes", Run: discoverPhase},
 	{Name: "collect assets", Run: assetsPhase},
 	{Name: "load catalogs", Run: catalogsPhase},
+	{Name: "check seo", Run: seoPhase},
 	{Name: "load handlers", Run: handlersPhase},
 	{Name: "load components", Run: componentsPhase},
 	{Name: "compile templates", Run: templatesPhase},
@@ -176,7 +178,7 @@ func (s *state) islandNames() map[string]bool {
 }
 
 func (s *state) linker() *Linker {
-	return NewLinker(s.routes).Serving(s.served()...)
+	return NewLinker(s.routes).Speaking(vocab.New(s.config), s.config.I18n.Locales).Serving(s.served()...)
 }
 
 func (s *state) served() []string {
@@ -187,7 +189,13 @@ func (s *state) served() []string {
 			files = append(files, asset.Path)
 		}
 	}
-	return append(files, seo.SitemapPath, seo.RobotsPath)
+	if s.config.SEO.Sitemap.Enabled() {
+		files = append(files, seo.SitemapPath)
+	}
+	if s.config.SEO.Robots.Enabled() {
+		files = append(files, seo.RobotsPath)
+	}
+	return files
 }
 
 func componentsPhase(s *state) error {

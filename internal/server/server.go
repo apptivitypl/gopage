@@ -1,12 +1,14 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,13 +18,17 @@ import (
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 type PropsProvider func(*http.Request, Params) (runtime.Accessible, error)
 
 type MetaProvider func(*http.Request, Params) (runtime.Meta, error)
+
+type SitemapProvider func(*http.Request) (seo.Seq, error)
 
 var ErrNotFound = errors.New("gopage: not found")
 
@@ -38,6 +44,7 @@ type Options struct {
 	Props      map[string]PropsProvider
 	Deferred   map[string]DeferredProvider
 	Meta       map[string]MetaProvider
+	Sitemap    map[string]SitemapProvider
 	Submit     map[string]SubmitProvider
 	API        map[string]http.Handler
 	Middleware []Middleware
@@ -45,6 +52,17 @@ type Options struct {
 	Logger     *slog.Logger
 	AccessLog  bool
 	Preloads   map[string][]string
+	Locals     any
+}
+
+type localsKey struct{}
+
+func WithLocals(ctx context.Context, locals any) context.Context {
+	return context.WithValue(ctx, localsKey{}, locals)
+}
+
+func LocalsFrom(ctx context.Context) any {
+	return ctx.Value(localsKey{})
 }
 
 type routePreload struct {
@@ -64,6 +82,7 @@ type App struct {
 	props      map[string]PropsProvider
 	deferred   map[string]DeferredProvider
 	meta       map[string]MetaProvider
+	sitemaps   map[string]SitemapProvider
 	submit     map[string]SubmitProvider
 	api        map[string]http.Handler
 	entropy    io.Reader
@@ -73,6 +92,8 @@ type App struct {
 	messages   map[string]uint32
 	chains     map[string][]*ir.Plan
 	deferrals  map[string][]string
+	locals     any
+	vocab      vocab.Table
 }
 
 func New(opts Options) *App {
@@ -98,10 +119,13 @@ func New(opts Options) *App {
 		deferred:   opts.Deferred,
 		cache:      opts.Cache,
 		router:     NewRouter(manifest.Routes),
+		vocab:      vocab.New(settings),
 		props:      opts.Props,
 		meta:       opts.Meta,
+		sitemaps:   opts.Sitemap,
 		submit:     opts.Submit,
 		api:        opts.API,
+		locals:     opts.Locals,
 		entropy:    opts.Entropy,
 		middleware: opts.Middleware,
 		logger:     logger,
@@ -161,11 +185,10 @@ func (a *App) Handler() http.Handler {
 			mux.Handle(file, a.assets)
 		}
 	}
-	mux.HandleFunc(seo.SitemapPath, a.sitemap)
-	mux.HandleFunc(seo.RobotsPath, a.robots)
+	a.serveSEO(mux)
 	mux.HandleFunc("/", a.renderPage)
 
-	var handler http.Handler = mux
+	handler := a.local(mux)
 	for i := len(a.middleware) - 1; i >= 0; i-- {
 		handler = a.middleware[i](handler)
 	}
@@ -175,6 +198,40 @@ func (a *App) Handler() http.Handler {
 		handler = a.locale(handler)
 	}
 	return a.observe(a.compressed(a.guard(a.secure(a.crossOrigin(a.limited(a.reroute(handler)))))))
+}
+
+func (a *App) serveSEO(mux *http.ServeMux) {
+	if a.config.SEO.Sitemap.Enabled() {
+		a.serveBuiltin(mux, seo.SitemapPath, a.sitemap)
+		a.serveBuiltin(mux, seo.SitemapPrefix+"{shard}", a.sitemapShard)
+	}
+	if a.config.SEO.Robots.Enabled() {
+		a.serveBuiltin(mux, seo.RobotsPath, a.robots)
+	}
+}
+
+func (a *App) serveBuiltin(mux *http.ServeMux, pattern string, handler http.HandlerFunc) {
+	if a.claims(pattern) {
+		a.logger.Warn("built-in endpoint yielded to a route of the project", "path", pattern)
+		return
+	}
+	mux.HandleFunc(pattern, handler)
+}
+
+func (a *App) claims(pattern string) bool {
+	if _, taken := a.api[pattern]; taken {
+		return true
+	}
+	return a.assets != nil && slices.Contains(a.public, pattern)
+}
+
+func (a *App) local(next http.Handler) http.Handler {
+	if a.locals == nil {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(WithLocals(r.Context(), a.locals)))
+	})
 }
 
 func (a *App) renderPage(w http.ResponseWriter, r *http.Request) {
@@ -389,7 +446,7 @@ func (a *App) providers(route ir.Route, r *http.Request, params Params) (runtime
 	if err != nil {
 		return nil, err
 	}
-	return runtime.WithLocale(runtime.WithMeta(props, a.seo(meta, r, route)), a.localeOf(r)), nil
+	return runtime.WithLocale(runtime.WithMeta(props, a.seo(meta, r)), a.localeOf(r)), nil
 }
 
 func (a *App) localeOf(r *http.Request) runtime.Locale {
@@ -417,14 +474,19 @@ func (a *App) Routes() []ir.Route {
 }
 
 func (a *App) RenderStatic(route ir.Route) ([]byte, error) {
-	request := &http.Request{
+	answer := reply.NewRecorder()
+	request := (&http.Request{
 		Method: http.MethodGet,
 		URL:    &url.URL{Path: patternPath(route.Pattern)},
 		Header: http.Header{},
-	}
+	}).WithContext(reply.WithRecorder(context.Background(), answer))
 	body, err := a.Render(route, request, Params{})
 	if err != nil {
 		return nil, err
+	}
+	if answer.Touched() {
+		runtime.Release(body)
+		return nil, fmt.Errorf("route %s writes to the response, so it cannot be exported as a static page", route.Pattern)
 	}
 	defer runtime.Release(body)
 	out := make([]byte, body.Len())

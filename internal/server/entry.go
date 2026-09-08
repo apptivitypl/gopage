@@ -9,6 +9,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/cookie"
 	"github.com/apptivitypl/gopage/internal/redirect"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 const (
@@ -77,13 +78,32 @@ func (a *App) sendRedirect(w http.ResponseWriter, r *http.Request, target string
 
 func (a *App) locale(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		locale, rest := a.splitLocale(r.URL.Path)
+		locale, rest, spoken := a.route(r.URL.Path)
+		if spoken != "" {
+			a.sendRedirect(w, r, spoken, http.StatusMovedPermanently)
+			return
+		}
 		if rest != r.URL.Path {
 			r = withPath(r, rest)
+		}
+		if a.vocab.Localises() {
+			r = r.WithContext(vocab.With(r.Context(), a.vocab))
 		}
 		w.Header().Set(LocaleHeader, locale)
 		next.ServeHTTP(w, withLocale(r, locale))
 	})
+}
+
+func (a *App) route(path string) (string, string, string) {
+	locale, rest := a.splitLocale(path)
+	if !a.vocab.Speaks(locale) || a.config.Reserves(rest) {
+		return locale, rest, ""
+	}
+	canonical := a.vocab.Canonical(locale, rest)
+	if spoken := a.vocab.Public(locale, canonical); spoken != rest {
+		return locale, rest, a.vocab.Localise(locale, canonical)
+	}
+	return locale, canonical, ""
 }
 
 func (a *App) splitLocale(path string) (string, string) {

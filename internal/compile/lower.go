@@ -472,9 +472,10 @@ func unaryOp(op syntax.UnaryOp) uint8 {
 }
 
 const (
-	LoaderName = "func Load("
-	MetaName   = "func Meta("
-	SubmitName = "func Submit("
+	LoaderName  = "func Load("
+	MetaName    = "func Meta("
+	SubmitName  = "func Submit("
+	SitemapName = "func Sitemap("
 )
 
 type Template struct {
@@ -500,6 +501,10 @@ func (t Template) LoaderTakesParams() bool {
 
 func (t Template) HasSubmit() bool {
 	return strings.Contains(t.Frontmatter, SubmitName)
+}
+
+func (t Template) HasSitemap() bool {
+	return strings.Contains(t.Frontmatter, SitemapName)
 }
 
 func (t Template) Sources() []schema.Source {

@@ -170,7 +170,7 @@ A build has three steps that are worth knowing about.
 
 **Compile.** Every `.gopage` file is parsed against a real grammar, not a regular expression. Types
 declared in a template's Go block become the props of the component, and a mismatch is a build
-error with a code. `GOPAGE-C318` and the other 41 have a page under [docs/errors](docs/errors).
+error with a code. Every code has a page under [docs/errors](docs/errors).
 
 **Lower.** The result is a flat instruction plan, not a tree walked at request time. Static runs of
 markup collapse into single byte ranges, so rendering a page is mostly copying.

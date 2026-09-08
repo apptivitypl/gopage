@@ -65,6 +65,14 @@
           "type": "array",
           "items": {"type": "string", "pattern": "^/"},
           "description": "Prefixes the router refuses to give to a page. Setting this replaces the defaults."
+        },
+        "aliases": {
+          "type": "object",
+          "description": "Per-locale path vocabulary: canonical segment to the segment the public URL uses.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          }
         }
       }
     },
@@ -77,6 +85,85 @@
           "enum": ["off", "partial"],
           "default": "off",
           "description": "\"partial\" sends only the part of the document that changed."
+        }
+      }
+    },
+    "seo": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The built-in sitemap and robots.txt generators.",
+      "properties": {
+        "sitemap": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["auto", "off"],
+              "default": "auto",
+              "description": "\"off\" stops serving /sitemap.xml, so a route of your own may claim the path."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50000,
+              "default": 50000,
+              "description": "Entries per file. Above it /sitemap.xml becomes an index over /sitemap/N.xml."
+            },
+            "probe": {
+              "type": "string",
+              "enum": ["meta", "off"],
+              "default": "meta",
+              "description": "\"meta\" asks each parameterless route for its Meta, so canonical and robots decide the entry."
+            },
+            "ttl": {"type": "string", "default": "1h", "description": "Freshness ceiling. A route may shorten it through ctx.Cache()."},
+            "stale": {"type": "string", "default": "24h"},
+            "changefreq": {
+              "type": "string",
+              "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"],
+              "description": "Emitted for routes the framework derives from the route table."
+            },
+            "priority": {"type": "number", "minimum": 0, "maximum": 1},
+            "exclude": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^/"},
+              "description": "Paths kept out of the sitemap, matched as prefixes."
+            }
+          }
+        },
+        "robots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["auto", "off"],
+              "default": "auto",
+              "description": "\"off\" stops serving /robots.txt, so a route or a public file may claim the path."
+            },
+            "ttl": {"type": "string", "default": "1h"},
+            "stale": {"type": "string", "default": "24h"},
+            "groups": {
+              "type": "array",
+              "description": "One block per crawler. Replaces the default \"User-agent: *\" with \"Allow: /\".",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["userAgent"],
+                "properties": {
+                  "userAgent": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                  "allow": {"type": "array", "items": {"type": "string", "pattern": "^/"}},
+                  "disallow": {"type": "array", "items": {"type": "string", "pattern": "^/"}},
+                  "crawlDelay": {"type": "integer", "minimum": 0}
+                }
+              }
+            },
+            "sitemaps": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Extra Sitemap: lines, next to the built-in one. Absolute URLs are kept as written."
+            }
+          }
         }
       }
     },
@@ -112,6 +199,11 @@
           "type": "array",
           "items": {"type": "string"},
           "description": "Origins allowed to make state-changing cross-origin requests, as scheme://host[:port]."
+        },
+        "privateCookies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Cookies that make a response personal. A request carrying one is never cached."
         },
         "maxConnections": {
           "type": "integer",

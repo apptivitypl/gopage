@@ -2,6 +2,7 @@ package cache
 
 import (
 	"container/list"
+	"net/http"
 	"sync"
 	"time"
 
@@ -38,6 +39,8 @@ func (s Status) String() string {
 type Value struct {
 	Body   []byte
 	Tags   []string
+	Status int
+	Header http.Header
 	Policy Policy
 }
 
@@ -45,6 +48,12 @@ func (v Value) weight() int64 {
 	total := int64(len(v.Body)) + entryOverhead
 	for _, tag := range v.Tags {
 		total += int64(len(tag))
+	}
+	for name, values := range v.Header {
+		total += int64(len(name))
+		for _, value := range values {
+			total += int64(len(value))
+		}
 	}
 	return total
 }
