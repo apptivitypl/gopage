@@ -237,6 +237,30 @@ func contentType(extension string) string {
 	return "application/octet-stream"
 }
 
+var icons = []struct {
+	file string
+	tag  string
+}{
+	{"/favicon.ico", `<link rel="icon" href="/favicon.ico" sizes="any">`},
+	{"/icon.svg", `<link rel="icon" href="/icon.svg" type="image/svg+xml">`},
+	{"/apple-icon.png", `<link rel="apple-touch-icon" href="/apple-icon.png">`},
+	{"/manifest.json", `<link rel="manifest" href="/manifest.json">`},
+}
+
+func Icons(public []Asset) string {
+	served := make(map[string]bool, len(public))
+	for _, asset := range public {
+		served[asset.Path] = true
+	}
+	var b strings.Builder
+	for _, icon := range icons {
+		if served[icon.file] {
+			b.WriteString(icon.tag)
+		}
+	}
+	return b.String()
+}
+
 func Tags(list []Asset) string {
 	var b strings.Builder
 	for _, asset := range list {

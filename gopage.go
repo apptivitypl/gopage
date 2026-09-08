@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/action"
 	"github.com/apptivitypl/gopage/internal/api"
@@ -13,8 +14,10 @@ import (
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/form"
+	"github.com/apptivitypl/gopage/internal/image"
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/logs"
+	"github.com/apptivitypl/gopage/internal/og"
 	"github.com/apptivitypl/gopage/internal/redirect"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -38,6 +41,7 @@ var (
 	String = runtime.String
 	Int    = runtime.Int
 	Bool   = runtime.Bool
+	Time   = runtime.Time
 )
 
 type (
@@ -88,6 +92,23 @@ type Options struct {
 	Middleware []Middleware
 	Logger     *slog.Logger
 	Locals     any
+	Encoders   map[string]ImageEncoder
+	Client     *http.Client
+	Invalidate string
+	OnRequest  Reporter
+}
+
+type (
+	Reporter = server.Reporter
+	Trace    = server.Trace
+)
+
+type ImageEncoder = image.Encoder
+
+type OpenGraphCard = og.Card
+
+func OpenGraph(card OpenGraphCard) ([]byte, error) {
+	return og.Render(card)
 }
 
 type App struct {
@@ -145,6 +166,10 @@ func New(opts Options) (*App, error) {
 			API:        opts.API,
 			Middleware: opts.Middleware,
 			Locals:     opts.Locals,
+			Encoders:   opts.Encoders,
+			Client:     opts.Client,
+			Invalidate: opts.Invalidate,
+			OnRequest:  opts.OnRequest,
 			Logger:     logger,
 			AccessLog:  logs.Access(),
 			Preloads:   sidecar.IslandChunks(),
@@ -300,6 +325,15 @@ func (a *App) Routes() []Route {
 	return routes
 }
 
+func (a *App) Render(ctx context.Context, name string, params Params) ([]byte, error) {
+	for _, route := range a.manifest.Routes {
+		if route.Name == name {
+			return a.inner.RenderRoute(ctx, route, params)
+		}
+	}
+	return nil, fmt.Errorf("gopage: no route named %q", name)
+}
+
 func (a *App) RenderStatic(name string) ([]byte, error) {
 	for _, route := range a.manifest.Routes {
 		if route.Name == name {
@@ -368,6 +402,17 @@ func (s Floats[T]) At(index int) Value {
 		return Nil()
 	}
 	return Float(float64(s[index]))
+}
+
+type Times []time.Time
+
+func (s Times) Len() int { return len(s) }
+
+func (s Times) At(index int) Value {
+	if index < 0 || index >= len(s) {
+		return Nil()
+	}
+	return Time(s[index])
 }
 
 type Bools []bool
@@ -478,6 +523,13 @@ func (c *Ctx) Query(name string) string {
 		return ""
 	}
 	return c.request.URL.Query().Get(name)
+}
+
+func (c *Ctx) QueryAll(name string) []string {
+	if c.request == nil {
+		return nil
+	}
+	return c.request.URL.Query()[name]
 }
 
 type Case interface {

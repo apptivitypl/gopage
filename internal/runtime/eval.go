@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"math"
@@ -16,6 +17,12 @@ type scope struct {
 	locals  []Value
 	catalog *ir.Catalog
 	plural  i18n.Rule
+	clock   func() time.Time
+	zone    *time.Location
+}
+
+func (s *scope) env() Env {
+	return Env{Now: s.clock, Location: s.zone, Plan: s.plan, Catalog: s.catalog, Plural: s.plural}
 }
 
 func (s *scope) eval(index uint32) (Value, error) {
@@ -44,6 +51,8 @@ func (s *scope) evalNode(node ir.ExprNode) (Value, error) {
 		return s.filter(node)
 	case ir.ExprMessage:
 		return s.message(node)
+	case ir.ExprSubst:
+		return s.substitute(node)
 	default:
 		return Nil(), fmt.Errorf("plan uses %s, which this runtime does not know", node.Kind)
 	}
@@ -60,7 +69,7 @@ func (s *scope) filter(node ir.ExprNode) (Value, error) {
 			return Nil(), err
 		}
 	}
-	return ApplyFilter(uint32(node.Op), value, argument)
+	return ApplyFilter(s.env(), uint32(node.Op), value, argument)
 }
 
 func (s *scope) text(index uint32) (string, error) {

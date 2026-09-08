@@ -96,6 +96,9 @@ func (a *App) locale(next http.Handler) http.Handler {
 
 func (a *App) route(path string) (string, string, string) {
 	locale, rest := a.splitLocale(path)
+	if spelled := vocab.Normalise(rest, a.config.Routing.Normalize); spelled != rest {
+		return locale, rest, a.vocab.Localise(locale, spelled)
+	}
 	if !a.vocab.Speaks(locale) || a.config.Reserves(rest) {
 		return locale, rest, ""
 	}

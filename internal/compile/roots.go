@@ -9,6 +9,7 @@ import (
 )
 
 var metaFields = []string{"Title", "Description", "Canonical", "Image", "Robots",
+	"Type", "URL", "Locale", "Card", "Site",
 	runtime.HeadField, runtime.AlternatesField}
 
 var formSections = []string{"Values", "Errors"}

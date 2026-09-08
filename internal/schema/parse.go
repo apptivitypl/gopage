@@ -38,6 +38,8 @@ var scalars = map[string]Kind{
 	"float64": KindFloat,
 }
 
+const TimeType = "time.Time"
+
 type Source struct {
 	File string
 	Code string
@@ -45,16 +47,20 @@ type Source struct {
 }
 
 func Parse(sources []Source, bag *diag.Bag) *Schema {
+	return ParseWith(sources, Packages{}, bag)
+}
+
+func ParseWith(sources []Source, packages Packages, bag *diag.Bag) *Schema {
 	schema := &Schema{Structs: map[string]Struct{}, Enums: map[string]Enum{}}
 	for _, source := range sources {
-		parseOne(schema, source, bag)
+		parseOne(schema, source, packages, bag)
 	}
 	markEnums(schema)
 	validate(schema, sources, bag)
 	return schema
 }
 
-func parseOne(schema *Schema, source Source, bag *diag.Bag) {
+func parseOne(schema *Schema, source Source, packages Packages, bag *diag.Bag) {
 	fileSet := token.NewFileSet()
 	file, err := parser.ParseFile(fileSet, source.File, wrap(source.Code), parser.SkipObjectResolution)
 	if err != nil {
@@ -63,6 +69,7 @@ func parseOne(schema *Schema, source Source, bag *diag.Bag) {
 			WithHelp("the block between the fences must be valid Go: imports and declarations"))
 		return
 	}
+	current := resolver{schema: schema, packages: packages, imports: fileImports(file), source: source, bag: bag}
 	for _, decl := range file.Decls {
 		generic, ok := decl.(*ast.GenDecl)
 		if !ok {
@@ -70,28 +77,28 @@ func parseOne(schema *Schema, source Source, bag *diag.Bag) {
 		}
 		switch generic.Tok {
 		case token.TYPE:
-			readTypes(schema, generic, source, bag)
+			readTypes(current, generic)
 		case token.CONST:
 			readConsts(schema, generic)
 		}
 	}
-	attach(schema, readMethods(file))
-	attachDeferred(schema, readDeferred(file))
+	attach(schema, readMethods(current, file))
+	attachDeferred(schema, readDeferred(current, file))
 }
 
-func readTypes(schema *Schema, decl *ast.GenDecl, source Source, bag *diag.Bag) {
+func readTypes(current resolver, decl *ast.GenDecl) {
 	for _, spec := range decl.Specs {
 		typeSpec, ok := spec.(*ast.TypeSpec)
 		if !ok {
 			continue
 		}
 		if structType, ok := typeSpec.Type.(*ast.StructType); ok {
-			schema.add(readStruct(typeSpec.Name.Name, structType, source, bag))
+			current.schema.add(readStruct(current, typeSpec.Name.Name, structType))
 			continue
 		}
 		if ident, ok := typeSpec.Type.(*ast.Ident); ok && !typeSpec.Assign.IsValid() {
 			if kind, isScalar := scalars[ident.Name]; isScalar {
-				schema.Enums[typeSpec.Name.Name] = Enum{Name: typeSpec.Name.Name, Underlying: kind}
+				current.schema.Enums[typeSpec.Name.Name] = Enum{Name: typeSpec.Name.Name, Underlying: kind}
 			}
 		}
 	}
@@ -131,8 +138,9 @@ func (s *Schema) add(value Struct) {
 	s.Structs[value.Name] = value
 }
 
-func readStruct(name string, node *ast.StructType, source Source, bag *diag.Bag) Struct {
+func readStruct(current resolver, name string, node *ast.StructType) Struct {
 	value := Struct{Name: name}
+	source, bag := current.source, current.bag
 	for _, field := range node.Fields.List {
 		if len(field.Names) == 0 {
 			bag.Add(diag.New(diag.C302, source.File, diag.Span{},
@@ -140,12 +148,12 @@ func readStruct(name string, node *ast.StructType, source Source, bag *diag.Bag)
 				WithHelp("props hold named fields only; give the field a name"))
 			continue
 		}
-		fieldType, ok := readType(field.Type)
+		fieldType, ok := readType(current, field.Type)
 		if !ok {
 			bag.Add(diag.New(diag.C302, source.File, diag.Span{},
 				fmt.Sprintf("%s.%s uses %s, which props cannot carry", name, field.Names[0].Name, describe(field.Type))).
-				WithHelp("props carry bools, numbers, strings, slices, pointers and structs declared in the same block; " +
-					"convert anything else in Load and pass a simple type"))
+				WithHelp("props carry bools, numbers, strings, times, slices, pointers, structs from this block " +
+					"and structs from this module's own packages; convert anything else in Load"))
 			continue
 		}
 		for _, ident := range field.Names {
@@ -183,26 +191,32 @@ func withTag(field Field, tag *ast.BasicLit) Field {
 	return field
 }
 
-func readType(node ast.Expr) (Type, bool) {
+func readType(current resolver, node ast.Expr) (Type, bool) {
 	switch n := node.(type) {
 	case *ast.Ident:
 		if kind, ok := scalars[n.Name]; ok {
 			return Type{Kind: kind, Name: n.Name}, true
 		}
+		if adopted, ok := current.sibling(n.Name); ok {
+			return adopted, true
+		}
+		if current.pkg != "" {
+			return Type{}, false
+		}
 		return Type{Kind: KindStruct, Name: n.Name}, true
 	case *ast.SelectorExpr:
-		return Type{}, false
+		return current.selector(n)
 	case *ast.ArrayType:
 		if n.Len != nil {
 			return Type{}, false
 		}
-		elem, ok := readType(n.Elt)
+		elem, ok := readType(current, n.Elt)
 		if !ok {
 			return Type{}, false
 		}
 		return Type{Kind: KindSlice, Elem: &elem}, true
 	case *ast.StarExpr:
-		elem, ok := readType(n.X)
+		elem, ok := readType(current, n.X)
 		if !ok {
 			return Type{}, false
 		}

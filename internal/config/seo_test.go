@@ -160,3 +160,94 @@ func TestAValidAliasTableSurvives(t *testing.T) {
 		t.Error("no aliases by default")
 	}
 }
+
+func TestImagesAreOffUntilAskedFor(t *testing.T) {
+	if parse(t, "").Images.Enabled() {
+		t.Error("the endpoint is opt-in")
+	}
+	config := parse(t, `{"images": {"mode": "on", "widths": [200, 400], "quality": 60, "ttl": "5m", "hosts": ["cdn.example.com"]}}`)
+	if !config.Images.Enabled() {
+		t.Error("mode on turns it on")
+	}
+	if got := config.Images.Sizes(); len(got) != 2 || got[0] != 200 {
+		t.Errorf("widths = %v", got)
+	}
+	if got := config.Images.Sharpness(); got != 60 {
+		t.Errorf("quality = %d", got)
+	}
+	if ttl, _ := config.Images.Freshness(); ttl != 5*time.Minute {
+		t.Errorf("ttl = %v", ttl)
+	}
+	if !config.Images.Serves("cdn.example.com") || config.Images.Serves("evil.example.com") {
+		t.Error("only the listed hosts are served")
+	}
+}
+
+func TestImageDefaultsFillThemselvesIn(t *testing.T) {
+	config := parse(t, `{"images": {"mode": "on"}}`)
+	if got := config.Images.Sizes(); len(got) != len(defaultWidths) {
+		t.Errorf("widths = %v", got)
+	}
+	if got := config.Images.Sharpness(); got != DefaultImageQuality {
+		t.Errorf("quality = %d", got)
+	}
+	if ttl, _ := config.Images.Freshness(); ttl != DefaultSEOTTL {
+		t.Errorf("ttl = %v", ttl)
+	}
+	if got := (Images{Quality: 200}).Sharpness(); got != DefaultImageQuality {
+		t.Errorf("an impossible quality falls back: %d", got)
+	}
+}
+
+func TestTheImageSectionIsValidated(t *testing.T) {
+	cases := map[string]string{
+		`{"images": {"mode": "maybe"}}`:            "images.mode",
+		`{"images": {"quality": 200}}`:             "images.quality",
+		`{"images": {"widths": [0]}}`:              "images.widths",
+		`{"images": {"widths": [99999]}}`:          "images.widths",
+		`{"images": {"hosts": ["https://cdn.x"]}}`: "images.hosts",
+		`{"images": {"hosts": [""]}}`:              "images.hosts",
+		`{"images": {"ttl": "soon"}}`:              "images.ttl",
+	}
+	for text, want := range cases {
+		if err := parseErr(t, text); !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: error = %v, want %q", text, err, want)
+		}
+	}
+}
+
+func TestNormalisationIsValidated(t *testing.T) {
+	cases := map[string]string{
+		`{"routing": {"normalize": {"trailingSlash": "maybe"}}}`: "trailingSlash",
+		`{"routing": {"normalize": {"case": "upper"}}}`:          "normalize.case",
+		`{"routing": {"normalize": {"diacritics": "strip"}}}`:    "diacritics",
+	}
+	for text, want := range cases {
+		if err := parseErr(t, text); !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: error = %v", text, err)
+		}
+	}
+	rules := parse(t, `{"routing": {"normalize": {"trailingSlash": "keep", "case": "lower", "diacritics": "fold"}}}`).Routing.Normalize
+	if !rules.Keeps() || rules.Strips() || !rules.Lowers() || !rules.Folds() || !rules.Any() {
+		t.Errorf("rules = %+v", rules)
+	}
+	if parse(t, "").Routing.Normalize.Any() {
+		t.Error("nothing is normalised by default")
+	}
+}
+
+func TestTheRenderZoneDefaultsToUTC(t *testing.T) {
+	if got := parse(t, "").I18n.Zone(); got != time.UTC {
+		t.Errorf("zone = %v", got)
+	}
+	warsaw := parse(t, `{"i18n": {"timezone": "Europe/Warsaw"}}`).I18n.Zone()
+	if warsaw == time.UTC || warsaw.String() != "Europe/Warsaw" {
+		t.Errorf("zone = %v", warsaw)
+	}
+	if got := (I18n{Timezone: "Mars/Olympus"}).Zone(); got != time.UTC {
+		t.Errorf("an unknown zone falls back: %v", got)
+	}
+	if err := parseErr(t, `{"i18n": {"timezone": "Mars/Olympus"}}`); !strings.Contains(err.Error(), "i18n.timezone") {
+		t.Errorf("error = %v", err)
+	}
+}

@@ -18,6 +18,7 @@ const (
 	OpPreload
 	OpURL
 	OpRaw
+	OpQuery
 )
 
 var opNames = map[OpKind]string{
@@ -28,6 +29,7 @@ var opNames = map[OpKind]string{
 	OpJSON:        "json",
 	OpURL:         "url",
 	OpRaw:         "raw",
+	OpQuery:       "query",
 	OpPreload:     "preload",
 	OpJumpIfFalse: "jump-if-false",
 	OpJump:        "jump",
@@ -61,6 +63,8 @@ const (
 	ExprIndex
 	ExprFilter
 	ExprMessage
+	ExprSubst
+	ExprPair
 )
 
 var exprNames = map[ExprKind]string{
@@ -72,6 +76,8 @@ var exprNames = map[ExprKind]string{
 	ExprIndex:   "index",
 	ExprFilter:  "filter",
 	ExprMessage: "message",
+	ExprSubst:   "substitution",
+	ExprPair:    "pair",
 }
 
 func (k ExprKind) String() string {
@@ -122,6 +128,15 @@ type Plan struct {
 	Paths     [][]string
 	Locals    uint32
 	Capacity  uint32
+}
+
+func (p *Plan) MessageIndex(key string) (uint32, bool) {
+	for index, name := range p.Messages {
+		if name == key {
+			return uint32(index), true
+		}
+	}
+	return 0, false
 }
 
 func (p *Plan) Message(index uint32) string {

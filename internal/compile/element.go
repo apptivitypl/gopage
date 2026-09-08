@@ -23,6 +23,9 @@ func (b *builder) attribute(attribute syntax.Attribute) {
 	if strings.EqualFold(attribute.Name, ClassAttribute) {
 		b.classes(attribute)
 	}
+	if b.boundBoolean(attribute) {
+		return
+	}
 	switch {
 	case len(attribute.Classes) > 0:
 		b.classMap(attribute)

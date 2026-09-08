@@ -19,6 +19,11 @@ var metaTags = []metaTag{
 	{`<meta property="og:description" content="`, "Description", `">`},
 	{`<meta property="og:image" content="`, "Image", `">`},
 	{`<meta name="robots" content="`, "Robots", `">`},
+	{`<meta property="og:type" content="`, "Type", `">`},
+	{`<meta property="og:url" content="`, "URL", `">`},
+	{`<meta property="og:locale" content="`, "Locale", `">`},
+	{`<meta name="twitter:card" content="`, "Card", `">`},
+	{`<meta name="twitter:site" content="`, "Site", `">`},
 }
 
 func (b *builder) meta() {

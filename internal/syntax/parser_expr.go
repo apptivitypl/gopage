@@ -229,27 +229,11 @@ func (p *parser) messageCall(start uint32) (Expr, bool) {
 	call := &MessageCall{Key: p.tok.Value, KeySpan: p.tok.Span}
 	p.advance()
 
-	if p.tok.Kind == KindComma {
+	for p.tok.Kind == KindComma {
 		p.advance()
-		if p.tok.Kind != KindIdent || p.tok.Text != "count" {
-			p.report(diag.C201, p.tok.Span, "a message takes one argument named count",
-				`write t("reviews.count", count = len(Reviews))`)
-			p.recover()
+		if !p.messageArgument(call) {
 			return nil, false
 		}
-		p.advance()
-		if p.tok.Kind != KindAssign {
-			p.report(diag.C201, p.tok.Span, "count needs a value",
-				`write t("reviews.count", count = len(Reviews))`)
-			p.recover()
-			return nil, false
-		}
-		p.advance()
-		count, ok := p.expr()
-		if !ok {
-			return nil, false
-		}
-		call.Count = count
 	}
 	if p.tok.Kind != KindRParen {
 		p.report(diag.C202, call.KeySpan, "the message call is never closed", "close it with )")
@@ -260,6 +244,36 @@ func (p *parser) messageCall(start uint32) (Expr, bool) {
 	p.advance()
 	return call, true
 }
+
+func (p *parser) messageArgument(call *MessageCall) bool {
+	if p.tok.Kind != KindIdent {
+		p.report(diag.C201, p.tok.Span, "a message argument needs a name",
+			`write t("jobs.in_city", city = City) or t("reviews.count", count = len(Reviews))`)
+		p.recover()
+		return false
+	}
+	name, span := p.tok.Text, p.tok.Span
+	p.advance()
+	if p.tok.Kind != KindAssign {
+		p.report(diag.C201, p.tok.Span, name+" needs a value",
+			`write `+name+` = expression`)
+		p.recover()
+		return false
+	}
+	p.advance()
+	value, ok := p.expr()
+	if !ok {
+		return false
+	}
+	if name == MessageCount {
+		call.Count = value
+		return true
+	}
+	call.Args = append(call.Args, MessageArg{Name: name, Span: span, Value: value})
+	return true
+}
+
+const MessageCount = "count"
 
 func (p *parser) builtinCall(start uint32, name string, nameSpan diag.Span) (Expr, bool) {
 	p.advance()

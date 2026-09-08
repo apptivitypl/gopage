@@ -103,3 +103,89 @@ func TestAMessageOutsideTheTableIsEmpty(t *testing.T) {
 		t.Errorf("got = %q, err = %v", got, err)
 	}
 }
+
+func TestANamedArgumentIsSubstituted(t *testing.T) {
+	plan := &ir.Plan{
+		Messages: []string{"jobs.in_city"},
+		Ops:      []ir.Op{{Kind: ir.OpText, A: 3}},
+		Exprs: []ir.ExprNode{
+			{Kind: ir.ExprMessage, A: 0, B: NoArgument},
+			{Kind: ir.ExprConst, A: 0},
+			{Kind: ir.ExprPair, A: 1, B: 4},
+			{Kind: ir.ExprSubst, A: 0, B: 2},
+			{Kind: ir.ExprPath, A: 0},
+		},
+		Consts:   []ir.Const{{Kind: ir.ConstString, Str: "city"}},
+		Paths:    [][]string{{"City"}},
+		Capacity: 64,
+	}
+	catalog := &ir.Catalog{Locale: "pl", Texts: [][ir.PluralForms]string{{i18n.FormOther: "Praca w {city}"}}}
+	out := NewBuffer(64)
+	if err := RenderOptions([]*ir.Plan{plan}, Map{"City": String("Warszawie")}, out, Options{Catalog: catalog}); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if got := string(out.Bytes()); got != "Praca w Warszawie" {
+		t.Errorf("render = %q", got)
+	}
+}
+
+func TestASubstitutionNeedsAPair(t *testing.T) {
+	plan := &ir.Plan{
+		Messages: []string{"k"},
+		Ops:      []ir.Op{{Kind: ir.OpText, A: 1}},
+		Exprs: []ir.ExprNode{
+			{Kind: ir.ExprMessage, A: 0, B: NoArgument},
+			{Kind: ir.ExprSubst, A: 0, B: 9},
+		},
+		Capacity: 16,
+	}
+	if err := Render([]*ir.Plan{plan}, Map{}, NewBuffer(16)); err == nil {
+		t.Error("a substitution without a pair was accepted")
+	}
+}
+
+func TestASubstitutionReportsABrokenPart(t *testing.T) {
+	cases := map[string]ir.Plan{
+		"text": {
+			Messages: []string{"k"},
+			Ops:      []ir.Op{{Kind: ir.OpText, A: 1}},
+			Exprs: []ir.ExprNode{
+				{Kind: ir.ExprPath, A: 9},
+				{Kind: ir.ExprSubst, A: 0, B: 2},
+				{Kind: ir.ExprPair, A: 3, B: 3},
+				{Kind: ir.ExprConst, A: 0},
+			},
+			Consts:   []ir.Const{{Kind: ir.ConstString, Str: "city"}},
+			Capacity: 16,
+		},
+		"name": {
+			Messages: []string{"k"},
+			Ops:      []ir.Op{{Kind: ir.OpText, A: 1}},
+			Exprs: []ir.ExprNode{
+				{Kind: ir.ExprMessage, A: 0, B: NoArgument},
+				{Kind: ir.ExprSubst, A: 0, B: 2},
+				{Kind: ir.ExprPair, A: 9, B: 3},
+				{Kind: ir.ExprConst, A: 0},
+			},
+			Consts:   []ir.Const{{Kind: ir.ConstString, Str: "city"}},
+			Capacity: 16,
+		},
+		"value": {
+			Messages: []string{"k"},
+			Ops:      []ir.Op{{Kind: ir.OpText, A: 1}},
+			Exprs: []ir.ExprNode{
+				{Kind: ir.ExprMessage, A: 0, B: NoArgument},
+				{Kind: ir.ExprSubst, A: 0, B: 2},
+				{Kind: ir.ExprPair, A: 3, B: 9},
+				{Kind: ir.ExprConst, A: 0},
+			},
+			Consts:   []ir.Const{{Kind: ir.ConstString, Str: "city"}},
+			Capacity: 16,
+		},
+	}
+	for name, plan := range cases {
+		if err := Render([]*ir.Plan{&plan}, Map{}, NewBuffer(16)); err == nil {
+			t.Errorf("%s: a broken substitution was accepted", name)
+		}
+	}
+}

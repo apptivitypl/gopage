@@ -40,8 +40,10 @@ func metaOf(t *testing.T, app *App, target string) runtime.Meta {
 		t.Fatalf("providers: %v", err)
 	}
 	title, _ := props.Get([]string{runtime.MetaRoot, "Canonical"})
+	address, _ := props.Get([]string{runtime.MetaRoot, "URL"})
+	tongue, _ := props.Get([]string{runtime.MetaRoot, "Locale"})
 	alternates, _ := props.Get([]string{runtime.MetaRoot, runtime.AlternatesField})
-	meta := runtime.Meta{Canonical: title.Str}
+	meta := runtime.Meta{Canonical: title.Str, URL: address.Str, Locale: tongue.Str}
 	if seq := alternates.Sequence(); seq != nil {
 		for i := range seq.Len() {
 			entry := seq.At(i).Object()
@@ -259,4 +261,32 @@ func TestTlsMakesTheSchemeHttps(t *testing.T) {
 	if got := app.scheme(plain); got != "http" {
 		t.Errorf("scheme = %q", got)
 	}
+}
+
+func TestOpenGraphFollowsTheCanonical(t *testing.T) {
+	meta := metaOf(t, seoApp(t, `{"i18n": {"locales": ["en", "pl"]}}`), "/pl")
+	if meta.URL != meta.Canonical || meta.URL != "http://example.com/pl" {
+		t.Errorf("og:url = %q, canonical = %q", meta.URL, meta.Canonical)
+	}
+	if meta.Locale != "pl" {
+		t.Errorf("og:locale = %q", meta.Locale)
+	}
+}
+
+func TestAnAppMayNameItsOwnOpenGraph(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config:   settings(t, ""),
+		Meta: map[string]MetaProvider{
+			"index": func(*http.Request, Params) (runtime.Meta, error) {
+				return runtime.Meta{URL: "https://cdn.example.com/x", Locale: "de", Card: "summary_large_image"}, nil
+			},
+		},
+	})
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	meta := app.seo(runtime.Meta{URL: "https://cdn.example.com/x", Locale: "de"}, request)
+	if meta.URL != "https://cdn.example.com/x" || meta.Locale != "de" {
+		t.Errorf("meta = %+v", meta)
+	}
+	_ = app
 }

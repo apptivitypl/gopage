@@ -82,15 +82,18 @@ type Let struct {
 func (l *Let) NodeSpan() diag.Span { return l.Span }
 
 type Arm struct {
-	Span diag.Span
-	Name string
-	Body []Node
+	Span    diag.Span
+	Name    string
+	Literal bool
+	Body    []Node
 }
 
 type Match struct {
 	Span    diag.Span
 	Subject Expr
 	Arms    []Arm
+	Else    []Node
+	Rest    bool
 }
 
 func (m *Match) NodeSpan() diag.Span { return m.Span }
@@ -116,6 +119,13 @@ type MessageCall struct {
 	Key     string
 	KeySpan diag.Span
 	Count   Expr
+	Args    []MessageArg
+}
+
+type MessageArg struct {
+	Name  string
+	Span  diag.Span
+	Value Expr
 }
 
 func (m *MessageCall) ExprSpan() diag.Span { return m.Span }

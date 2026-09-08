@@ -66,6 +66,18 @@ type I18n struct {
 	DefaultLocale string   `json:"defaultLocale,omitempty"`
 	Locales       []string `json:"locales,omitempty"`
 	PrefixDefault bool     `json:"prefixDefault,omitempty"`
+	Timezone      string   `json:"timezone,omitempty"`
+}
+
+func (i I18n) Zone() *time.Location {
+	if i.Timezone == "" {
+		return time.UTC
+	}
+	zone, err := time.LoadLocation(i.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return zone
 }
 
 type NavMode string
@@ -84,8 +96,43 @@ func (n Nav) Differential() bool {
 }
 
 type Routing struct {
-	Reserved []string                     `json:"reserved,omitempty"`
-	Aliases  map[string]map[string]string `json:"aliases,omitempty"`
+	Reserved  []string                     `json:"reserved,omitempty"`
+	Aliases   map[string]map[string]string `json:"aliases,omitempty"`
+	Normalize Normalize                    `json:"normalize,omitempty"`
+}
+
+type Normalize struct {
+	TrailingSlash string `json:"trailingSlash,omitempty"`
+	Case          string `json:"case,omitempty"`
+	Diacritics    string `json:"diacritics,omitempty"`
+}
+
+const (
+	SlashStrip   = "strip"
+	SlashKeep    = "keep"
+	CaseLower    = "lower"
+	FoldMarks    = "fold"
+	NormalizeOff = "off"
+)
+
+func (n Normalize) Strips() bool {
+	return n.TrailingSlash == SlashStrip
+}
+
+func (n Normalize) Keeps() bool {
+	return n.TrailingSlash == SlashKeep
+}
+
+func (n Normalize) Lowers() bool {
+	return n.Case == CaseLower
+}
+
+func (n Normalize) Folds() bool {
+	return n.Diacritics == FoldMarks
+}
+
+func (n Normalize) Any() bool {
+	return n.Strips() || n.Keeps() || n.Lowers() || n.Folds()
 }
 
 type Host struct {
@@ -273,6 +320,52 @@ func (r Robots) Freshness() (time.Duration, time.Duration) {
 	return freshness(r.TTL, r.Stale)
 }
 
+type ImageMode string
+
+const (
+	ImagesOn  ImageMode = "on"
+	ImagesOff ImageMode = "off"
+)
+
+type Images struct {
+	Mode    ImageMode `json:"mode,omitempty"`
+	Widths  []int     `json:"widths,omitempty"`
+	Quality int       `json:"quality,omitempty"`
+	Formats []string  `json:"formats,omitempty"`
+	Hosts   []string  `json:"hosts,omitempty"`
+	TTL     string    `json:"ttl,omitempty"`
+}
+
+var defaultWidths = []int{320, 640, 960, 1280, 1920}
+
+func (i Images) Enabled() bool {
+	return i.Mode == ImagesOn
+}
+
+func (i Images) Sizes() []int {
+	if len(i.Widths) == 0 {
+		return defaultWidths
+	}
+	return i.Widths
+}
+
+func (i Images) Sharpness() int {
+	if i.Quality <= 0 || i.Quality > 100 {
+		return DefaultImageQuality
+	}
+	return i.Quality
+}
+
+func (i Images) Freshness() (time.Duration, time.Duration) {
+	return freshness(i.TTL, "")
+}
+
+func (i Images) Serves(host string) bool {
+	return slices.Contains(i.Hosts, host)
+}
+
+const DefaultImageQuality = 75
+
 type SEO struct {
 	Sitemap Sitemap `json:"sitemap,omitempty"`
 	Robots  Robots  `json:"robots,omitempty"`
@@ -299,6 +392,7 @@ type Config struct {
 	Routing   Routing    `json:"routing,omitempty"`
 	Nav       Nav        `json:"nav,omitempty"`
 	SEO       SEO        `json:"seo,omitempty"`
+	Images    Images     `json:"images,omitempty"`
 	Hosts     []Host     `json:"hosts,omitempty"`
 	Security  Security   `json:"security,omitempty"`
 	Client    Client     `json:"client,omitempty"`
@@ -606,6 +700,53 @@ func segment(value, locale string) error {
 	return nil
 }
 
+func validateNormalize(normalize Normalize) error {
+	switch normalize.TrailingSlash {
+	case "", NormalizeOff, SlashStrip, SlashKeep:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.trailingSlash %q, want strip or keep",
+			FileName, normalize.TrailingSlash)
+	}
+	switch normalize.Case {
+	case "", NormalizeOff, CaseLower:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.case %q, want lower", FileName, normalize.Case)
+	}
+	switch normalize.Diacritics {
+	case "", NormalizeOff, FoldMarks:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.diacritics %q, want fold", FileName, normalize.Diacritics)
+	}
+	return nil
+}
+
+func validateImages(images Images) error {
+	switch images.Mode {
+	case "", ImagesOn, ImagesOff:
+	default:
+		return fmt.Errorf("%s: unknown images.mode %q, want on or off", FileName, images.Mode)
+	}
+	if images.Quality < 0 || images.Quality > 100 {
+		return fmt.Errorf("%s: images.quality %d must be between 1 and 100", FileName, images.Quality)
+	}
+	for _, width := range images.Widths {
+		if width < 1 || width > MaxImageWidth {
+			return fmt.Errorf("%s: images.widths holds %d, want a width between 1 and %d", FileName, width, MaxImageWidth)
+		}
+	}
+	for _, host := range images.Hosts {
+		if host == "" || strings.ContainsAny(host, "/:") {
+			return fmt.Errorf("%s: images.hosts entry %q is not a host name", FileName, host)
+		}
+	}
+	if err := freshnessFields(images.TTL, "", "images"); err != nil {
+		return err
+	}
+	return nil
+}
+
+const MaxImageWidth = 4096
+
 func validate(config Config) error {
 	if config.CSS.Engine != "" && config.CSS.Engine != EnginePlain && config.CSS.Engine != EngineTailwind {
 		return fmt.Errorf("%s: unknown css engine %q, want plain or tailwind", FileName, config.CSS.Engine)
@@ -631,10 +772,22 @@ func validate(config Config) error {
 	if err := validateAliases(config); err != nil {
 		return err
 	}
+	if err := validateImages(config.Images); err != nil {
+		return err
+	}
+	if err := validateNormalize(config.Routing.Normalize); err != nil {
+		return err
+	}
 	switch config.I18n.Mode {
 	case ModePath, ModeSubdomain, ModeSingle:
 	default:
 		return fmt.Errorf("%s: unknown i18n mode %q, want path, subdomain or single", FileName, config.I18n.Mode)
+	}
+	if config.I18n.Timezone != "" {
+		if _, err := time.LoadLocation(config.I18n.Timezone); err != nil {
+			return fmt.Errorf("%s: i18n.timezone %q is not a zone the system knows: %w",
+				FileName, config.I18n.Timezone, err)
+		}
 	}
 	for _, locale := range config.I18n.Locales {
 		if reserved := config.Reserves("/" + locale); reserved {

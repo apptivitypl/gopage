@@ -2,11 +2,13 @@ package css
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
 func TestPassthroughCopiesTheStylesheet(t *testing.T) {
@@ -307,3 +309,45 @@ func TestEveryPlatformCarriesAPinnedDigest(t *testing.T) {
 		}
 	}
 }
+
+func TestMuslIsRecognisedByItsLoader(t *testing.T) {
+	alpine := fstest.MapFS{"lib/ld-musl-x86_64.so.1": &fstest.MapFile{}}
+	debian := fstest.MapFS{"lib/ld-linux-x86-64.so.2": &fstest.MapFile{}}
+	both := fstest.MapFS{"lib/ld-musl-x86_64.so.1": &fstest.MapFile{}, "lib/ld-linux-x86-64.so.2": &fstest.MapFile{}}
+	if !Musl(alpine) || Musl(debian) || Musl(both) || Musl(fstest.MapFS{}) {
+		t.Error("musl detection reads the dynamic loader")
+	}
+}
+
+func TestAMuslSystemIsToldWhy(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the refusal only applies to linux")
+	}
+	tailwind := Tailwind{
+		CacheDir: t.TempDir(),
+		Root:     fstest.MapFS{"lib/ld-musl-x86_64.so.1": &fstest.MapFile{}},
+		Fetch:    func(string, string, string) error { return nil },
+	}
+	_, err := tailwind.Install()
+	if err == nil || !strings.Contains(err.Error(), "glibc") {
+		t.Errorf("error = %v, want the libc named", err)
+	}
+}
+
+func TestTheLibcRootDefaultsToTheSystem(t *testing.T) {
+	bare := Tailwind{}
+	if bare.root() == nil {
+		t.Error("a tailwind without a root reads the system")
+	}
+	injected := Tailwind{Root: fstest.MapFS{}}
+	if got := injected.root(); got == nil {
+		t.Error("an injected root is used")
+	}
+	if glob(brokenFS{}, "lib/*") {
+		t.Error("a filesystem that refuses to walk matches nothing")
+	}
+}
+
+type brokenFS struct{}
+
+func (brokenFS) Open(string) (fs.File, error) { return nil, fs.ErrInvalid }

@@ -1,6 +1,7 @@
 package gopage
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/compile"
@@ -459,5 +461,62 @@ func TestTheSidecarDecidesTheEarlyHints(t *testing.T) {
 	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 	if got := recorder.Header().Get("GOPAGE-Assets"); !strings.Contains(got, "mono.woff2") || strings.Contains(got, "island.R.js") {
 		t.Errorf("assets = %q, want the sidecar's list with the lazy island chunk kept out", got)
+	}
+}
+
+func TestRepeatedQueryValuesAreReadable(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/jobs?market=PL&market=DE&q=go", nil)
+	ctx := NewCtx(request, Params{})
+	if got := ctx.QueryAll("market"); len(got) != 2 || got[0] != "PL" || got[1] != "DE" {
+		t.Errorf("market = %v", got)
+	}
+	if got := ctx.Query("market"); got != "PL" {
+		t.Errorf("first market = %q", got)
+	}
+	if got := ctx.QueryAll("missing"); got != nil {
+		t.Errorf("missing = %v", got)
+	}
+	if got := NewCtx(nil, Params{}).QueryAll("market"); got != nil {
+		t.Errorf("without a request = %v", got)
+	}
+}
+
+func TestARouteRendersForATest(t *testing.T) {
+	app, err := New(Options{Manifest: demo(t)})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	body, err := app.Render(context.Background(), "index", Params{})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if !strings.Contains(string(body), "<h1>home</h1>") {
+		t.Errorf("body = %q", body)
+	}
+	if _, err := app.Render(context.Background(), "nope", Params{}); err == nil {
+		t.Error("an unknown route was rendered")
+	}
+}
+
+func TestATimeSequenceIsExported(t *testing.T) {
+	moments := Times{time.Unix(0, 0).UTC(), time.Unix(3600, 0).UTC()}
+	if moments.Len() != 2 {
+		t.Errorf("len = %d", moments.Len())
+	}
+	if got := moments.At(1).Text(); got != "1970-01-01T01:00:00Z" {
+		t.Errorf("second = %q", got)
+	}
+	if moments.At(5).Text() != "" || moments.At(-1).Text() != "" {
+		t.Error("an index outside the slice is nil")
+	}
+}
+
+func TestAnOpenGraphCardIsRendered(t *testing.T) {
+	data, err := OpenGraph(OpenGraphCard{Title: "Praca w Warszawie", Subtitle: "12 922 oferty"})
+	if err != nil {
+		t.Fatalf("OpenGraph: %v", err)
+	}
+	if len(data) < 1000 || string(data[1:4]) != "PNG" {
+		t.Errorf("card = %d bytes, header = %q", len(data), data[:8])
 	}
 }

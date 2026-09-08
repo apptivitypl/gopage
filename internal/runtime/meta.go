@@ -43,6 +43,11 @@ type Meta struct {
 	Image       string
 	Robots      string
 	Head        string
+	Type        string
+	URL         string
+	Locale      string
+	Card        string
+	Site        string
 	Alternates  Alternates
 }
 
@@ -61,6 +66,16 @@ func (m Meta) Get(path []string) (Value, bool) {
 		return String(m.Image), true
 	case "Robots":
 		return String(m.Robots), true
+	case "Type":
+		return String(m.Type), true
+	case "URL":
+		return String(m.URL), true
+	case "Locale":
+		return String(m.Locale), true
+	case "Card":
+		return String(m.Card), true
+	case "Site":
+		return String(m.Site), true
 	case HeadField:
 		return String(m.Head), true
 	case AlternatesField:

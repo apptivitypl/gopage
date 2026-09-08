@@ -15,18 +15,25 @@ func (a *App) seo(meta runtime.Meta, r *http.Request) runtime.Meta {
 	if a.config.Reserves(r.URL.Path) {
 		return meta
 	}
-	locales := a.config.I18n.Locales
-	if len(locales) < 2 && meta.Canonical != "" {
-		return meta
-	}
 	origin := a.origin(r)
 	if meta.Canonical == "" {
 		meta.Canonical = a.hrefFor(r.URL.Path, LocaleOf(r), origin, a.scheme(r))
 	}
-	if len(locales) < 2 || len(meta.Alternates) > 0 {
+	meta = a.opengraph(meta, r)
+	if len(a.config.I18n.Locales) < 2 || len(meta.Alternates) > 0 {
 		return meta
 	}
 	meta.Alternates = a.alternates(r.URL.Path, origin, a.scheme(r))
+	return meta
+}
+
+func (a *App) opengraph(meta runtime.Meta, r *http.Request) runtime.Meta {
+	if meta.URL == "" {
+		meta.URL = meta.Canonical
+	}
+	if meta.Locale == "" {
+		meta.Locale = LocaleOf(r)
+	}
 	return meta
 }
 

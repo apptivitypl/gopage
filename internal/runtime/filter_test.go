@@ -13,7 +13,7 @@ func apply(t *testing.T, name string, value, argument Value) Value {
 	if !ok {
 		t.Fatalf("no filter named %q", name)
 	}
-	out, err := ApplyFilter(id, value, argument)
+	out, err := ApplyFilter(Env{}, id, value, argument)
 	if err != nil {
 		t.Fatalf("%s: %v", name, err)
 	}
@@ -63,7 +63,7 @@ func TestTruncateCountsRunes(t *testing.T) {
 func TestTruncateNeedsAWholeNumber(t *testing.T) {
 	id, _, _ := LookupFilter("truncate")
 	for _, argument := range []Value{String("x"), Int(-1), Nil()} {
-		if _, err := ApplyFilter(id, String("abc"), argument); err == nil {
+		if _, err := ApplyFilter(Env{}, id, String("abc"), argument); err == nil {
 			t.Errorf("%+v was accepted", argument)
 		}
 	}
@@ -96,7 +96,7 @@ func TestMoneyFormatsWithACode(t *testing.T) {
 
 func TestMoneyNeedsANumber(t *testing.T) {
 	id, _, _ := LookupFilter("money")
-	if _, err := ApplyFilter(id, String("ada"), String("PLN")); err == nil {
+	if _, err := ApplyFilter(Env{}, id, String("ada"), String("PLN")); err == nil {
 		t.Error("money must reject text")
 	}
 }
@@ -105,7 +105,7 @@ func TestUnknownFiltersAreReported(t *testing.T) {
 	if _, _, ok := LookupFilter("wobble"); ok {
 		t.Error("wobble is not a filter")
 	}
-	if _, err := ApplyFilter(9999, Nil(), Nil()); err == nil {
+	if _, err := ApplyFilter(Env{}, 9999, Nil(), Nil()); err == nil {
 		t.Error("an index outside the registry must be reported")
 	}
 }
@@ -193,7 +193,7 @@ func TestLenCountsListsAndStrings(t *testing.T) {
 
 func TestLenRefusesWhatItCannotCount(t *testing.T) {
 	id, _, _ := LookupFilter("len")
-	if _, err := ApplyFilter(id, Int(7), Nil()); err == nil {
+	if _, err := ApplyFilter(Env{}, id, Int(7), Nil()); err == nil {
 		t.Error("len must refuse a number")
 	}
 }

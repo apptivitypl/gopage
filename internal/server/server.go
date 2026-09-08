@@ -12,11 +12,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/assets"
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/i18n"
+	"github.com/apptivitypl/gopage/internal/image"
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -53,6 +55,10 @@ type Options struct {
 	AccessLog  bool
 	Preloads   map[string][]string
 	Locals     any
+	Encoders   map[string]image.Encoder
+	Client     *http.Client
+	Invalidate string
+	OnRequest  Reporter
 }
 
 type localsKey struct{}
@@ -94,6 +100,11 @@ type App struct {
 	deferrals  map[string][]string
 	locals     any
 	vocab      vocab.Table
+	zone       *time.Location
+	encoders   map[string]image.Encoder
+	client     *http.Client
+	token      string
+	onRequest  Reporter
 }
 
 func New(opts Options) *App {
@@ -120,12 +131,17 @@ func New(opts Options) *App {
 		cache:      opts.Cache,
 		router:     NewRouter(manifest.Routes),
 		vocab:      vocab.New(settings),
+		zone:       settings.I18n.Zone(),
 		props:      opts.Props,
 		meta:       opts.Meta,
 		sitemaps:   opts.Sitemap,
 		submit:     opts.Submit,
 		api:        opts.API,
 		locals:     opts.Locals,
+		encoders:   opts.Encoders,
+		client:     imageClient(opts.Client),
+		token:      opts.Invalidate,
+		onRequest:  opts.OnRequest,
 		entropy:    opts.Entropy,
 		middleware: opts.Middleware,
 		logger:     logger,
@@ -200,6 +216,13 @@ func (a *App) Handler() http.Handler {
 	return a.observe(a.compressed(a.guard(a.secure(a.crossOrigin(a.limited(a.reroute(handler)))))))
 }
 
+func imageClient(client *http.Client) *http.Client {
+	if client != nil {
+		return client
+	}
+	return &http.Client{Timeout: 10 * time.Second}
+}
+
 func (a *App) serveSEO(mux *http.ServeMux) {
 	if a.config.SEO.Sitemap.Enabled() {
 		a.serveBuiltin(mux, seo.SitemapPath, a.sitemap)
@@ -207,6 +230,12 @@ func (a *App) serveSEO(mux *http.ServeMux) {
 	}
 	if a.config.SEO.Robots.Enabled() {
 		a.serveBuiltin(mux, seo.RobotsPath, a.robots)
+	}
+	if a.config.Images.Enabled() {
+		a.serveBuiltin(mux, ImagePath, a.image)
+	}
+	if a.token != "" {
+		a.serveBuiltin(mux, InvalidatePath, a.invalidate)
 	}
 }
 
@@ -398,6 +427,7 @@ func (a *App) renderHooked(route ir.Route, props runtime.Accessible, hook runtim
 func (a *App) options(hook runtime.Fragments, locale string) runtime.Options {
 	opts := runtime.Options{
 		Fragments: hook,
+		Zone:      a.zone,
 		Plural:    i18n.RuleFor(locale),
 		Markers:   a.config.Nav.Differential(),
 		Fetched:   a.config.Fragments.Fetches(),
@@ -471,6 +501,30 @@ func (a *App) metaFor(name string, r *http.Request, params Params) (runtime.Meta
 
 func (a *App) Routes() []ir.Route {
 	return a.router.Routes()
+}
+
+func (a *App) RenderRoute(ctx context.Context, route ir.Route, params Params) ([]byte, error) {
+	request := (&http.Request{
+		Method: http.MethodGet,
+		URL:    &url.URL{Path: patternPath(route.Pattern)},
+		Header: http.Header{},
+	}).WithContext(ctx)
+	locale := a.config.I18n.DefaultLocale
+	request = withLocale(request, locale)
+	if a.vocab.Localises() {
+		request = request.WithContext(vocab.With(request.Context(), a.vocab))
+	}
+	if filled, err := Fill(route.Pattern, params); err == nil {
+		request.URL = &url.URL{Path: filled}
+	}
+	body, err := a.Render(route, request, params)
+	if err != nil {
+		return nil, err
+	}
+	defer runtime.Release(body)
+	out := make([]byte, body.Len())
+	copy(out, body.Bytes())
+	return out, nil
 }
 
 func (a *App) RenderStatic(route ir.Route) ([]byte, error) {

@@ -48,6 +48,10 @@ const (
 	C325 Code = "C325"
 	C112 Code = "C112"
 	W704 Code = "W704"
+	C326 Code = "C326"
+	C327 Code = "C327"
+	C328 Code = "C328"
+	C604 Code = "C604"
 )
 
 var titles = map[Code]string{
@@ -96,6 +100,10 @@ var titles = map[Code]string{
 	C325: "malformed sitemap hook",
 	C112: "route claims a built-in endpoint",
 	W704: "seo rule points at no route",
+	C326: "interpolation in a literal attribute",
+	C327: "boolean attribute bound to a value",
+	C328: "loader in a layout",
+	C604: "message argument mismatch",
 }
 
 func (c Code) Title() string {

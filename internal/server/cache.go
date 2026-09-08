@@ -67,11 +67,13 @@ func (a *App) renderFresh(w http.ResponseWriter, r *http.Request, route ir.Route
 type recorders struct {
 	policy cache.Recorder
 	answer reply.Recorder
+	slot   cache.Slot
 }
 
 func recording(ctx context.Context) (context.Context, *cache.Recorder, *reply.Recorder) {
 	pair := &recorders{}
-	return reply.WithRecorder(cache.WithRecorder(ctx, &pair.policy), &pair.answer), &pair.policy, &pair.answer
+	pair.slot = cache.Slot{Policy: &pair.policy, Response: &pair.answer}
+	return cache.With(ctx, &pair.slot), &pair.policy, &pair.answer
 }
 
 func (a *App) valueOf(body []byte, recorder *cache.Recorder, answer *reply.Recorder) cache.Value {

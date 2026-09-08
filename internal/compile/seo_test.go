@@ -191,3 +191,32 @@ func TestALinkThatNoLocaleAnswersIsStillReported(t *testing.T) {
 		t.Errorf("diagnostics = %+v", bag.Items())
 	}
 }
+
+func TestAConfiguredLocaleWithoutACatalogIsRejected(t *testing.T) {
+	files := app(map[string]string{"app/page.gopage": "<p>home</p>"})
+	files["gopage.jsonc"] = &fstest.MapFile{Data: []byte(`{"i18n": {"locales": ["en", "pl"]}}`)}
+	files["locales/en.json"] = &fstest.MapFile{Data: []byte(`{"nav": {"home": "home"}}`)}
+	var bag diag.Bag
+	if _, err := Compile(files, &bag); err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	item, ok := found(&bag, diag.C601)
+	if !ok {
+		t.Fatalf("diagnostics = %+v", bag.Items())
+	}
+	if !strings.Contains(item.Message, "locales/pl.json") {
+		t.Errorf("message = %q", item.Message)
+	}
+}
+
+func TestAProjectWithoutCatalogsNeedsNone(t *testing.T) {
+	files := app(map[string]string{"app/page.gopage": "<p>home</p>"})
+	files["gopage.jsonc"] = &fstest.MapFile{Data: []byte(`{"i18n": {"locales": ["en", "pl"]}}`)}
+	var bag diag.Bag
+	if _, err := Compile(files, &bag); err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	if bag.HasErrors() {
+		t.Errorf("diagnostics = %+v", bag.Items())
+	}
+}

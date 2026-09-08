@@ -147,3 +147,29 @@ func TestAnAppWithoutLocalsCarriesNone(t *testing.T) {
 	}
 	get(t, app.Handler(), "/")
 }
+
+func TestAnAddressIsRedirectedToItsOneSpelling(t *testing.T) {
+	app := New(Options{Manifest: metaChain(), Config: settings(t, `{
+		"i18n": {"locales": ["en", "pl"]},
+		"routing": {"normalize": {"trailingSlash": "strip", "case": "lower", "diacritics": "fold"}}
+	}`)})
+	handler := app.Handler()
+	cases := map[string]string{
+		"/docs/Kraków":  "/docs/krakow",
+		"/docs/a/":      "/docs/a",
+		"/pl/docs/Wien": "/pl/docs/wien",
+	}
+	for from, to := range cases {
+		response := get(t, handler, from)
+		if response.Code != http.StatusMovedPermanently {
+			t.Errorf("%s answered %d", from, response.Code)
+			continue
+		}
+		if got := response.Header().Get("Location"); got != to {
+			t.Errorf("%s went to %q, want %q", from, got, to)
+		}
+	}
+	if code := get(t, handler, "/docs/krakow").Code; code != http.StatusOK {
+		t.Errorf("the normalised address answered %d", code)
+	}
+}

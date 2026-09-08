@@ -28,7 +28,7 @@ func CheckFragments(doc *syntax.Document, file string, model *schema.Schema, bag
 func guardPerVisitor(fragment *syntax.Fragment, file string, bag *diag.Bag) {
 	syntax.Walk(fragment.Body, func(node syntax.Node) {
 		component, ok := node.(*syntax.Component)
-		if !ok || component.Name != FormComponent {
+		if !ok || component.Name != FormComponent || Reading(component.Attributes) {
 			return
 		}
 		bag.Add(diag.New(diag.C503, file, component.Span,

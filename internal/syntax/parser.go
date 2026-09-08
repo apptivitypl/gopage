@@ -319,7 +319,7 @@ func (p *parser) matchDirective(span diag.Span) Node {
 	}
 	node := &Match{Span: span, Subject: subject}
 
-	leading, stop, stopSpan := p.block([]string{"when", "endmatch"})
+	leading, stop, stopSpan := p.block([]string{"when", "else", "endmatch"})
 	if hasContent(leading) {
 		p.report(diag.C006, stopSpan, "text between {% match %} and the first {% when %}",
 			"every branch of a match lives inside a {% when %}")
@@ -330,22 +330,32 @@ func (p *parser) matchDirective(span diag.Span) Node {
 			return nil
 		}
 		var body []Node
-		body, stop, stopSpan = p.block([]string{"when", "endmatch"})
+		body, stop, stopSpan = p.block([]string{"when", "else", "endmatch"})
 		arm.Body = body
 		node.Arms = append(node.Arms, arm)
+	}
+	if stop == "else" {
+		if !p.endDirective("else", stopSpan) {
+			return nil
+		}
+		node.Rest = true
+		node.Else, stop, stopSpan = p.block([]string{"endmatch"})
 	}
 	return p.closeBlock(node, "match", stop, "endmatch", stopSpan)
 }
 
 func (p *parser) arm(span diag.Span) (Arm, bool) {
-	if p.tok.Kind != KindIdent {
+	if p.tok.Kind != KindIdent && p.tok.Kind != KindString {
 		p.report(diag.C201, p.tok.Span,
 			fmt.Sprintf("expected a case name, found %s", p.tok.Kind),
-			"the form is {% when Active %}")
+			`the form is {% when Active %} for a constant, or {% when "active" %} for a string`)
 		p.recover()
 		return Arm{}, false
 	}
-	arm := Arm{Span: span, Name: p.tok.Text}
+	arm := Arm{Span: span, Name: p.tok.Text, Literal: p.tok.Kind == KindString}
+	if arm.Literal {
+		arm.Name = p.tok.Value
+	}
 	p.advance()
 	if !p.endDirective("when", span) {
 		return Arm{}, false

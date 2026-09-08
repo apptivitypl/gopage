@@ -3,6 +3,7 @@ package css
 import (
 	"fmt"
 	"github.com/apptivitypl/gopage/internal/paths"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,6 +38,7 @@ type Tailwind struct {
 	Fetch    Fetcher
 	CacheDir string
 	Minify   bool
+	Root     fs.FS
 }
 
 type Fetcher func(url, target, digest string) error
@@ -97,6 +99,9 @@ func (t Tailwind) resolve() (string, error) {
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return "", err
+	}
+	if runtime.GOOS == "linux" && Musl(t.root()) {
+		return "", fmt.Errorf("tailwind %s cannot run on this system\n%s%s", Version, muslHelp, paths.Config)
 	}
 	build, err := Asset(runtime.GOOS, runtime.GOARCH)
 	if err != nil {

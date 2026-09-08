@@ -1,14 +1,17 @@
 package compile
 
 import (
+	"fmt"
 	"io/fs"
 	"slices"
+	"strings"
 
 	"github.com/apptivitypl/gopage/internal/assets"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/diag"
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/paths"
 	"github.com/apptivitypl/gopage/internal/schema"
 	"github.com/apptivitypl/gopage/internal/seo"
 	"github.com/apptivitypl/gopage/internal/vocab"
@@ -138,7 +141,23 @@ func catalogsPhase(s *state) error {
 	}
 	s.config = settings
 	s.catalogs = catalogs
+	reportMissingCatalogs(s)
 	return nil
+}
+
+func reportMissingCatalogs(s *state) {
+	if len(s.catalogs) == 0 {
+		return
+	}
+	for _, locale := range s.config.I18n.Locales {
+		if _, ok := s.catalogs[locale]; ok {
+			continue
+		}
+		name := paths.LocalesDir + "/" + locale + ".json"
+		s.bag.Add(diag.New(diag.C601, name, diag.Span{},
+			fmt.Sprintf("locale %s is configured but %s is missing", locale, name)).
+			WithHelp("write the catalog, or drop the locale from i18n.locales"))
+	}
 }
 
 func assetsPhase(s *state) error {
@@ -147,7 +166,11 @@ func assetsPhase(s *state) error {
 		return err
 	}
 	s.assets = append(slices.Clone(list), s.extra...)
-	s.assetTags = assets.Tags(s.assets)
+	public, err := assets.Public(s.fsys)
+	if err != nil {
+		public = nil
+	}
+	s.assetTags = assets.Icons(public) + assets.Tags(s.assets)
 	return nil
 }
 
@@ -198,6 +221,22 @@ func (s *state) served() []string {
 	return files
 }
 
+func reportLayoutLoaders(s *state) {
+	for file, template := range s.templates {
+		if !template.IsLayout {
+			continue
+		}
+		for _, name := range []string{LoaderName, MetaName, SubmitName, SitemapName} {
+			if !strings.Contains(template.Frontmatter, name) {
+				continue
+			}
+			s.bag.Add(diag.New(diag.C328, file, diag.Span{},
+				fmt.Sprintf("a layout carries %s, which never runs", strings.TrimSuffix(strings.TrimPrefix(name, "func "), "("))).
+				WithHelp("a layout renders the props of the page below it; move the function to the page"))
+		}
+	}
+}
+
 func componentsPhase(s *state) error {
 	s.islands = DiscoverIslands(s.fsys)
 	for name, file := range DiscoverComponents(s.fsys) {
@@ -227,6 +266,7 @@ func templatesPhase(s *state) error {
 		}
 		s.compileTemplate(fallback.File)
 	}
+	reportLayoutLoaders(s)
 	return nil
 }
 
@@ -256,6 +296,7 @@ func (s *state) compileTemplate(file string) {
 		Classes:    s.inventory,
 		Deferred:   deferredNames(model),
 		Fetches:    s.config.Fragments.Fetches(),
+		Images:     s.config.Images,
 	}, s.bag))
 }
 
@@ -267,12 +308,29 @@ func deferredNames(model *schema.Schema) map[string]bool {
 	return names
 }
 
+func (s *state) packages() schema.Packages {
+	return schema.Packages{FS: s.fsys, Module: ModuleOf(s.fsys)}
+}
+
+func ModuleOf(fsys fs.FS) string {
+	data, err := fs.ReadFile(fsys, "go.mod")
+	if err != nil {
+		return ""
+	}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "module "); found {
+			return strings.TrimSpace(rest)
+		}
+	}
+	return ""
+}
+
 func (s *state) model(template Template) *schema.Schema {
 	sources := template.Sources()
 	if len(sources) == 0 {
 		return nil
 	}
-	model := schema.Parse(sources, s.bag)
+	model := schema.ParseWith(sources, s.packages(), s.bag)
 	s.schemas[template.File] = model
 	return model
 }

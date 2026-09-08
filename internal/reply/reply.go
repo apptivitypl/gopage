@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/logs"
 )
 
@@ -28,14 +29,12 @@ func NewRecorder() *Recorder {
 	return &Recorder{}
 }
 
-type key struct{}
-
 func WithRecorder(ctx context.Context, recorder *Recorder) context.Context {
-	return context.WithValue(ctx, key{}, recorder)
+	return cache.WithResponse(ctx, recorder)
 }
 
 func From(ctx context.Context) *Recorder {
-	recorder, _ := ctx.Value(key{}).(*Recorder)
+	recorder, _ := cache.Response(ctx).(*Recorder)
 	if recorder == nil {
 		return NewRecorder()
 	}

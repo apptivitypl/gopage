@@ -58,9 +58,13 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C323](C323.md) | value interpolated into an event handler |
 | [C324](C324.md) | value interpolated into srcdoc |
 | [C325](C325.md) | malformed sitemap hook |
+| [C326](C326.md) | interpolation in a literal attribute |
+| [C327](C327.md) | boolean attribute bound to a value |
+| [C328](C328.md) | loader in a layout |
 | [C503](C503.md) | private value in a cached fragment |
 | [C601](C601.md) | missing translation |
 | [C602](C602.md) | plural form mismatch |
 | [C603](C603.md) | catalog in the old toml format |
+| [C604](C604.md) | message argument mismatch |
 | [W703](W703.md) | class built at request time |
 | [W704](W704.md) | seo rule points at no route |

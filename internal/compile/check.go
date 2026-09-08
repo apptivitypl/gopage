@@ -98,9 +98,14 @@ func (c *checker) matchNode(node *syntax.Match) {
 	for _, arm := range node.Arms {
 		c.nodes(arm.Body)
 	}
+	c.nodes(node.Else)
 
 	typ, known := c.typeOf(node.Subject)
 	if !known {
+		return
+	}
+	if literalArms(node) {
+		c.strings(node, typ)
 		return
 	}
 	enum, ok := c.schema.Enum(typ.Name)
@@ -111,6 +116,45 @@ func (c *checker) matchNode(node *syntax.Match) {
 		return
 	}
 	c.arms(node, enum)
+}
+
+func literalArms(node *syntax.Match) bool {
+	for _, arm := range node.Arms {
+		if arm.Literal {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *checker) strings(node *syntax.Match, typ schema.Type) {
+	if typ.Kind != schema.KindString && typ.Kind != schema.KindEnum {
+		c.report(diag.C309, node.Span,
+			fmt.Sprintf("the cases are strings and this is a %s", typ.Kind),
+			"quote the cases only when the subject is a string")
+		return
+	}
+	seen := map[string]bool{}
+	for _, arm := range node.Arms {
+		if !arm.Literal {
+			c.report(diag.C309, arm.Span,
+				fmt.Sprintf("%s is not quoted while the other cases are", arm.Name),
+				`write {% when "`+arm.Name+`" %}`)
+			continue
+		}
+		if seen[arm.Name] {
+			c.report(diag.C309, arm.Span, fmt.Sprintf("%q is handled twice", arm.Name), "remove the duplicate case")
+		}
+		seen[arm.Name] = true
+	}
+	if !hasElse(node) {
+		c.report(diag.C309, node.Span, "a match on strings has no case for the rest",
+			"add {% else %}, because the compiler cannot know every string the value may hold")
+	}
+}
+
+func hasElse(node *syntax.Match) bool {
+	return node.Rest
 }
 
 func (c *checker) arms(node *syntax.Match, enum schema.Enum) {
@@ -246,7 +290,7 @@ func (c *checker) locate(root string, path []string) (string, string, []string) 
 	for i, segment := range path {
 		field, found := current.Field(segment)
 		if !found {
-			return current.Name, segment, current.FieldNames()
+			return current.Display(), segment, current.FieldNames()
 		}
 		if i == len(path)-1 {
 			break
@@ -256,13 +300,13 @@ func (c *checker) locate(root string, path []string) (string, string, []string) 
 			next = *next.Elem
 		}
 		if next.Kind != schema.KindStruct {
-			return current.Name, path[i+1], nil
+			return current.Display(), path[i+1], nil
 		}
 		if current, ok = c.schema.Get(next.Name); !ok {
 			return next.Name, path[i+1], nil
 		}
 	}
-	return current.Name, path[len(path)-1], current.FieldNames()
+	return current.Display(), path[len(path)-1], current.FieldNames()
 }
 
 func (c *checker) typeOf(node syntax.Expr) (schema.Type, bool) {

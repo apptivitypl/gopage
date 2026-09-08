@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/apptivitypl/gopage/internal/diag"
@@ -12,10 +13,12 @@ import (
 )
 
 type messageUse struct {
-	index  uint32
-	plural bool
-	file   string
-	span   diag.Span
+	index    uint32
+	plural   bool
+	implicit bool
+	args     []string
+	file     string
+	span     diag.Span
 }
 
 type messageTable struct {
@@ -42,6 +45,14 @@ func (m *messageTable) Keys() []string {
 	return m.keys
 }
 
+func argumentNames(node *syntax.MessageCall) []string {
+	names := make([]string, 0, len(node.Args))
+	for _, argument := range node.Args {
+		names = append(names, argument.Name)
+	}
+	return names
+}
+
 func (b *builder) messageCall(node *syntax.MessageCall) uint32 {
 	if b.messages == nil {
 		return b.constant(ir.Const{Kind: ir.ConstString, Str: node.Key}, "s"+node.Key)
@@ -50,6 +61,7 @@ func (b *builder) messageCall(node *syntax.MessageCall) uint32 {
 	b.messages.uses = append(b.messages.uses, messageUse{
 		index:  index,
 		plural: node.Count != nil,
+		args:   argumentNames(node),
 		file:   b.file,
 		span:   node.KeySpan,
 	})
@@ -57,7 +69,13 @@ func (b *builder) messageCall(node *syntax.MessageCall) uint32 {
 	if node.Count != nil {
 		count = b.expr(node.Count)
 	}
-	return b.emitExpr(ir.ExprNode{Kind: ir.ExprMessage, A: index, B: count})
+	text := b.emitExpr(ir.ExprNode{Kind: ir.ExprMessage, A: index, B: count})
+	for _, argument := range node.Args {
+		name := b.constant(ir.Const{Kind: ir.ConstString, Str: argument.Name}, "s"+argument.Name)
+		pair := b.emitExpr(ir.ExprNode{Kind: ir.ExprPair, A: name, B: b.expr(argument.Value)})
+		text = b.emitExpr(ir.ExprNode{Kind: ir.ExprSubst, A: text, B: pair})
+	}
+	return text
 }
 
 func BuildCatalogs(table *messageTable, catalogs map[string]i18n.Catalog, locales []string,
@@ -89,9 +107,45 @@ func buildCatalog(table *messageTable, catalogs map[string]i18n.Catalog, locale,
 		}
 		for form, text := range message.Forms {
 			catalog.Texts[index][form] = text
+			checkArguments(table, uint32(index), key, locale, text, bag)
 		}
 	}
 	return catalog
+}
+
+var placeholder = regexp.MustCompile(`\{([a-zA-Z][a-zA-Z0-9_]*)\}`)
+
+func checkArguments(table *messageTable, index uint32, key, locale, text string, bag *diag.Bag) {
+	wanted := map[string]bool{}
+	for _, match := range placeholder.FindAllStringSubmatch(text, -1) {
+		wanted[match[1]] = true
+	}
+	for _, use := range table.uses {
+		if use.index != index {
+			continue
+		}
+		given := map[string]bool{runtime.CountArgument: use.plural || use.implicit}
+		for _, name := range use.args {
+			given[name] = true
+		}
+		for name := range wanted {
+			if !given[name] {
+				bag.Add(diag.New(diag.C604, use.file, use.span,
+					fmt.Sprintf("%s in %s wants {%s}, and the call does not pass it", key, locale, name)).
+					WithHelp(fmt.Sprintf("write t(%q, %s = …)", key, name)))
+			}
+		}
+		if use.implicit {
+			continue
+		}
+		for _, name := range use.args {
+			if !wanted[name] {
+				bag.Add(diag.New(diag.C604, use.file, use.span,
+					fmt.Sprintf("%s passes %s, and %s holds no {%s}", key, name, locale, name)).
+					WithHelp("drop the argument, or add the placeholder to the message"))
+			}
+		}
+	}
 }
 
 func report(table *messageTable, index uint32, key, locale string, bag *diag.Bag) {
@@ -115,7 +169,7 @@ func CheckPlurals(table *messageTable, catalogs map[string]i18n.Catalog, locales
 				continue
 			}
 			message, found := catalog.Messages[key]
-			if !found || message.Plural() == use.plural {
+			if !found || use.implicit || message.Plural() == use.plural {
 				continue
 			}
 			bag.Add(diag.New(diag.C602, use.file, use.span, pluralMessage(key, locale, use.plural)).

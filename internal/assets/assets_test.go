@@ -780,3 +780,18 @@ func TestTagsKeepTheOrderWithinEachKind(t *testing.T) {
 		t.Errorf("tags = %q, want other assets left out", tags)
 	}
 }
+
+func TestIconsAreLinkedWhenTheyExist(t *testing.T) {
+	tags := Icons([]Asset{{Path: "/favicon.ico"}, {Path: "/icon.svg"}, {Path: "/other.txt"}})
+	for _, want := range []string{`rel="icon" href="/favicon.ico"`, `href="/icon.svg"`} {
+		if !strings.Contains(tags, want) {
+			t.Errorf("tags = %q, want %q", tags, want)
+		}
+	}
+	if strings.Contains(tags, "apple-touch-icon") || strings.Contains(tags, "manifest") {
+		t.Errorf("tags = %q, want only what is there", tags)
+	}
+	if Icons(nil) != "" {
+		t.Errorf("tags = %q", Icons(nil))
+	}
+}

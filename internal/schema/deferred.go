@@ -9,7 +9,7 @@ const contextType = "Ctx"
 
 var reservedLoaders = map[string]bool{"Load": true, "Meta": true, "Submit": true, "Sitemap": true}
 
-func readDeferred(file *ast.File) []Field {
+func readDeferred(current resolver, file *ast.File) []Field {
 	var found []Field
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*ast.FuncDecl)
@@ -19,7 +19,7 @@ func readDeferred(file *ast.File) []Field {
 		if !takesContext(fn.Type.Params) {
 			continue
 		}
-		typ, ok := loaderResult(fn.Type.Results)
+		typ, ok := loaderResult(current, fn.Type.Results)
 		if !ok {
 			continue
 		}
@@ -41,14 +41,14 @@ func takesContext(params *ast.FieldList) bool {
 	return ok && selector.Sel.Name == contextType
 }
 
-func loaderResult(results *ast.FieldList) (Type, bool) {
+func loaderResult(current resolver, results *ast.FieldList) (Type, bool) {
 	if results == nil || len(results.List) != 2 {
 		return Type{}, false
 	}
 	if !isError(results.List[1].Type) {
 		return Type{}, false
 	}
-	return readType(results.List[0].Type)
+	return readType(current, results.List[0].Type)
 }
 
 func isError(node ast.Expr) bool {

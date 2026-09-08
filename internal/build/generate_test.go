@@ -370,3 +370,49 @@ func TestABrokenSitemapHookStopsTheBuild(t *testing.T) {
 		t.Fatalf("Run: %v, want C325", err)
 	}
 }
+
+const chromePage = `---
+import "example.com/demo/server/chrome"
+
+type Props struct {
+	Nav chrome.Nav
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Nav: chrome.Nav{Home: "/"}}, nil
+}
+---
+<p>{{ Nav.Home }}</p>
+{% for link in Nav.Links %}<a href="/">{{ link.Label }}</a>{% endfor %}
+`
+
+func TestAPropFromAnotherPackageIsGenerated(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/page.gopage": chromePage,
+		"server/chrome/chrome.go": `package chrome
+
+type Nav struct {
+	Home  string
+	Links []Link
+}
+
+type Link struct {
+	Label string
+	Href  string
+}
+`,
+	})
+	page := read(t, dir, "internal/gen/index/page.go")
+	mustParse(t, page)
+	for _, want := range []string{
+		"type extChromeNav struct {",
+		"inner chrome.Nav",
+		"type extChromeNavSeq []chrome.Nav",
+		"gopage.Object((extChromeNav{v.Nav}))",
+		"extChromeLinkSeq(v.inner.Links)",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("generated page is missing %q:\n%s", want, page)
+		}
+	}
+}

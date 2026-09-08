@@ -588,3 +588,37 @@ func TestAnUnknownDirectiveSuggestsRaw(t *testing.T) {
 		t.Errorf("help = %q, want raw suggested", bag.Items()[0].Help)
 	}
 }
+
+func TestMatchTakesQuotedCasesAndADefault(t *testing.T) {
+	doc := parseClean(t, `{% match S %}{% when "a" %}x{% else %}y{% endmatch %}`)
+	node, ok := doc.Nodes[0].(*Match)
+	if !ok {
+		t.Fatalf("node = %#v", doc.Nodes[0])
+	}
+	if len(node.Arms) != 1 || node.Arms[0].Name != "a" || !node.Arms[0].Literal {
+		t.Errorf("arms = %+v", node.Arms)
+	}
+	if !node.Rest || len(node.Else) != 1 {
+		t.Errorf("else = %+v, rest = %v", node.Else, node.Rest)
+	}
+}
+
+func TestMatchWithoutADefaultCarriesNone(t *testing.T) {
+	doc := parseClean(t, "{% match S %}{% when A %}x{% endmatch %}")
+	node := doc.Nodes[0].(*Match)
+	if node.Rest || node.Else != nil {
+		t.Errorf("else = %+v", node.Else)
+	}
+}
+
+func TestAMalformedCaseIsReported(t *testing.T) {
+	if _, bag := parse(t, "{% match S %}{% when 7 %}x{% endmatch %}"); !bag.HasErrors() {
+		t.Error("a number is not a case")
+	}
+	if _, bag := parse(t, "{% match S %}{% when A B %}x{% endmatch %}"); !bag.HasErrors() {
+		t.Error("two names are not a case")
+	}
+	if _, bag := parse(t, "{% match S %}{% when A %}x{% else junk %}y{% endmatch %}"); !bag.HasErrors() {
+		t.Error("else takes no argument")
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/diag"
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -48,12 +49,14 @@ type builder struct {
 	deferred   map[string]bool
 	fetches    bool
 	inventory  *inventory
+	images     config.Images
 	reads      *[]uint32
 	mergeable  int
 	uses       []ir.IslandUse
 }
 
 type LowerOptions struct {
+	Images     config.Images
 	IsLayout   bool
 	Components map[string]Component
 	Assets     string
@@ -66,6 +69,7 @@ type LowerOptions struct {
 
 func newBuilder(file string, opts LowerOptions, bag *diag.Bag) *builder {
 	return &builder{
+		images:     opts.Images,
 		file:       file,
 		bag:        bag,
 		isLayout:   opts.IsLayout,
@@ -200,11 +204,11 @@ func (b *builder) ifNode(node *syntax.If) {
 		test := b.emit(ir.Op{Kind: ir.OpJumpIfFalse, A: b.expr(branch.Cond)})
 		b.nodes(branch.Body)
 		exits = append(exits, b.emit(ir.Op{Kind: ir.OpJump}))
-		b.ops[test].B = uint32(len(b.ops))
+		b.patch(test, b.here())
 	}
-	end := uint32(len(b.ops))
+	end := b.here()
 	for _, exit := range exits {
-		b.ops[exit].B = end
+		b.patch(exit, end)
 	}
 }
 
@@ -221,6 +225,7 @@ func (b *builder) matchNode(node *syntax.Match) {
 		exits = append(exits, b.emit(ir.Op{Kind: ir.OpJump}))
 		b.patch(jump, b.here())
 	}
+	b.nodes(node.Else)
 	end := b.here()
 	for _, exit := range exits {
 		b.patch(exit, end)
@@ -352,8 +357,26 @@ func (b *builder) filterCall(node *syntax.FilterCall) uint32 {
 	case node.Argument != nil:
 		argument = b.expr(node.Argument)
 	}
+	b.relativeKeys(node)
 	return b.emitExpr(ir.ExprNode{Kind: ir.ExprFilter, Op: uint8(id), A: input, B: argument})
 }
+
+func (b *builder) relativeKeys(node *syntax.FilterCall) {
+	if node.Name != RelativeFilter || b.messages == nil {
+		return
+	}
+	for _, key := range runtime.RelativeKeys() {
+		index := b.messages.intern(key)
+		b.messages.uses = append(b.messages.uses, messageUse{
+			index:    index,
+			implicit: true,
+			file:     b.file,
+			span:     node.NameSpan,
+		})
+	}
+}
+
+const RelativeFilter = "relative"
 
 var escapeFilters = []string{"raw", "safe", "html", "unescape"}
 
