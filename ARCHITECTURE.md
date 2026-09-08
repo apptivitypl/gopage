@@ -109,6 +109,16 @@ visible in the template rather than hidden in the Go behind a marker type; and `
 over `app/` and `components/` is the complete audit. What goes into it is the project's
 responsibility, not the compiler's — gopage validates nothing about the payload.
 
+## What a project links
+
+Two features carry heavy dependencies and neither is linked unless the project asks for it. The
+image endpoint needs the standard library's decoders, which is about a megabyte of compressed
+worker; the open graph card needs a font rasteriser, which is another two hundred kilobytes. So
+`internal/server` names only an interface, the generated `internal/gen` imports
+`gopage/images` when `images.mode` is on, and an application that draws a card imports `gopage/og`
+itself. The linker then drops whatever nobody reached. That is what keeps a plain site inside the
+three megabyte module a worker may be.
+
 ## Two targets, one project
 
 `gopage build --target native` compiles `cmd/server` into `dist/server` with everything embedded.

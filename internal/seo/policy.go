@@ -14,14 +14,21 @@ type Policy struct {
 }
 
 func (p *Policy) Add(recorder *cache.Recorder) {
-	if !recorder.Shared() {
-		p.private = true
+	if !p.Observe(recorder) {
 		return
 	}
 	policy := recorder.Policy()
 	p.ttl = cache.Shorter(p.ttl, policy.TTL)
 	p.stale = cache.Shorter(p.stale, policy.Stale)
+}
+
+func (p *Policy) Observe(recorder *cache.Recorder) bool {
+	if !recorder.Shared() {
+		p.private = true
+		return false
+	}
 	p.tags = append(p.tags, recorder.Tags()...)
+	return true
 }
 
 func (p *Policy) Tags() []string {

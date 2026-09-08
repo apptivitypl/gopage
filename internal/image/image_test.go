@@ -157,3 +157,25 @@ func TestAnEncoderThatFailsIsReported(t *testing.T) {
 		t.Error("the encoder error was swallowed")
 	}
 }
+
+func TestSupportAdaptsTheCodecForTheServer(t *testing.T) {
+	held := Support{}
+	source, width := held.Limits()
+	if source != MaxSourceSize || width != MaxWidth {
+		t.Errorf("limits = %d, %d", source, width)
+	}
+	if !held.Knows("png") || held.Knows("webp") {
+		t.Error("only the built-in formats are known without an encoder")
+	}
+	plugged := Support{Encoders: map[string]Encoder{"webp": func(io.Writer, image.Image, int) error { return nil }}}
+	if !plugged.Knows("webp") {
+		t.Error("a plugged encoder makes its format known")
+	}
+	body, kind, err := held.Transform(photo(t, 200, 100), 100, 80, "png")
+	if err != nil || kind != "image/png" || len(body) == 0 {
+		t.Errorf("transform = %d bytes, %q, err = %v", len(body), kind, err)
+	}
+	if _, _, err := held.Transform([]byte("not an image"), 10, 80, ""); err == nil {
+		t.Error("a source that is no image must fail")
+	}
+}

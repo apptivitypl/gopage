@@ -19,7 +19,6 @@ import (
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/i18n"
-	"github.com/apptivitypl/gopage/internal/image"
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -57,7 +56,7 @@ type Options struct {
 	AccessLog  bool
 	Preloads   map[string][]string
 	Locals     any
-	Encoders   map[string]image.Encoder
+	Images     ImageSupport
 	Client     *http.Client
 	Invalidate string
 	OnRequest  Reporter
@@ -104,7 +103,7 @@ type App struct {
 	locals     any
 	vocab      vocab.Table
 	zone       *time.Location
-	encoders   map[string]image.Encoder
+	images     ImageSupport
 	client     *http.Client
 	token      string
 	onRequest  Reporter
@@ -142,7 +141,7 @@ func New(opts Options) *App {
 		api:        opts.API,
 		layouts:    layoutPlans(opts.Manifest, opts.Layouts),
 		locals:     opts.Locals,
-		encoders:   opts.Encoders,
+		images:     opts.Images,
 		client:     imageClient(opts.Client),
 		token:      opts.Invalidate,
 		onRequest:  opts.OnRequest,
@@ -235,7 +234,7 @@ func (a *App) serveSEO(mux *http.ServeMux) {
 	if a.config.SEO.Robots.Enabled() {
 		a.serveBuiltin(mux, seo.RobotsPath, a.robots)
 	}
-	if a.config.Images.Enabled() {
+	if a.config.Images.Enabled() && a.images != nil {
 		a.serveBuiltin(mux, ImagePath, a.image)
 	}
 	if a.token != "" {

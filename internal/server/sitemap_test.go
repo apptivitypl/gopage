@@ -315,3 +315,47 @@ func TestAFailingShardIsReported(t *testing.T) {
 		t.Errorf("status = %d", code)
 	}
 }
+
+func TestAProbeLendsItsTagsButNotItsFreshness(t *testing.T) {
+	app := sitemapApp(t, "", Options{
+		Props: map[string]PropsProvider{
+			"index": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				cache.From(r.Context()).TTL(time.Minute).Tag("items")
+				return runtime.Empty{}, nil
+			},
+		},
+		Meta: map[string]MetaProvider{
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
+				return runtime.Meta{Canonical: "http://example.com/"}, nil
+			},
+		},
+	})
+	answer := get(t, app.Handler(), "/sitemap.xml")
+	if got := answer.Header().Get("Cache-Control"); !strings.Contains(got, "max-age=3600") {
+		t.Errorf("cache-control = %q, want the sitemap's own freshness, not the page's", got)
+	}
+	if app.Invalidate("items") != 1 {
+		t.Error("a probe still lends its tags, so invalidating the listing drops the sitemap")
+	}
+}
+
+func TestAPrivateProbeKeepsTheSitemapOutOfTheStore(t *testing.T) {
+	app := sitemapApp(t, "", Options{
+		Props: map[string]PropsProvider{
+			"index": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				cache.From(r.Context()).Private()
+				return runtime.Empty{}, nil
+			},
+		},
+		Meta: map[string]MetaProvider{
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
+				return runtime.Meta{}, nil
+			},
+		},
+	})
+	handler := app.Handler()
+	get(t, handler, "/sitemap.xml")
+	if got := get(t, handler, "/sitemap.xml").Header().Get(CacheHeader); got == "hit" {
+		t.Error("a private probe must keep the sitemap out of the store")
+	}
+}

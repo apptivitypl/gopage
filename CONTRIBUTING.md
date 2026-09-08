@@ -72,6 +72,8 @@ internal/vocab/      locale prefixes, and the segment each locale publishes
 internal/seo/        the sitemap and robots.txt documents
 internal/image/      decoding, scaling and re-encoding behind /_gopage/image
 internal/og/         the open graph card
+og/                  the public wrapper an app imports to draw one
+images/              the public wrapper the generated code imports when images are on
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
 internal/scaffold/   the templates gopage new writes

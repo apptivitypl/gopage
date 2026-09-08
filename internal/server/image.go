@@ -10,17 +10,24 @@ import (
 	"time"
 
 	"github.com/apptivitypl/gopage/internal/cache"
-	"github.com/apptivitypl/gopage/internal/image"
 	"github.com/apptivitypl/gopage/internal/reply"
 )
 
 const (
 	ImagePath      = "/_gopage/image"
 	ImageFreshness = "public, max-age=31536000, immutable"
-	maxRemoteBytes = image.MaxSourceSize
 )
 
-var errNoSource = errors.New("no such image")
+type ImageSupport interface {
+	Transform(source []byte, width, quality int, format string) ([]byte, string, error)
+	Knows(format string) bool
+	Limits() (source int64, width int)
+}
+
+var (
+	errNoSource = errors.New("no such image")
+	errTooLarge = errors.New("image is too large")
+)
 
 type imageRequest struct {
 	source  string
@@ -40,16 +47,14 @@ func (a *App) image(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return cache.Value{}, cache.Policy{}, err
 		}
-		body, format, err := image.Transform(source, image.Options{
-			Width: asked.width, Quality: asked.quality, Format: asked.format,
-		}, a.encoders)
+		body, kind, err := a.images.Transform(source, asked.width, asked.quality, asked.format)
 		if err != nil {
 			return cache.Value{}, cache.Policy{}, err
 		}
 		return cache.Value{
 			Body:   body,
 			Tags:   []string{"image", "image:" + asked.source},
-			Header: http.Header{"Content-Type": []string{image.ContentType(format)}},
+			Header: http.Header{"Content-Type": []string{kind}},
 		}, cache.Policy{TTL: a.imageTTL()}, nil
 	}
 	value, status, err := a.serveImage(asked.key(), load)
@@ -97,8 +102,9 @@ func (a *App) imageRequest(r *http.Request) (imageRequest, error) {
 	if source == "" {
 		return imageRequest{}, errNoSource
 	}
+	_, widest := a.images.Limits()
 	width, err := strconv.Atoi(query.Get("w"))
-	if query.Get("w") != "" && (err != nil || width < 1 || width > image.MaxWidth) {
+	if query.Get("w") != "" && (err != nil || width < 1 || width > widest) {
 		return imageRequest{}, errNoSource
 	}
 	quality := a.config.Images.Sharpness()
@@ -109,7 +115,7 @@ func (a *App) imageRequest(r *http.Request) (imageRequest, error) {
 		}
 	}
 	format := query.Get("f")
-	if format != "" && !image.Known(format) && a.encoders[format] == nil {
+	if format != "" && !a.images.Knows(format) {
 		return imageRequest{}, errNoSource
 	}
 	return imageRequest{source: source, width: width, quality: quality, format: format}, nil
@@ -126,14 +132,15 @@ func (a *App) localImage(r *http.Request, source string) ([]byte, error) {
 	if a.assets == nil {
 		return nil, errNoSource
 	}
-	recorder := &imageWriter{header: http.Header{}}
+	limit, _ := a.images.Limits()
+	recorder := &imageWriter{header: http.Header{}, limit: limit}
 	request := r.Clone(r.Context())
 	request.Method = http.MethodGet
 	request.URL = &url.URL{Path: source}
 	request.Header = http.Header{}
 	a.assets.ServeHTTP(recorder, request)
 	if recorder.overflow {
-		return nil, image.ErrTooLarge
+		return nil, errTooLarge
 	}
 	if recorder.status != 0 && recorder.status != http.StatusOK {
 		return nil, errNoSource
@@ -158,13 +165,15 @@ func (a *App) remoteImage(r *http.Request, source string) ([]byte, error) {
 	if response.StatusCode != http.StatusOK {
 		return nil, errNoSource
 	}
-	return io.ReadAll(io.LimitReader(response.Body, maxRemoteBytes+1))
+	limit, _ := a.images.Limits()
+	return io.ReadAll(io.LimitReader(response.Body, limit+1))
 }
 
 type imageWriter struct {
 	header   http.Header
 	body     []byte
 	status   int
+	limit    int64
 	overflow bool
 }
 
@@ -173,9 +182,9 @@ func (w *imageWriter) Header() http.Header { return w.header }
 func (w *imageWriter) WriteHeader(status int) { w.status = status }
 
 func (w *imageWriter) Write(data []byte) (int, error) {
-	if len(w.body)+len(data) > maxRemoteBytes {
+	if int64(len(w.body)+len(data)) > w.limit {
 		w.overflow = true
-		return 0, image.ErrTooLarge
+		return 0, errTooLarge
 	}
 	w.body = append(w.body, data...)
 	return len(data), nil

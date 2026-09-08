@@ -14,10 +14,8 @@ import (
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/form"
-	"github.com/apptivitypl/gopage/internal/image"
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/logs"
-	"github.com/apptivitypl/gopage/internal/og"
 	"github.com/apptivitypl/gopage/internal/redirect"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -93,7 +91,7 @@ type Options struct {
 	Middleware []Middleware
 	Logger     *slog.Logger
 	Locals     any
-	Encoders   map[string]ImageEncoder
+	Images     ImageSupport
 	Client     *http.Client
 	Invalidate string
 	OnRequest  Reporter
@@ -104,13 +102,7 @@ type (
 	Trace    = server.Trace
 )
 
-type ImageEncoder = image.Encoder
-
-type OpenGraphCard = og.Card
-
-func OpenGraph(card OpenGraphCard) ([]byte, error) {
-	return og.Render(card)
-}
+type ImageSupport = server.ImageSupport
 
 type App struct {
 	inner    *server.App
@@ -176,7 +168,7 @@ func New(opts Options) (*App, error) {
 			API:        opts.API,
 			Middleware: opts.Middleware,
 			Locals:     opts.Locals,
-			Encoders:   opts.Encoders,
+			Images:     opts.Images,
 			Client:     opts.Client,
 			Invalidate: opts.Invalidate,
 			OnRequest:  opts.OnRequest,

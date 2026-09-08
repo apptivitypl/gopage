@@ -49,6 +49,7 @@ func imageApp(t *testing.T, text string, served []byte, calls *atomic.Int64) *Ap
 		Config:   settings(t, text),
 		Cache:    cache.New(cache.Options{Limit: 4 << 20}),
 		Assets:   assets,
+		Images:   gimage.Support{},
 	})
 }
 
@@ -137,6 +138,7 @@ func TestAnAllowedHostIsFetched(t *testing.T) {
 		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["`+strings.Split(host, ":")[0]+`"]}}`),
 		Cache:    cache.New(cache.Options{Limit: 4 << 20}),
 		Client:   upstream.Client(),
+		Images:   gimage.Support{},
 	})
 	app.client = &http.Client{Transport: rewriting{to: upstream.URL}}
 	response := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2F"+strings.Split(host, ":")[0]+"%2Fa.jpg&w=40")
@@ -172,9 +174,11 @@ func TestAnAppMayPlugAnEncoderIn(t *testing.T) {
 		Assets: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = w.Write(jpegBytes(t, 80, 40))
 		}),
-		Encoders: map[string]gimage.Encoder{"webp": func(w io.Writer, _ image.Image, _ int) error {
-			_, err := w.Write([]byte("RIFFWEBP"))
-			return err
+		Images: gimage.Support{Encoders: map[string]gimage.Encoder{
+			"webp": func(w io.Writer, _ image.Image, _ int) error {
+				_, err := w.Write([]byte("RIFFWEBP"))
+				return err
+			},
 		}},
 	})
 	response := get(t, app.Handler(), ImagePath+"?src=%2Fphoto.jpg&w=40&f=webp")
@@ -209,6 +213,7 @@ func TestASourceThatAnswersAnErrorIsMissing(t *testing.T) {
 		Assets: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusForbidden)
 		}),
+		Images: gimage.Support{},
 	})
 	if code := get(t, app.Handler(), ImagePath+"?src=%2Fphoto.jpg&w=10").Code; code != http.StatusNotFound {
 		t.Errorf("status = %d", code)
@@ -216,14 +221,14 @@ func TestASourceThatAnswersAnErrorIsMissing(t *testing.T) {
 }
 
 func TestAnAppWithoutAssetsHasNoLocalImages(t *testing.T) {
-	app := New(Options{Manifest: manifest(), Config: settings(t, optimising)})
+	app := New(Options{Manifest: manifest(), Config: settings(t, optimising), Images: gimage.Support{}})
 	if code := get(t, app.Handler(), ImagePath+"?src=%2Fphoto.jpg&w=10").Code; code != http.StatusNotFound {
 		t.Errorf("status = %d", code)
 	}
 }
 
 func TestAnOversizedSourceIsRefused(t *testing.T) {
-	huge := bytes.Repeat([]byte{0x7f}, maxRemoteBytes+16)
+	huge := bytes.Repeat([]byte{0x7f}, gimage.MaxSourceSize+16)
 	app := imageApp(t, optimising, huge, nil)
 	if code := get(t, app.Handler(), ImagePath+"?src=%2Fphoto.jpg&w=10").Code; code != http.StatusBadRequest {
 		t.Errorf("status = %d", code)
@@ -235,6 +240,7 @@ func TestAnUnreachableHostIsReported(t *testing.T) {
 		Manifest: manifest(),
 		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["cdn.invalid"]}}`),
 		Client:   &http.Client{Transport: failing{}},
+		Images:   gimage.Support{},
 	})
 	if code := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2Fcdn.invalid%2Fa.jpg").Code; code != http.StatusBadRequest {
 		t.Errorf("status = %d", code)
@@ -249,6 +255,7 @@ func TestARemoteErrorIsMissing(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),
 		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["cdn.example.com"]}}`),
+		Images:   gimage.Support{},
 	})
 	app.client = &http.Client{Transport: rewriting{to: upstream.URL}}
 	if code := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2Fcdn.example.com%2Fa.jpg").Code; code != http.StatusNotFound {
@@ -273,6 +280,7 @@ func TestARemoteAddressThatCannotBeRequestedIsMissing(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),
 		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["cdn.example.com"]}}`),
+		Images:   gimage.Support{},
 	})
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	if _, err := app.remoteImage(request, "https://cdn.example.com/\x7f"); !errors.Is(err, errNoSource) {
@@ -294,6 +302,7 @@ func TestARemoteBodyThatBreaksIsReported(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),
 		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["cdn.example.com"]}}`),
+		Images:   gimage.Support{},
 	})
 	app.client = &http.Client{Transport: rewriting{to: upstream.URL}}
 	if code := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2Fcdn.example.com%2Fa.jpg").Code; code != http.StatusBadRequest {

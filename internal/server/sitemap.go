@@ -154,11 +154,11 @@ func (a *App) probe(r *http.Request, derived seo.Derived, policy *seo.Policy) (s
 	if err == nil {
 		var meta runtime.Meta
 		if meta, err = provider(request, Params{}, props); err == nil {
-			policy.Add(recorder)
+			policy.Observe(recorder)
 			return seo.FromMeta(derived.Entry, meta)
 		}
 	}
-	policy.Add(recorder)
+	policy.Observe(recorder)
 	a.logger.Warn("sitemap probe failed", "route", derived.Route, "locale", derived.Locale, "error", err)
 	return derived.Entry, true
 }

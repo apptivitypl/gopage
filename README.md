@@ -248,7 +248,9 @@ lists, and `noindex` in `Robots` keeps the page out. To answer either path yours
 **Images.** With `images.mode: "on"`, `<Image>` points at `/_gopage/image` and emits a `srcset` from
 the widths you configure, so a phone downloads a phone-sized file. The endpoint decodes, scales and
 re-encodes with the standard library, caches the result as immutable, and reads remote sources only
-from `images.hosts`. WebP and AVIF are yours to add through `Options.Encoders`.
+from `images.hosts`. The decoders are linked only into a project whose config asks for them, so a
+site that serves no optimised images does not carry them; WebP and AVIF are yours to add through
+`images.Support`.
 
 **Sessions.** A loader can read and write the response:
 
@@ -389,6 +391,6 @@ one.
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option.
 
 The starter ships JetBrains Mono under the SIL Open Font License; its licence travels with the font
-in the generated project. `gopage.OpenGraph` draws its card with the Go font, which is BSD licensed,
-so that licence travels with any binary that calls it. Nothing else links the font: it costs about
-60 KB of type information in a binary that never draws a card, and 50 KB more in one that does.
+in the generated project. The `og` package draws its card with the Go font, which is BSD licensed,
+so that licence travels with a binary that imports it. Nothing else reaches the font, and a project
+that never imports `og` does not link it at all.

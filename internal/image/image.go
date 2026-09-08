@@ -98,3 +98,23 @@ func encoderFor(format string, extra map[string]Encoder) (Encoder, bool) {
 	encode, ok := encoders[format]
 	return encode, ok
 }
+
+type Support struct {
+	Encoders map[string]Encoder
+}
+
+func (s Support) Transform(source []byte, width, quality int, format string) ([]byte, string, error) {
+	body, kind, err := Transform(source, Options{Width: width, Quality: quality, Format: format}, s.Encoders)
+	if err != nil {
+		return nil, "", err
+	}
+	return body, ContentType(kind), nil
+}
+
+func (s Support) Knows(format string) bool {
+	return Known(format) || s.Encoders[format] != nil
+}
+
+func (s Support) Limits() (int64, int) {
+	return MaxSourceSize, MaxWidth
+}

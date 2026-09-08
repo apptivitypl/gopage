@@ -512,16 +512,6 @@ func TestATimeSequenceIsExported(t *testing.T) {
 	}
 }
 
-func TestAnOpenGraphCardIsRendered(t *testing.T) {
-	data, err := OpenGraph(OpenGraphCard{Title: "Praca w Warszawie", Subtitle: "12 922 oferty"})
-	if err != nil {
-		t.Fatalf("OpenGraph: %v", err)
-	}
-	if len(data) < 1000 || string(data[1:4]) != "PNG" {
-		t.Errorf("card = %d bytes, header = %q", len(data), data[:8])
-	}
-}
-
 func deferredDemo(t *testing.T) []byte {
 	t.Helper()
 	return build(t, fstest.MapFS{

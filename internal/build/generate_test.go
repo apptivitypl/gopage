@@ -473,3 +473,23 @@ func TestGroupedLayoutsAreNamedApart(t *testing.T) {
 		}
 	}
 }
+
+func TestImageSupportIsLinkedOnlyWhenAsked(t *testing.T) {
+	plain := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
+	if got := read(t, plain, AppGo); strings.Contains(got, "images.Support") {
+		t.Errorf("options = %q, want no image support in a project that asks for none", got)
+	}
+
+	optimising := buildProject(t, map[string]string{
+		"app/page.gopage": `<Image src="/photo.jpg" width="400" height="200" alt="a photo" />`,
+		"gopage.jsonc":    `{"images": {"mode": "on", "widths": [320, 640]}}`,
+	})
+	source := read(t, optimising, AppGo)
+	mustParse(t, source)
+	if !strings.Contains(source, "Images:   images.Support(nil),") {
+		t.Errorf("options = %q, want the image support wired in", source)
+	}
+	if !strings.Contains(source, `"github.com/apptivitypl/gopage/images"`) {
+		t.Errorf("options = %q, want the import that links the decoders", source)
+	}
+}
