@@ -395,3 +395,27 @@ func TestAValueCannotForgeALogLine(t *testing.T) {
 		}
 	}
 }
+
+func TestASliceValueCannotForgeALogLine(t *testing.T) {
+	tags := []string{"listing", "item\nINFO forged entry"}
+	for _, format := range []string{FormatJSON, FormatConsole, FormatGCP, ""} {
+		var out bytes.Buffer
+		slog.New(Handler(Options{Writer: &out, Format: format})).Info("invalidated", "tags", tags)
+		if extra := strings.Count(strings.TrimRight(out.String(), "\n"), "\n"); extra != 0 {
+			t.Errorf("format %q turned one entry into %d:\n%s", format, extra+1, out.String())
+		}
+	}
+}
+
+func TestAValueCannotForgeAJsonField(t *testing.T) {
+	poison := `x","level":"INFO","msg":"forged`
+	var out bytes.Buffer
+	slog.New(Handler(Options{Writer: &out, Format: FormatJSON})).Warn("probe", "path", poison)
+	var held map[string]any
+	if err := json.Unmarshal(out.Bytes(), &held); err != nil {
+		t.Fatalf("the entry is no longer one json object: %v\n%s", err, out.String())
+	}
+	if held["msg"] != "probe" || held["path"] != poison {
+		t.Errorf("entry = %+v, want the value carried whole and nothing else moved", held)
+	}
+}
