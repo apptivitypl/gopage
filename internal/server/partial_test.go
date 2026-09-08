@@ -95,7 +95,7 @@ func TestTheTitleTravelsEscaped(t *testing.T) {
 		Manifest: nested(),
 		Config:   settings(t, "{\"nav\": {\"mode\": \"partial\"}}"),
 		Meta: map[string]MetaProvider{
-			"docs": func(*http.Request, Params) (runtime.Meta, error) {
+			"docs": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{Title: "żółw & co"}, nil
 			},
 		},
@@ -149,7 +149,7 @@ func TestAFailingMetaFailsThePartialTheSameWayItFailsADocument(t *testing.T) {
 		Manifest: nested(),
 		Config:   settings(t, "{\"nav\": {\"mode\": \"partial\"}}"),
 		Meta: map[string]MetaProvider{
-			"docs": func(*http.Request, Params) (runtime.Meta, error) {
+			"docs": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{}, http.ErrBodyNotAllowed
 			},
 		},
@@ -165,7 +165,7 @@ func TestTheTitleIsReadFromThePropsThatWereAlreadyBuilt(t *testing.T) {
 		Manifest: nested(),
 		Config:   settings(t, "{\"nav\": {\"mode\": \"partial\"}}"),
 		Meta: map[string]MetaProvider{
-			"docs": func(*http.Request, Params) (runtime.Meta, error) {
+			"docs": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				calls++
 				return runtime.Meta{Title: "docs"}, nil
 			},

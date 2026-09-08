@@ -6,7 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/apptivitypl/gopage/internal/cookie"
 	"github.com/apptivitypl/gopage/internal/logs"
+	"github.com/apptivitypl/gopage/internal/reply"
 )
 
 type Response interface {
@@ -78,6 +80,8 @@ func Mux(handlers map[string]Handler) http.Handler {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		answer := reply.NewRecorder()
+		r = r.WithContext(reply.WithRecorder(r.Context(), answer))
 		response, err := handler(r)
 		if err != nil {
 			logger.Error("api handler failed", "path", r.URL.Path, "method", r.Method, "error", err)
@@ -88,6 +92,11 @@ func Mux(handlers map[string]Handler) http.Handler {
 			logger.Error("api handler answered nothing", "path", r.URL.Path, "method", r.Method)
 			writeError(w, http.StatusInternalServerError)
 			return
+		}
+		answer.Deliver(w, r, cookie.Of(r).Secure)
+		reply.Apply(w, answer.Headers())
+		if coded, ok := response.(Coded); ok && answer.Code() != 0 {
+			response = coded.WithStatus(answer.Code())
 		}
 		if err := response.Respond(w); err != nil {
 			logger.Error("api write failed", "path", r.URL.Path, "error", err)

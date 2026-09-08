@@ -667,3 +667,122 @@ func Totals(ctx *gopage.Ctx) ([]Count, error) {
 	}
 	mustParse(t, code)
 }
+
+func TestATimeFieldBecomesATimeValue(t *testing.T) {
+	text := render(t, File{
+		Package:    "page",
+		SourceFile: "app/page.gopage",
+		SourceLine: 2,
+		Source:     "type Props struct {\n\tPosted time.Time\n}\n",
+		Schema: &schema.Schema{
+			Structs: map[string]schema.Struct{
+				"Props": {Name: "Props", Fields: []schema.Field{
+					{Name: "Posted", Type: schema.Type{Kind: schema.KindTime, Name: schema.TimeType}},
+				}},
+			},
+			Order: []string{"Props"},
+		},
+	})
+	if !strings.Contains(text, "gopage.Time(v.Posted)") {
+		t.Errorf("generated = %q, want a time value", text)
+	}
+}
+
+func TestATimeReachesTypeScript(t *testing.T) {
+	model := &schema.Schema{
+		Structs: map[string]schema.Struct{
+			"Props": {Name: "Props", Fields: []schema.Field{
+				{Name: "Posted", Type: schema.Type{Kind: schema.KindTime, Name: schema.TimeType}},
+			}},
+		},
+		Order: []string{"Props"},
+	}
+	if got := TypeScript(model); !strings.Contains(got, "Posted") {
+		t.Errorf("typescript = %q", got)
+	}
+}
+
+func TestATimeSliceAndADeferredTimeAreNamed(t *testing.T) {
+	text := render(t, File{
+		Package:    "page",
+		SourceFile: "app/page.gopage",
+		SourceLine: 2,
+		Source:     "type Props struct {\n\tDates []time.Time\n}\n",
+		Schema: &schema.Schema{
+			Structs: map[string]schema.Struct{
+				"Props": {Name: "Props", Fields: []schema.Field{
+					{Name: "Dates", Type: schema.Type{Kind: schema.KindSlice, Elem: &schema.Type{Kind: schema.KindTime, Name: schema.TimeType}}},
+					{Name: "Latest", Type: schema.Type{Kind: schema.KindTime, Name: schema.TimeType}, Deferred: true},
+				}},
+			},
+			Order: []string{"Props"},
+		},
+	})
+	if !strings.Contains(text, "gopage.Times(v.Dates)") {
+		t.Errorf("generated = %q, want a time sequence", text)
+	}
+	if !strings.Contains(text, "time.Time") {
+		t.Errorf("generated = %q, want the deferred type named", text)
+	}
+}
+
+func adoptedSchema() *schema.Schema {
+	wrapper := schema.WrapperName("example.com/demo/server/chrome", "Nav")
+	link := schema.WrapperName("example.com/demo/server/chrome", "Link")
+	return &schema.Schema{
+		Structs: map[string]schema.Struct{
+			"Props": {Name: "Props", Fields: []schema.Field{
+				{Name: "Nav", Type: schema.Type{Kind: schema.KindStruct, Name: wrapper}},
+				{Name: "Maybe", Type: schema.Type{Kind: schema.KindOptional, Elem: &schema.Type{Kind: schema.KindStruct, Name: wrapper}}},
+				{Name: "Later", Type: schema.Type{Kind: schema.KindStruct, Name: wrapper}, Deferred: true},
+			}},
+			wrapper: {Name: wrapper, External: true, Local: "chrome.Nav", Fields: []schema.Field{
+				{Name: "Home", Type: schema.Type{Kind: schema.KindString}},
+				{Name: "Links", Type: schema.Type{Kind: schema.KindSlice, Elem: &schema.Type{Kind: schema.KindStruct, Name: link}}},
+			}},
+			link: {Name: link, External: true, Local: "chrome.Link", Fields: []schema.Field{
+				{Name: "Label", Type: schema.Type{Kind: schema.KindString}},
+			}},
+		},
+		Order: []string{"Props", wrapper, link},
+	}
+}
+
+func TestAnAdoptedTypeGetsAWrapper(t *testing.T) {
+	text := render(t, File{
+		Package:    "page",
+		SourceFile: "app/page.gopage",
+		SourceLine: 2,
+		Source:     "import \"example.com/demo/server/chrome\"\n\ntype Props struct{}\n",
+		Schema:     adoptedSchema(),
+	})
+	for _, want := range []string{
+		"type extChromeNav struct {",
+		"inner chrome.Nav",
+		"type extChromeNavSeq []chrome.Nav",
+		"func (s extChromeNavSeq) Len() int",
+		"gopage.Object(extChromeNav{s[index]})",
+		"return gopage.Object((extChromeNav{v.Nav})), true",
+		"gopage.Seq(extChromeLinkSeq(v.inner.Links))",
+		"gopage.Object((extChromeNav{(*v.Maybe)})), true",
+		"type deferredLater struct {",
+		"value chrome.Nav",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("generated is missing %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestAnAdoptedSequenceAnswersOutsideItsRange(t *testing.T) {
+	text := render(t, File{
+		Package:    "page",
+		SourceFile: "app/page.gopage",
+		SourceLine: 2,
+		Source:     "import \"example.com/demo/server/chrome\"\n\ntype Props struct{}\n",
+		Schema:     adoptedSchema(),
+	})
+	if !strings.Contains(text, "if index < 0 || index >= len(s) {") {
+		t.Errorf("generated = %q", text)
+	}
+}

@@ -18,6 +18,7 @@ const (
 	OpPreload
 	OpURL
 	OpRaw
+	OpQuery
 )
 
 var opNames = map[OpKind]string{
@@ -28,6 +29,7 @@ var opNames = map[OpKind]string{
 	OpJSON:        "json",
 	OpURL:         "url",
 	OpRaw:         "raw",
+	OpQuery:       "query",
 	OpPreload:     "preload",
 	OpJumpIfFalse: "jump-if-false",
 	OpJump:        "jump",
@@ -61,6 +63,8 @@ const (
 	ExprIndex
 	ExprFilter
 	ExprMessage
+	ExprSubst
+	ExprPair
 )
 
 var exprNames = map[ExprKind]string{
@@ -72,6 +76,8 @@ var exprNames = map[ExprKind]string{
 	ExprIndex:   "index",
 	ExprFilter:  "filter",
 	ExprMessage: "message",
+	ExprSubst:   "substitution",
+	ExprPair:    "pair",
 }
 
 func (k ExprKind) String() string {
@@ -122,6 +128,15 @@ type Plan struct {
 	Paths     [][]string
 	Locals    uint32
 	Capacity  uint32
+}
+
+func (p *Plan) MessageIndex(key string) (uint32, bool) {
+	for index, name := range p.Messages {
+		if name == key {
+			return uint32(index), true
+		}
+	}
+	return 0, false
 }
 
 func (p *Plan) Message(index uint32) string {
@@ -191,6 +206,42 @@ type Route struct {
 	Plan        uint32
 	LayoutChain []uint32
 	Class       RouteClass
+	Vary        []Vary
+}
+
+type Layout struct {
+	Name string
+	Plan uint32
+}
+
+type VaryKind uint8
+
+const (
+	VaryCookie VaryKind = iota
+	VaryHeader
+)
+
+type Vary struct {
+	Kind   VaryKind
+	Name   string
+	Values []string
+}
+
+func (v Vary) Bucket(value string) string {
+	for _, held := range v.Values {
+		if held == value {
+			return held
+		}
+	}
+	return ""
+}
+
+func Variants(dimensions []Vary) int {
+	total := 1
+	for _, dimension := range dimensions {
+		total *= len(dimension.Values) + 1
+	}
+	return total
 }
 
 type Fragment struct {
@@ -249,9 +300,10 @@ type Manifest struct {
 	Routes    []Route
 	Plans     []Plan
 	Fallbacks []Fallback
+	Layouts   []Layout
 }
 
-const Version uint32 = 8
+const Version uint32 = 9
 
 func (m *Manifest) Catalog(locale string) (*Catalog, bool) {
 	for i := range m.Catalogs {

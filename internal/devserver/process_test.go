@@ -161,3 +161,47 @@ func TestRelevantIgnoresGeneratedAndBuildOutput(t *testing.T) {
 		}
 	}
 }
+
+func listening(address string) bool {
+	connection, err := net.DialTimeout("tcp", address, 100*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	_ = connection.Close()
+	return true
+}
+
+func awaitPort(t *testing.T, address string, want bool) bool {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if listening(address) == want {
+			return true
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return false
+}
+
+func TestStopEndsTheWholeProcessGroup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("process groups are a unix idea")
+	}
+	port, err := FreePort()
+	if err != nil {
+		t.Fatalf("FreePort: %v", err)
+	}
+	grandchild := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+	app, err := Start(Launch{Dir: t.TempDir(), Binary: buildApp(t), Env: []string{"SPAWN=" + grandchild}})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if !awaitPort(t, grandchild, true) {
+		app.Stop()
+		t.Fatal("the grandchild never listened")
+	}
+	app.Stop()
+	if !awaitPort(t, grandchild, false) {
+		t.Error("the grandchild outlived its parent, so the kill did not reach the group")
+	}
+}

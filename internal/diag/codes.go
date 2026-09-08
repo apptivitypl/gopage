@@ -45,6 +45,18 @@ const (
 	C322 Code = "C322"
 	C323 Code = "C323"
 	C324 Code = "C324"
+	C325 Code = "C325"
+	C112 Code = "C112"
+	W704 Code = "W704"
+	C326 Code = "C326"
+	C327 Code = "C327"
+	C328 Code = "C328"
+	C604 Code = "C604"
+	C113 Code = "C113"
+	W705 Code = "W705"
+	C114 Code = "C114"
+	C330 Code = "C330"
+	W706 Code = "W706"
 )
 
 var titles = map[Code]string{
@@ -90,6 +102,18 @@ var titles = map[Code]string{
 	C105: "malformed route handler",
 	C111: "link points at no route",
 	C603: "catalog in the old toml format",
+	C325: "malformed sitemap hook",
+	C112: "route claims a built-in endpoint",
+	W704: "seo rule points at no route",
+	C326: "interpolation in a literal attribute",
+	C327: "boolean attribute bound to a value",
+	C328: "route hook in a layout",
+	C604: "message argument mismatch",
+	C113: "standalone outside a layout",
+	W705: "standalone layout without a head",
+	C114: "vary outside a page or a layout",
+	C330: "vary on a private cookie",
+	W706: "route asks for too many cache variants",
 }
 
 func (c Code) Title() string {

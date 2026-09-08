@@ -192,13 +192,24 @@ func TestBrokenGoReportsC301(t *testing.T) {
 	}
 }
 
+func TestATimeIsAProp(t *testing.T) {
+	model := parseClean(t, "type Props struct{ Posted time.Time }")
+	field := model.Structs["Props"].Fields[0]
+	if field.Type.Kind != KindTime || field.Type.Name != TimeType {
+		t.Errorf("field = %+v", field)
+	}
+	if !field.Type.Scalar() {
+		t.Error("a time is a scalar")
+	}
+}
+
 func TestUnsupportedTypesReportC302(t *testing.T) {
 	cases := map[string]string{
 		"map":       "type Props struct{ A map[string]int }",
 		"interface": "type Props struct{ A interface{} }",
 		"function":  "type Props struct{ A func() }",
 		"channel":   "type Props struct{ A chan int }",
-		"imported":  "type Props struct{ A time.Time }",
+		"imported":  "type Props struct{ A bytes.Buffer }",
 		"array":     "type Props struct{ A [3]int }",
 		"embedded":  "type Props struct{ Card }",
 	}

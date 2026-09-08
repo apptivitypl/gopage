@@ -7,9 +7,9 @@ cannot drift from what the compiler actually reports.
 | Range | Area |
 |---|---|
 | C0xx | template syntax |
-| C1xx | routes, links, route handlers |
+| C1xx | routes, links, route handlers, built-in endpoints, layouts |
 | C2xx | expressions |
-| C3xx | props, components, islands, images, filters, fragments |
+| C3xx | props, components, islands, images, filters, fragments, route hooks |
 | C5xx | cache and what may enter it |
 | C6xx | catalogs and plurals |
 | Wxxx | warnings |
@@ -30,6 +30,9 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C104](C104.md) | route handler without a method |
 | [C105](C105.md) | malformed route handler |
 | [C111](C111.md) | link points at no route |
+| [C112](C112.md) | route claims a built-in endpoint |
+| [C113](C113.md) | standalone outside a layout |
+| [C114](C114.md) | vary outside a page or a layout |
 | [C201](C201.md) | malformed expression |
 | [C202](C202.md) | unclosed group |
 | [C301](C301.md) | unreadable go block |
@@ -56,8 +59,17 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C322](C322.md) | value interpolated into css |
 | [C323](C323.md) | value interpolated into an event handler |
 | [C324](C324.md) | value interpolated into srcdoc |
+| [C325](C325.md) | malformed sitemap hook |
+| [C326](C326.md) | interpolation in a literal attribute |
+| [C327](C327.md) | boolean attribute bound to a value |
+| [C328](C328.md) | route hook in a layout |
+| [C330](C330.md) | vary on a private cookie |
 | [C503](C503.md) | private value in a cached fragment |
 | [C601](C601.md) | missing translation |
 | [C602](C602.md) | plural form mismatch |
 | [C603](C603.md) | catalog in the old toml format |
+| [C604](C604.md) | message argument mismatch |
 | [W703](W703.md) | class built at request time |
+| [W704](W704.md) | seo rule points at no route |
+| [W705](W705.md) | standalone layout without a head |
+| [W706](W706.md) | route asks for too many cache variants |

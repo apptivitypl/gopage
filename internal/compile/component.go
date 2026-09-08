@@ -49,6 +49,7 @@ func ComponentNames(components map[string]Component) []string {
 }
 
 func LoadComponent(fsys fs.FS, name, file string, bag *diag.Bag) (Component, bool) {
+	packages := schema.Packages{FS: fsys, Module: ModuleOf(fsys)}
 	template, ok := ReadTemplate(fsys, file, bag)
 	if !ok {
 		return Component{}, false
@@ -65,7 +66,7 @@ func LoadComponent(fsys fs.FS, name, file string, bag *diag.Bag) (Component, boo
 		sources = append(sources, schema.Source{File: path.Join(path.Dir(file), PropsFile), Code: stripPackage(string(props))})
 	}
 	if len(sources) > 0 {
-		component.Schema = schema.Parse(sources, bag)
+		component.Schema = schema.ParseWith(sources, packages, bag)
 	}
 	return component, true
 }

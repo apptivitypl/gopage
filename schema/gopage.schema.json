@@ -54,7 +54,8 @@
         "mode": {"type": "string", "enum": ["path", "subdomain", "single"], "default": "path"},
         "defaultLocale": {"type": "string", "default": "en"},
         "locales": {"type": "array", "items": {"type": "string"}, "minItems": 1},
-        "prefixDefault": {"type": "boolean", "default": false, "description": "Give the default locale a path prefix of its own."}
+        "prefixDefault": {"type": "boolean", "default": false, "description": "Give the default locale a path prefix of its own."},
+        "timezone": {"type": "string", "description": "The zone the date filters render in. Defaults to UTC."}
       }
     },
     "routing": {
@@ -65,6 +66,24 @@
           "type": "array",
           "items": {"type": "string", "pattern": "^/"},
           "description": "Prefixes the router refuses to give to a page. Setting this replaces the defaults."
+        },
+        "normalize": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Redirect an address to one spelling of itself.",
+          "properties": {
+            "trailingSlash": {"type": "string", "enum": ["off", "strip", "keep"], "default": "off"},
+            "case": {"type": "string", "enum": ["off", "lower"], "default": "off"},
+            "diacritics": {"type": "string", "enum": ["off", "fold"], "default": "off"}
+          }
+        },
+        "aliases": {
+          "type": "object",
+          "description": "Per-locale path vocabulary: canonical segment to the segment the public URL uses.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          }
         }
       }
     },
@@ -78,6 +97,98 @@
           "default": "off",
           "description": "\"partial\" sends only the part of the document that changed."
         }
+      }
+    },
+    "seo": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The built-in sitemap and robots.txt generators.",
+      "properties": {
+        "sitemap": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["auto", "off"],
+              "default": "auto",
+              "description": "\"off\" stops serving /sitemap.xml, so a route of your own may claim the path."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50000,
+              "default": 50000,
+              "description": "Entries per file. Above it /sitemap.xml becomes an index over /sitemap/N.xml."
+            },
+            "probe": {
+              "type": "string",
+              "enum": ["meta", "off"],
+              "default": "meta",
+              "description": "\"meta\" asks each parameterless route for its Meta, so canonical and robots decide the entry."
+            },
+            "ttl": {"type": "string", "default": "1h", "description": "Freshness ceiling. A route may shorten it through ctx.Cache()."},
+            "stale": {"type": "string", "default": "24h"},
+            "changefreq": {
+              "type": "string",
+              "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"],
+              "description": "Emitted for routes the framework derives from the route table."
+            },
+            "priority": {"type": "number", "minimum": 0, "maximum": 1},
+            "exclude": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^/"},
+              "description": "Paths kept out of the sitemap, matched as prefixes."
+            }
+          }
+        },
+        "robots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["auto", "off"],
+              "default": "auto",
+              "description": "\"off\" stops serving /robots.txt, so a route or a public file may claim the path."
+            },
+            "ttl": {"type": "string", "default": "1h"},
+            "stale": {"type": "string", "default": "24h"},
+            "groups": {
+              "type": "array",
+              "description": "One block per crawler. Replaces the default \"User-agent: *\" with \"Allow: /\".",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["userAgent"],
+                "properties": {
+                  "userAgent": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                  "allow": {"type": "array", "items": {"type": "string", "pattern": "^/"}},
+                  "disallow": {"type": "array", "items": {"type": "string", "pattern": "^/"}},
+                  "crawlDelay": {"type": "integer", "minimum": 0}
+                }
+              }
+            },
+            "sitemaps": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Extra Sitemap: lines, next to the built-in one. Absolute URLs are kept as written."
+            }
+          }
+        }
+      }
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The built-in image endpoint: resizing and re-encoding on the way out.",
+      "properties": {
+        "mode": {"type": "string", "enum": ["on", "off"], "default": "off", "description": "\"on\" serves /_gopage/image and points <Image> at it."},
+        "widths": {"type": "array", "items": {"type": "integer", "minimum": 1, "maximum": 4096}},
+        "quality": {"type": "integer", "minimum": 1, "maximum": 100, "default": 75},
+        "formats": {"type": "array", "items": {"type": "string"}},
+        "hosts": {"type": "array", "items": {"type": "string"}, "description": "Remote hosts the endpoint may read from."},
+        "ttl": {"type": "string", "default": "1h"}
       }
     },
     "hosts": {
@@ -113,6 +224,11 @@
           "items": {"type": "string"},
           "description": "Origins allowed to make state-changing cross-origin requests, as scheme://host[:port]."
         },
+        "privateCookies": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Cookies that make a response personal. A request carrying one is never cached."
+        },
         "maxConnections": {
           "type": "integer",
           "minimum": 0,
@@ -125,6 +241,13 @@
       "additionalProperties": false,
       "properties": {
         "react": {"type": "string", "enum": ["react", "preact"], "description": "Which engine islands are bundled against."}
+      }
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "variants": {"type": "integer", "minimum": 1, "description": "How many cache entries one route may hold once its vary directives are multiplied out."}
       }
     },
     "redirects": {

@@ -1,8 +1,10 @@
 package css
 
 import (
+	"errors"
 	"fmt"
 	"github.com/apptivitypl/gopage/internal/paths"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,8 +37,10 @@ func (Passthrough) Process(input, output, _ string) error {
 type Tailwind struct {
 	Binary   string
 	Fetch    Fetcher
+	Verify   func(binary string) error
 	CacheDir string
 	Minify   bool
+	Root     fs.FS
 }
 
 type Fetcher func(url, target, digest string) error
@@ -98,20 +102,34 @@ func (t Tailwind) resolve() (string, error) {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return "", err
 	}
-	build, err := Asset(runtime.GOOS, runtime.GOARCH)
+	build, err := Asset(runtime.GOOS, runtime.GOARCH, t.musl())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w\n%s%s", err, muslHelp, paths.Config)
 	}
 	if err := t.Fetch(assetBase+Version+"/"+build.Name, target, build.Digest); err != nil {
 		return "", fmt.Errorf("downloading tailwind %s: %w\n"+
 			"run gopage css install again, or set \"css\": {\"engine\": \"plain\"} in %s",
 			Version, err, paths.Config)
 	}
-	return target, os.Chmod(target, 0o755)
+	if err := os.Chmod(target, 0o755); err != nil {
+		return "", err
+	}
+	return target, t.verify(target)
 }
 
 func (t Tailwind) Install() (string, error) {
 	return t.resolve()
+}
+
+func (t Tailwind) verify(binary string) error {
+	if t.Verify != nil {
+		return t.Verify(binary)
+	}
+	var exit *exec.ExitError
+	if err := exec.Command(binary, "--help").Run(); err != nil && !errors.As(err, &exit) {
+		return fmt.Errorf("tailwind %s does not run here: %w\n%s%s", Version, err, muslHelp, paths.Config)
+	}
+	return nil
 }
 
 func (t Tailwind) path() (string, error) {
@@ -123,12 +141,15 @@ func (t Tailwind) path() (string, error) {
 		}
 		root = filepath.Join(cache, "gopage")
 	}
-	return filepath.Join(root, "tailwind", Version, binaryName(runtime.GOOS)), nil
+	return filepath.Join(root, "tailwind", Version, binaryName(runtime.GOOS, t.musl())), nil
 }
 
-func binaryName(goos string) string {
+func binaryName(goos string, musl bool) string {
 	if goos == "windows" {
 		return "tailwindcss.exe"
+	}
+	if musl {
+		return "tailwindcss-musl"
 	}
 	return "tailwindcss"
 }
@@ -139,17 +160,23 @@ type Build struct {
 }
 
 var assets = map[string]Build{
-	"darwin/arm64":  {"tailwindcss-macos-arm64", "e722b752f51def86d42e886b4c1171f2d09a4be1a7487a0a51e4aff8e7603ce3"},
-	"darwin/amd64":  {"tailwindcss-macos-x64", "67b25b6103fa7677637e5a5de3327fec3335da316d90d3fdb1a4cd72bda41c0a"},
-	"linux/arm64":   {"tailwindcss-linux-arm64", "314941f5f6e143e74e740c587ad1fbaaede5462572dd330bbe0937e611e966db"},
-	"linux/amd64":   {"tailwindcss-linux-x64", "bc34c301b080b6e6b98ed24118419833f966f6f347e556945d6557d36a44a56e"},
-	"windows/amd64": {"tailwindcss-windows-x64.exe", "ae892cdb0817fbe6b692fc67bb1339a728f21116020e620bc4b94d87d6ba1fee"},
+	"darwin/arm64":     {"tailwindcss-macos-arm64", "e722b752f51def86d42e886b4c1171f2d09a4be1a7487a0a51e4aff8e7603ce3"},
+	"darwin/amd64":     {"tailwindcss-macos-x64", "67b25b6103fa7677637e5a5de3327fec3335da316d90d3fdb1a4cd72bda41c0a"},
+	"linux/arm64":      {"tailwindcss-linux-arm64", "314941f5f6e143e74e740c587ad1fbaaede5462572dd330bbe0937e611e966db"},
+	"linux/amd64":      {"tailwindcss-linux-x64", "bc34c301b080b6e6b98ed24118419833f966f6f347e556945d6557d36a44a56e"},
+	"linux/arm64/musl": {"tailwindcss-linux-arm64-musl", "0924f5b717d76ecc08e3ea1dbc7bb071f9b4a71dddff6243e82d8e96d3bf6c17"},
+	"linux/amd64/musl": {"tailwindcss-linux-x64-musl", "245b149dc7699079c255bd0aa4bdc6917d9b80364b0505e84430e156afa35a96"},
+	"windows/amd64":    {"tailwindcss-windows-x64.exe", "ae892cdb0817fbe6b692fc67bb1339a728f21116020e620bc4b94d87d6ba1fee"},
 }
 
-func Asset(goos, arch string) (Build, error) {
-	build, ok := assets[goos+"/"+arch]
+func Asset(goos, arch string, musl bool) (Build, error) {
+	key := goos + "/" + arch
+	if musl {
+		key += "/musl"
+	}
+	build, ok := assets[key]
 	if !ok {
-		return Build{}, fmt.Errorf("tailwind ships no standalone build for %s/%s", goos, arch)
+		return Build{}, fmt.Errorf("tailwind ships no standalone build for %s", key)
 	}
 	return build, nil
 }

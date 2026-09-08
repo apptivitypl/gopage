@@ -3,6 +3,7 @@ package runtime
 import (
 	"math"
 	"strconv"
+	"time"
 )
 
 type ValueKind uint8
@@ -15,6 +16,7 @@ const (
 	KindBool
 	KindSeq
 	KindObject
+	KindTime
 )
 
 type Sequence interface {
@@ -63,6 +65,18 @@ func Float(f float64) Value {
 	return Value{Kind: KindFloat, num: math.Float64bits(f)}
 }
 
+func Time(moment time.Time) Value {
+	return Value{Kind: KindTime, num: uint64(moment.UnixNano()), ref: moment.Location()}
+}
+
+func (v Value) Moment() time.Time {
+	location, _ := v.ref.(*time.Location)
+	if location == nil {
+		location = time.UTC
+	}
+	return time.Unix(0, int64(v.num)).In(location)
+}
+
 func Bool(b bool) Value {
 	var n uint64
 	if b {
@@ -91,6 +105,8 @@ func (v Value) Text() string {
 		return strconv.FormatInt(v.Int(), 10)
 	case KindFloat:
 		return strconv.FormatFloat(v.Float(), 'g', -1, 64)
+	case KindTime:
+		return v.Moment().Format(time.RFC3339)
 	case KindBool:
 		if v.num != 0 {
 			return "true"
@@ -105,7 +121,7 @@ func (v Value) Truthy() bool {
 	switch v.Kind {
 	case KindString:
 		return v.Str != ""
-	case KindInt, KindBool:
+	case KindInt, KindBool, KindTime:
 		return v.num != 0
 	case KindFloat:
 		return v.Float() != 0

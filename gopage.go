@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/action"
 	"github.com/apptivitypl/gopage/internal/api"
@@ -16,8 +17,11 @@ import (
 	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/redirect"
+	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
+	"github.com/apptivitypl/gopage/internal/seo"
 	"github.com/apptivitypl/gopage/internal/server"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 type (
@@ -26,6 +30,7 @@ type (
 	PropsProvider    = server.PropsProvider
 	DeferredProvider = server.DeferredProvider
 	MetaProvider     = server.MetaProvider
+	SitemapProvider  = server.SitemapProvider
 	SubmitProvider   = server.SubmitProvider
 	Value            = runtime.Value
 )
@@ -34,11 +39,27 @@ var (
 	String = runtime.String
 	Int    = runtime.Int
 	Bool   = runtime.Bool
+	Time   = runtime.Time
 )
+
+type (
+	SitemapEntry     = seo.Entry
+	SitemapAlternate = seo.Alternate
+	SitemapSeq       = seo.Seq
+)
+
+func SitemapOf(entries []SitemapEntry) SitemapSeq {
+	return seo.Of(entries)
+}
 
 type Props = runtime.Map
 
 type Meta = runtime.Meta
+
+type (
+	Alternate  = runtime.Alternate
+	Alternates = runtime.Alternates
+)
 
 func NewMeta(title string) Meta {
 	return Meta{Title: title}
@@ -61,13 +82,27 @@ type Options struct {
 	Public     fs.FS
 	CacheBytes int64
 	Props      map[string]PropsProvider
+	Layouts    map[string]PropsProvider
 	Deferred   map[string]DeferredProvider
 	Meta       map[string]MetaProvider
+	Sitemap    map[string]SitemapProvider
 	Submit     map[string]SubmitProvider
 	API        map[string]http.Handler
 	Middleware []Middleware
 	Logger     *slog.Logger
+	Locals     any
+	Images     ImageSupport
+	Client     *http.Client
+	Invalidate string
+	OnRequest  Reporter
 }
+
+type (
+	Reporter = server.Reporter
+	Trace    = server.Trace
+)
+
+type ImageSupport = server.ImageSupport
 
 type App struct {
 	inner    *server.App
@@ -81,6 +116,14 @@ func (a *App) MaxConnections() int {
 
 func (a *App) Log() *slog.Logger {
 	return a.logger
+}
+
+func TestApp(opts Options) (*App, error) {
+	opts.CacheBytes = 0
+	if opts.Logger == nil {
+		opts.Logger = slog.New(slog.DiscardHandler)
+	}
+	return New(opts)
 }
 
 func New(opts Options) (*App, error) {
@@ -117,11 +160,18 @@ func New(opts Options) (*App, error) {
 			AssetLink:  link,
 			Public:     public,
 			Props:      opts.Props,
+			Layouts:    opts.Layouts,
 			Deferred:   opts.Deferred,
 			Meta:       opts.Meta,
+			Sitemap:    opts.Sitemap,
 			Submit:     opts.Submit,
 			API:        opts.API,
 			Middleware: opts.Middleware,
+			Locals:     opts.Locals,
+			Images:     opts.Images,
+			Client:     opts.Client,
+			Invalidate: opts.Invalidate,
+			OnRequest:  opts.OnRequest,
 			Logger:     logger,
 			AccessLog:  logs.Access(),
 			Preloads:   sidecar.IslandChunks(),
@@ -225,6 +275,38 @@ func RedirectTo(location string) *action.Redirect {
 	return action.To(location)
 }
 
+func Path(c *Ctx, route string, params Params) (string, error) {
+	return PathFor(c, c.Locale(), route, params)
+}
+
+func PathFor(c *Ctx, locale, route string, params Params) (string, error) {
+	filled, err := server.Fill(route, params)
+	if err != nil {
+		return "", err
+	}
+	return vocab.From(c.Context()).Localise(locale, filled), nil
+}
+
+func RedirectError(status int, location string) error {
+	return redirect.Fail(status, location)
+}
+
+func Once[T any](c *Ctx, name string, load func(context.Context) (T, error)) (T, error) {
+	ctx := c.Context()
+	group := cache.Shared(ctx)
+	if group == nil {
+		return load(ctx)
+	}
+	value, err, _ := group.Do(name, func() (any, error) { return load(ctx) })
+	held, _ := value.(T)
+	return held, err
+}
+
+func LocalsOf[T any](c *Ctx) (T, bool) {
+	value, ok := server.LocalsFrom(c.Context()).(T)
+	return value, ok
+}
+
 func SafeRedirect(target, fallback string, allowed ...string) string {
 	if location, ok := redirect.Safe(target, allowed); ok {
 		return location
@@ -256,13 +338,37 @@ func (a *App) Routes() []Route {
 	return routes
 }
 
-func (a *App) RenderStatic(name string) ([]byte, error) {
+func (a *App) routeNamed(name string) (ir.Route, error) {
 	for _, route := range a.manifest.Routes {
 		if route.Name == name {
-			return a.inner.RenderStatic(route)
+			return route, nil
 		}
 	}
-	return nil, fmt.Errorf("gopage: no route named %q", name)
+	return ir.Route{}, fmt.Errorf("gopage: no route named %q", name)
+}
+
+func (a *App) Render(ctx context.Context, name string, params Params) ([]byte, error) {
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
+	}
+	return a.inner.RenderRoute(ctx, route, params)
+}
+
+func (a *App) RenderFragment(ctx context.Context, name, fragment string, params Params) ([]byte, error) {
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
+	}
+	return a.inner.RenderFragment(ctx, route, params, fragment)
+}
+
+func (a *App) RenderStatic(name string) ([]byte, error) {
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
+	}
+	return a.inner.RenderStatic(route)
 }
 
 type Sequence = runtime.Sequence
@@ -326,6 +432,17 @@ func (s Floats[T]) At(index int) Value {
 	return Float(float64(s[index]))
 }
 
+type Times []time.Time
+
+func (s Times) Len() int { return len(s) }
+
+func (s Times) At(index int) Value {
+	if index < 0 || index >= len(s) {
+		return Nil()
+	}
+	return Time(s[index])
+}
+
 type Bools []bool
 
 func (s Bools) Len() int { return len(s) }
@@ -384,11 +501,69 @@ func (c *Ctx) Count(key string, count int) string {
 	return server.TranslatorFrom(c.Context())(key, count, true)
 }
 
+func (c *Ctx) Status(code int) {
+	reply.From(c.Context()).Status(code)
+}
+
+func (c *Ctx) Header() http.Header {
+	return reply.From(c.Context()).Header()
+}
+
+func (c *Ctx) Vary(headers ...string) {
+	reply.From(c.Context()).Vary(headers...)
+}
+
+func (c *Ctx) Cookie(name string) (*http.Cookie, bool) {
+	if c.request == nil {
+		return nil, false
+	}
+	if bucket, declared := server.BucketsFrom(c.Context()).Cookie(name); declared {
+		if bucket == "" {
+			return nil, false
+		}
+		return &http.Cookie{Name: name, Value: bucket}, true
+	}
+	held, err := c.request.Cookie(name)
+	if err != nil {
+		return nil, false
+	}
+	c.personal()
+	return held, true
+}
+
+func (c *Ctx) SetCookie(held *http.Cookie) {
+	reply.From(c.Context()).SetCookie(held)
+	c.personal()
+}
+
+func (c *Ctx) personal() {
+	c.Cache().Private()
+	reply.From(c.Context()).Vary(reply.CookieVary)
+}
+
+func WithValue[T any](ctx context.Context, value T) context.Context {
+	return context.WithValue(ctx, valueKey[T]{}, value)
+}
+
+func ValueOf[T any](c *Ctx) (T, bool) {
+	value, ok := c.Context().Value(valueKey[T]{}).(T)
+	return value, ok
+}
+
+type valueKey[T any] struct{}
+
 func (c *Ctx) Query(name string) string {
 	if c.request == nil {
 		return ""
 	}
 	return c.request.URL.Query().Get(name)
+}
+
+func (c *Ctx) QueryAll(name string) []string {
+	if c.request == nil {
+		return nil
+	}
+	return c.request.URL.Query()[name]
 }
 
 type Case interface {

@@ -10,7 +10,7 @@ type method struct {
 	Field    Field
 }
 
-func readMethods(file *ast.File) []method {
+func readMethods(current resolver, file *ast.File) []method {
 	var found []method
 	for _, decl := range file.Decls {
 		fn, ok := decl.(*ast.FuncDecl)
@@ -27,7 +27,7 @@ func readMethods(file *ast.File) []method {
 		if fn.Type.Results == nil || len(fn.Type.Results.List) != 1 || len(fn.Type.Results.List[0].Names) > 1 {
 			continue
 		}
-		typ, ok := readType(fn.Type.Results.List[0].Type)
+		typ, ok := readType(current, fn.Type.Results.List[0].Type)
 		if !ok {
 			continue
 		}

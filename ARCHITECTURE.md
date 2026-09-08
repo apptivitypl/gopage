@@ -47,16 +47,29 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
 - **Reserved and static first.** Assets, `public/` files and redirects are answered before any
   render is considered.
 - **The cache.** `internal/cache` is bounded by bytes, not entries, and evicts by least recent use.
-  A cache key carries everything that changes the answer — route, locale, host, and the loader's
-  own declared inputs. What may not enter a key is the point of the `I2` invariant test.
+  A cache key carries everything that changes the answer — route, locale, host, the loader's own
+  declared inputs, and the bucket of every `{% vary %}` dimension the route declares. What may not
+  enter a key is the point of the `I2` invariant test. A response that belongs to one visitor never
+  becomes an entry at all: a request carrying a cookie named in
+  `security.privateCookies`, a loader that reads a cookie which is there, and a loader that sets one
+  are each enough to keep it out.
 - **Partial navigation.** When the browser sends the partial header, the server compares the chain
   of layouts it holds against the one this route needs and sends only the suffix that differs. A
   missing or malformed header is not an error; it answers with the whole document.
 - **Fragments.** A deferred fragment is either inlined, flushed in the tail of the same response,
   or fetched by the browser on its own, depending on `fragments.deferred`. The shell is cacheable
   even when the body is not, which is why the mode exists.
+- **Loading.** The loaders a route needs are independent of one another, so the page and every
+  layout in the chain run at once, each with its own policy and response recorder; the server merges
+  them in chain order afterwards, which keeps the answer the same whichever finishes first. A route
+  with one loader runs it in place, without a goroutine. `Meta` is given what `Load` returned rather
+  than calling it a second time.
 - **Render.** `internal/runtime` interprets the plan. It writes into a pooled buffer and escapes on
-  the way out; there is no intermediate string.
+  the way out; there is no intermediate string. A layout with a loader of its own is resolved per
+  plan in the chain, so `layout.` in one layout can never read another's.
+- **The rest of the answer.** `internal/vocab` turns a canonical path into the address a locale
+  publishes and back, `internal/reply` carries the status, headers and cookies a loader asked for,
+  and `internal/seo` answers `/sitemap.xml` and `/robots.txt` from the same route table.
 
 ## Where a value is allowed to land
 
@@ -72,6 +85,9 @@ lands in, so this costs nothing per request:
   of `OpText`. It filters the scheme the way a browser reads it, stripping the control characters
   that would otherwise hide `java\tscript:`, and writes nothing when the scheme is not one a link
   may carry.
+- A value the compiler writes into a query string, which today means the source of an optimised
+  image, lowers to `OpQuery` and is percent-encoded. A path with an ampersand in it can then not
+  smuggle a second parameter into the endpoint's own address.
 - The four contexts an escaper cannot rescue are refused at compile time, with a code that says
   which one and what to do instead: [C321](docs/errors/C321.md) for a script body,
   [C322](docs/errors/C322.md) for css, [C323](docs/errors/C323.md) for an event handler and
@@ -92,6 +108,16 @@ stand where a node can stand, so it cannot land in an attribute, a condition or 
 visible in the template rather than hidden in the Go behind a marker type; and `grep -rn '{% raw'`
 over `app/` and `components/` is the complete audit. What goes into it is the project's
 responsibility, not the compiler's — gopage validates nothing about the payload.
+
+## What a project links
+
+Two features carry heavy dependencies and neither is linked unless the project asks for it. The
+image endpoint needs the standard library's decoders, which is about a megabyte of compressed
+worker; the open graph card needs a font rasteriser, which is another two hundred kilobytes. So
+`internal/server` names only an interface, the generated `internal/gen` imports
+`gopage/images` when `images.mode` is on, and an application that draws a card imports `gopage/og`
+itself. The linker then drops whatever nobody reached. That is what keeps a plain site inside the
+three megabyte module a worker may be.
 
 ## Two targets, one project
 

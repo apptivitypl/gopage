@@ -180,3 +180,100 @@ func TestDecodeRejectsTruncationInsideACatalog(t *testing.T) {
 		t.Errorf("catalogs = %+v", decoded.Catalogs)
 	}
 }
+
+func TestVaryRoundTripsAndRejectsTruncation(t *testing.T) {
+	original := &Manifest{
+		Version: Version,
+		Routes: []Route{{
+			Pattern: "/",
+			Name:    "index",
+			Vary: []Vary{
+				{Kind: VaryCookie, Name: "theme", Values: []string{"light", "dark"}},
+				{Kind: VaryHeader, Name: "CF-IPCountry", Values: []string{"PL"}},
+			},
+		}},
+	}
+	full := Encode(original)
+	for cut := len(magic); cut < len(full); cut++ {
+		if _, err := Decode(full[:cut]); err == nil {
+			t.Fatalf("Decode accepted %d of %d bytes", cut, len(full))
+		}
+	}
+	decoded, err := Decode(full)
+	if err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.Routes, original.Routes) {
+		t.Errorf("routes = %+v", decoded.Routes)
+	}
+}
+
+func TestABucketHoldsOnlyDeclaredValues(t *testing.T) {
+	dimension := Vary{Kind: VaryCookie, Name: "theme", Values: []string{"light", "dark"}}
+	if got := dimension.Bucket("light"); got != "light" {
+		t.Errorf("bucket = %q", got)
+	}
+	if got := dimension.Bucket("sepia"); got != "" {
+		t.Errorf("bucket = %q, want everything else to share one entry", got)
+	}
+}
+
+func TestDecodeRejectsTruncationInsideAPlan(t *testing.T) {
+	original := &Manifest{
+		Version: Version,
+		Plans: []Plan{{
+			Ops:      []Op{{Kind: OpStatic, A: 0, B: 3}, {Kind: OpText, A: 0}},
+			Exprs:    []ExprNode{{Kind: ExprConst, A: 0}, {Kind: ExprPath, A: 0}},
+			Consts:   []Const{{Kind: ConstString, Str: "hi"}, {Kind: ConstInt, Int: 7}, {Kind: ConstFloat, Float: 1.5}},
+			Paths:    [][]string{{"Title"}},
+			Blob:     []byte("<p>"),
+			Capacity: 16,
+		}},
+	}
+	full := Encode(original)
+	for cut := len(magic); cut < len(full); cut++ {
+		if _, err := Decode(full[:cut]); err == nil {
+			t.Fatalf("Decode accepted %d of %d bytes", cut, len(full))
+		}
+	}
+	decoded, err := Decode(full)
+	if err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.Plans, original.Plans) {
+		t.Errorf("plans = %+v", decoded.Plans)
+	}
+}
+
+func TestVariantsCountsEveryBucket(t *testing.T) {
+	dimensions := []Vary{
+		{Name: "theme", Values: []string{"light", "dark"}},
+		{Name: "market", Values: []string{"pl"}},
+	}
+	if got := Variants(dimensions); got != 6 {
+		t.Errorf("variants = %d, want three themes times two markets", got)
+	}
+	if got := Variants(nil); got != 1 {
+		t.Errorf("variants = %d, want one entry when nothing varies", got)
+	}
+}
+
+func TestLayoutsRoundTripAndRejectTruncation(t *testing.T) {
+	original := &Manifest{
+		Version: Version,
+		Layouts: []Layout{{Name: "layout", Plan: 0}, {Name: "layout.auth", Plan: 3}},
+	}
+	full := Encode(original)
+	for cut := len(magic); cut < len(full); cut++ {
+		if _, err := Decode(full[:cut]); err == nil {
+			t.Fatalf("Decode accepted %d of %d bytes", cut, len(full))
+		}
+	}
+	decoded, err := Decode(full)
+	if err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.Layouts, original.Layouts) {
+		t.Errorf("layouts = %+v", decoded.Layouts)
+	}
+}

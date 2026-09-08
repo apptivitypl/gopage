@@ -201,6 +201,7 @@ func (r *referenceServer) ServeHTTP(w http.ResponseWriter, request *http.Request
 		_, _ = w.Write([]byte("event: item\ndata: {}\n\nevent: done\ndata: \n\n"))
 	case "/sitemap.xml":
 		w.Header().Set("Content-Type", "application/xml")
+		w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 		_, _ = w.Write([]byte("<loc>http://x/</loc>"))
 	case "/robots.txt":
 		_, _ = w.Write([]byte("Sitemap: http://x/sitemap.xml"))

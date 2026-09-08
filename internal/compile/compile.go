@@ -1,16 +1,20 @@
 package compile
 
 import (
+	"fmt"
 	"io/fs"
 	"slices"
+	"strings"
 
 	"github.com/apptivitypl/gopage/internal/assets"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/diag"
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/paths"
 	"github.com/apptivitypl/gopage/internal/schema"
 	"github.com/apptivitypl/gopage/internal/seo"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 type Phase struct {
@@ -46,6 +50,7 @@ var phases = []Phase{
 	{Name: "discover routes", Run: discoverPhase},
 	{Name: "collect assets", Run: assetsPhase},
 	{Name: "load catalogs", Run: catalogsPhase},
+	{Name: "check seo", Run: seoPhase},
 	{Name: "load handlers", Run: handlersPhase},
 	{Name: "load components", Run: componentsPhase},
 	{Name: "compile templates", Run: templatesPhase},
@@ -136,7 +141,23 @@ func catalogsPhase(s *state) error {
 	}
 	s.config = settings
 	s.catalogs = catalogs
+	reportMissingCatalogs(s)
 	return nil
+}
+
+func reportMissingCatalogs(s *state) {
+	if len(s.catalogs) == 0 && len(s.config.I18n.Locales) < 2 {
+		return
+	}
+	for _, locale := range s.config.I18n.Locales {
+		if _, ok := s.catalogs[locale]; ok {
+			continue
+		}
+		name := paths.LocalesDir + "/" + locale + ".json"
+		s.bag.Add(diag.New(diag.C601, name, diag.Span{},
+			fmt.Sprintf("locale %s is configured but %s is missing", locale, name)).
+			WithHelp("write the catalog, or drop the locale from i18n.locales"))
+	}
 }
 
 func assetsPhase(s *state) error {
@@ -145,7 +166,11 @@ func assetsPhase(s *state) error {
 		return err
 	}
 	s.assets = append(slices.Clone(list), s.extra...)
-	s.assetTags = assets.Tags(s.assets)
+	public, err := assets.Public(s.fsys)
+	if err != nil {
+		public = nil
+	}
+	s.assetTags = assets.Icons(public) + assets.Tags(s.assets)
 	return nil
 }
 
@@ -176,7 +201,7 @@ func (s *state) islandNames() map[string]bool {
 }
 
 func (s *state) linker() *Linker {
-	return NewLinker(s.routes).Serving(s.served()...)
+	return NewLinker(s.routes).Speaking(vocab.New(s.config), s.config.I18n.Locales).Serving(s.served()...)
 }
 
 func (s *state) served() []string {
@@ -187,7 +212,30 @@ func (s *state) served() []string {
 			files = append(files, asset.Path)
 		}
 	}
-	return append(files, seo.SitemapPath, seo.RobotsPath)
+	if s.config.SEO.Sitemap.Enabled() {
+		files = append(files, seo.SitemapPath)
+	}
+	if s.config.SEO.Robots.Enabled() {
+		files = append(files, seo.RobotsPath)
+	}
+	return files
+}
+
+func reportLayoutLoaders(s *state) {
+	for file, template := range s.templates {
+		if !template.IsLayout {
+			continue
+		}
+		for _, name := range []string{MetaName, SubmitName, SitemapName} {
+			if !strings.Contains(template.Frontmatter, name) {
+				continue
+			}
+			s.bag.Add(diag.New(diag.C328, file, diag.Span{},
+				fmt.Sprintf("a layout carries %s, which never runs", strings.TrimSuffix(strings.TrimPrefix(name, "func "), "("))).
+				WithHelp("only a route answers with meta, a form or a sitemap; move the function to the page, " +
+					"and use Load if the layout needs data of its own"))
+		}
+	}
 }
 
 func componentsPhase(s *state) error {
@@ -198,6 +246,7 @@ func componentsPhase(s *state) error {
 			continue
 		}
 		Check(component.Document, component.File, component.Schema, s.bag)
+		CheckVary(component.Document, component.File, s.config, s.bag)
 		s.linker().Check(component.Document, component.File, s.bag)
 		s.components[name] = component
 	}
@@ -219,6 +268,7 @@ func templatesPhase(s *state) error {
 		}
 		s.compileTemplate(fallback.File)
 	}
+	reportLayoutLoaders(s)
 	return nil
 }
 
@@ -231,8 +281,14 @@ func (s *state) compileTemplate(file string) {
 		return
 	}
 	model := s.model(template)
-	Check(template.Document, file, model, s.bag)
+	if template.IsLayout {
+		CheckLayout(template.Document, file, model, s.bag)
+	} else {
+		Check(template.Document, file, model, s.bag)
+	}
 	CheckContexts(template.Document, file, s.bag)
+	CheckStandalone(template.Document, file, template.IsLayout, s.bag)
+	CheckVary(template.Document, file, s.config, s.bag)
 	CheckFragments(template.Document, file, model, s.bag)
 	CheckIslands(template.Document, file, model, s.components, s.islandNames(), s.bag)
 	s.linker().Check(template.Document, file, s.bag)
@@ -248,6 +304,7 @@ func (s *state) compileTemplate(file string) {
 		Classes:    s.inventory,
 		Deferred:   deferredNames(model),
 		Fetches:    s.config.Fragments.Fetches(),
+		Images:     s.config.Images,
 	}, s.bag))
 }
 
@@ -259,12 +316,29 @@ func deferredNames(model *schema.Schema) map[string]bool {
 	return names
 }
 
+func (s *state) packages() schema.Packages {
+	return schema.Packages{FS: s.fsys, Module: ModuleOf(s.fsys)}
+}
+
+func ModuleOf(fsys fs.FS) string {
+	data, err := fs.ReadFile(fsys, "go.mod")
+	if err != nil {
+		return ""
+	}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if rest, found := strings.CutPrefix(strings.TrimSpace(line), "module "); found {
+			return strings.TrimSpace(rest)
+		}
+	}
+	return ""
+}
+
 func (s *state) model(template Template) *schema.Schema {
 	sources := template.Sources()
 	if len(sources) == 0 {
 		return nil
 	}
-	model := schema.Parse(sources, s.bag)
+	model := schema.ParseWith(sources, s.packages(), s.bag)
 	s.schemas[template.File] = model
 	return model
 }
@@ -283,12 +357,15 @@ func manifestPhase(s *state) error {
 		if !ok {
 			continue
 		}
+		dimensions := s.varyOf(route)
+		CheckVariants(route.Pattern, dimensions, s.config.Cache.Variants, route.File, s.bag)
 		manifest.Routes = append(manifest.Routes, ir.Route{
 			Pattern:     route.Pattern,
 			Name:        route.Name,
 			Plan:        planIndex,
 			LayoutChain: s.chainOf(route.Layouts),
 			Class:       s.classOf(route),
+			Vary:        dimensions,
 		})
 	}
 	for _, fallback := range s.fallbacks {
@@ -308,18 +385,28 @@ func manifestPhase(s *state) error {
 			LayoutChain: s.chainOf(fallback.Layouts),
 		})
 	}
+	manifest.Layouts = s.loadingLayouts()
 	s.manifest = manifest
 	return nil
 }
 
 func (s *state) chainOf(layouts []string) []uint32 {
 	chain := make([]uint32, 0, len(layouts))
-	for _, layout := range layouts {
+	for _, layout := range s.standing(layouts) {
 		if index, ok := s.planOf[layout]; ok {
 			chain = append(chain, index)
 		}
 	}
 	return chain
+}
+
+func (s *state) standing(layouts []string) []string {
+	for index := len(layouts) - 1; index >= 0; index-- {
+		if s.templates[layouts[index]].Document.Standalone {
+			return layouts[index:]
+		}
+	}
+	return layouts
 }
 
 func (s *state) classOf(route Route) ir.RouteClass {

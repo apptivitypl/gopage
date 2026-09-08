@@ -151,3 +151,21 @@ func TestAFallbackPageIsLocalised(t *testing.T) {
 		t.Errorf("body = %q, want the translated fallback", got)
 	}
 }
+
+func TestAnApiHandlerTranslatesLikeAPage(t *testing.T) {
+	manifest := &ir.Manifest{
+		Messages: []string{"blog.title"},
+		Catalogs: []ir.Catalog{{Locale: "en", Texts: [][ir.PluralForms]string{{i18n.FormOther: "Journal"}}}},
+	}
+	app := New(Options{
+		Manifest: manifest,
+		API: map[string]http.Handler{"/api/feed": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(TranslatorFrom(r.Context())("blog.title", 0, false)))
+		})},
+	})
+	recorder := httptest.NewRecorder()
+	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/feed", nil))
+	if got := recorder.Body.String(); got != "Journal" {
+		t.Errorf("body = %q, want the translated text", got)
+	}
+}

@@ -115,7 +115,32 @@ func writeEnum(b *strings.Builder, enum schema.Enum) {
 	b.WriteString("\t}\n\treturn \"\"\n}\n\n")
 }
 
+const innerField = "inner"
+
+func holder(all *schema.Schema, name, access string) (string, bool) {
+	value, ok := all.Get(name)
+	if !ok {
+		return "", false
+	}
+	if value.External {
+		return fmt.Sprintf("(%s{%s})", value.Name, access), true
+	}
+	return access, true
+}
+
+func writeWrapper(b *strings.Builder, value schema.Struct) {
+	fmt.Fprintf(b, "type %s struct {\n\t%s %s\n}\n\n", value.Name, innerField, value.Local)
+	fmt.Fprintf(b, "type %sSeq []%s\n\n", value.Name, value.Local)
+	fmt.Fprintf(b, "func (s %sSeq) Len() int { return len(s) }\n\n", value.Name)
+	fmt.Fprintf(b, "func (s %sSeq) At(index int) gopage.Value {\n", value.Name)
+	b.WriteString("\tif index < 0 || index >= len(s) {\n\t\treturn gopage.Nil()\n\t}\n")
+	fmt.Fprintf(b, "\treturn gopage.Object(%s{s[index]})\n}\n\n", value.Name)
+}
+
 func writeAccessor(b *strings.Builder, value schema.Struct, all *schema.Schema) {
+	if value.External {
+		writeWrapper(b, value)
+	}
 	fmt.Fprintf(b, "func (v %s) Get(path []string) (gopage.Value, bool) {\n", value.Name)
 	b.WriteString("\tif len(path) == 0 {\n\t\treturn gopage.Nil(), false\n\t}\n")
 	b.WriteString("\tswitch path[0] {\n")
@@ -124,7 +149,7 @@ func writeAccessor(b *strings.Builder, value schema.Struct, all *schema.Schema) 
 			continue
 		}
 		fmt.Fprintf(b, "\tcase %q:\n", field.Name)
-		writeField(b, field, all)
+		writeField(b, field, all, reader(value))
 	}
 	b.WriteString("\t}\n\treturn gopage.Nil(), false\n}\n\n")
 	writeNames(b, value)
@@ -156,8 +181,8 @@ func deferredValue(fieldType schema.Type, access string, all *schema.Schema) str
 	case schema.KindSlice:
 		return fmt.Sprintf("gopage.Seq(%s)", sequence(*fieldType.Elem, access, all))
 	case schema.KindStruct:
-		if all.Has(fieldType.Name) {
-			return fmt.Sprintf("gopage.Object(%s)", access)
+		if boxed, ok := holder(all, fieldType.Name, access); ok {
+			return fmt.Sprintf("gopage.Object(%s)", boxed)
 		}
 		return "gopage.Nil()"
 	default:
@@ -179,7 +204,12 @@ func typeName(fieldType schema.Type, all *schema.Schema) string {
 		return primitive(fieldType, "float64")
 	case schema.KindBool:
 		return primitive(fieldType, "bool")
+	case schema.KindTime:
+		return schema.TimeType
 	default:
+		if value, ok := all.Get(fieldType.Name); ok && value.External {
+			return value.Local
+		}
 		return fieldType.Name
 	}
 }
@@ -203,18 +233,25 @@ func writeNames(b *strings.Builder, value schema.Struct) {
 	b.WriteString("}\n}\n\n")
 }
 
-func writeField(b *strings.Builder, field schema.Field, all *schema.Schema) {
-	access := "v." + field.Name
+func reader(value schema.Struct) string {
+	if value.External {
+		return "v." + innerField + "."
+	}
+	return "v."
+}
+
+func writeField(b *strings.Builder, field schema.Field, all *schema.Schema, prefix string) {
+	access := prefix + field.Name
 	if field.Computed {
 		access += "()"
 	}
 	switch field.Type.Kind {
 	case schema.KindStruct:
-		if all.Has(field.Type.Name) {
+		if boxed, ok := holder(all, field.Type.Name, access); ok {
 			b.WriteString("\t\tif len(path) > 1 {\n")
-			fmt.Fprintf(b, "\t\t\treturn %s.Get(path[1:])\n", access)
+			fmt.Fprintf(b, "\t\t\treturn %s.Get(path[1:])\n", boxed)
 			b.WriteString("\t\t}\n")
-			fmt.Fprintf(b, "\t\treturn gopage.Object(%s), true\n", access)
+			fmt.Fprintf(b, "\t\treturn gopage.Object(%s), true\n", boxed)
 			return
 		}
 		b.WriteString("\t\treturn gopage.Nil(), false\n")
@@ -232,11 +269,11 @@ func writeField(b *strings.Builder, field schema.Field, all *schema.Schema) {
 func writeOptional(b *strings.Builder, field schema.Field, access string, all *schema.Schema) {
 	elem := *field.Type.Elem
 	fmt.Fprintf(b, "\t\tif %s == nil {\n\t\t\treturn gopage.Nil(), len(path) == 1\n\t\t}\n", access)
-	if elem.Kind == schema.KindStruct && all.Has(elem.Name) {
+	if boxed, ok := holder(all, elem.Name, "(*"+access+")"); elem.Kind == schema.KindStruct && ok {
 		b.WriteString("\t\tif len(path) > 1 {\n")
-		fmt.Fprintf(b, "\t\t\treturn (*%s).Get(path[1:])\n", access)
+		fmt.Fprintf(b, "\t\t\treturn %s.Get(path[1:])\n", boxed)
 		b.WriteString("\t\t}\n")
-		fmt.Fprintf(b, "\t\treturn gopage.Object(*%s), true\n", access)
+		fmt.Fprintf(b, "\t\treturn gopage.Object(%s), true\n", boxed)
 		return
 	}
 	b.WriteString("\t\tif len(path) != 1 {\n\t\t\treturn gopage.Nil(), false\n\t\t}\n")
@@ -255,15 +292,19 @@ func scalar(fieldType schema.Type, access string) string {
 		return fmt.Sprintf("gopage.Float(float64(%s))", access)
 	case schema.KindBool:
 		return fmt.Sprintf("gopage.Bool(bool(%s))", access)
+	case schema.KindTime:
+		return fmt.Sprintf("gopage.Time(%s)", access)
 	default:
 		return "gopage.Nil()"
 	}
 }
 
 func sequence(elem schema.Type, access string, all *schema.Schema) string {
-	switch {
+	switch value, adopted := all.Get(elem.Name); {
 	case elem.Kind == schema.KindEnum:
 		return fmt.Sprintf("gopage.Cases[%s](%s)", elem.Name, access)
+	case elem.Kind == schema.KindStruct && adopted && value.External:
+		return fmt.Sprintf("%sSeq(%s)", elem.Name, access)
 	case elem.Kind == schema.KindStruct && all.Has(elem.Name):
 		return fmt.Sprintf("gopage.Objects[%s](%s)", elem.Name, access)
 	case elem.Kind == schema.KindString:
@@ -274,6 +315,8 @@ func sequence(elem schema.Type, access string, all *schema.Schema) string {
 		return fmt.Sprintf("gopage.Floats[%s](%s)", elem.Name, access)
 	case elem.Kind == schema.KindBool:
 		return fmt.Sprintf("gopage.Bools(%s)", access)
+	case elem.Kind == schema.KindTime:
+		return fmt.Sprintf("gopage.Times(%s)", access)
 	default:
 		return "gopage.Strings(nil)"
 	}

@@ -83,6 +83,13 @@ func (a *App) writeFragment(w http.ResponseWriter, r *http.Request, route ir.Rou
 
 	page := a.options(a.fragmentHook(r), LocaleOf(r))
 	body := runtime.Options{Fragments: page.Fragments, Catalog: page.Catalog, Plural: page.Plural}
+	if own, err := a.layoutOf(request, route, params, plan); err == nil {
+		body.Layouts = own
+	} else {
+		a.logger.Error("layout loader failed", "route", route.Name, "error", err)
+		a.fail(w, r, ir.FallbackError, http.StatusInternalServerError)
+		return
+	}
 	out := runtime.Acquire(plan.Capacity)
 	defer runtime.Release(out)
 	rooted := runtime.WithRoot(props, fragment.Name, held)

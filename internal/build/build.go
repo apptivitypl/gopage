@@ -132,7 +132,7 @@ func Run(opts Options) (Report, error) {
 		return Report{}, &Error{Diagnostics: bag.Sorted(), Sources: sourcesOf(opts.Dir, bag.Sorted())}
 	}
 
-	packages, err := writeGenerated(opts.Dir, opts.Module, result)
+	packages, err := writeGenerated(opts.Dir, opts.Module, result, settings.Images.Enabled())
 	if err != nil {
 		return Report{}, err
 	}

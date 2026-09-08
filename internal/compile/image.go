@@ -1,10 +1,12 @@
 package compile
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/syntax"
 )
 
@@ -14,6 +16,9 @@ const (
 	widthAttribute  = "width"
 	heightAttribute = "height"
 	eagerAttribute  = "eager"
+	plainAttribute  = "plain"
+	sizesAttribute  = "sizes"
+	ImageEndpoint   = "/_gopage/image"
 )
 
 func (b *builder) imageComponent(node *syntax.Component) {
@@ -31,7 +36,7 @@ func (b *builder) imageComponent(node *syntax.Component) {
 	}
 
 	b.static("<img")
-	b.imageSource(node)
+	b.imageSource(node, width)
 	b.static(` width="` + strconv.Itoa(width) + `" height="` + strconv.Itoa(height) + `"`)
 	b.static(` loading="` + b.loading(node) + `" decoding="async"`)
 	for _, attribute := range node.Attributes {
@@ -43,17 +48,65 @@ func (b *builder) imageComponent(node *syntax.Component) {
 	b.static(">")
 }
 
-func (b *builder) imageSource(node *syntax.Component) {
+func (b *builder) imageSource(node *syntax.Component, width int) {
 	for _, attribute := range node.Attributes {
 		switch {
 		case strings.EqualFold(attribute.Name, srcAttribute):
-			b.attribute(attribute)
+			b.imageAddress(node, attribute, width)
 		case strings.EqualFold(attribute.Name, altAttribute) && !attribute.Bound && len(attribute.Parts) == 0:
 			b.static(` alt="` + escapeAttribute(attribute.Text) + `"`)
 		case strings.EqualFold(attribute.Name, altAttribute):
 			b.attribute(attribute)
 		}
 	}
+}
+
+func (b *builder) imageAddress(node *syntax.Component, attribute syntax.Attribute, width int) {
+	if !b.optimises(node, attribute) {
+		b.attribute(attribute)
+		return
+	}
+	b.static(` src="`)
+	b.imageURL(attribute, width)
+	b.static(`" srcset="`)
+	for index, size := range b.imageWidths(width) {
+		if index > 0 {
+			b.static(", ")
+		}
+		b.imageURL(attribute, size)
+		b.static(" " + strconv.Itoa(size) + "w")
+	}
+	b.static(`"`)
+}
+
+func (b *builder) imageURL(attribute syntax.Attribute, width int) {
+	b.static(ImageEndpoint + "?src=")
+	if attribute.Bound {
+		b.emit(ir.Op{Kind: ir.OpQuery, A: b.expr(attribute.Value)})
+	} else {
+		b.static(url.QueryEscape(attribute.Text))
+	}
+	b.static("&amp;w=" + strconv.Itoa(width))
+}
+
+func (b *builder) optimises(node *syntax.Component, attribute syntax.Attribute) bool {
+	if !b.images.Enabled() || hasAttribute(node.Attributes, plainAttribute) {
+		return false
+	}
+	if attribute.Bound {
+		return true
+	}
+	return len(attribute.Parts) == 0 && strings.HasPrefix(attribute.Text, "/")
+}
+
+func (b *builder) imageWidths(width int) []int {
+	var sizes []int
+	for _, size := range b.images.Sizes() {
+		if size < width {
+			sizes = append(sizes, size)
+		}
+	}
+	return append(sizes, width)
 }
 
 func (b *builder) loading(node *syntax.Component) string {
@@ -77,7 +130,7 @@ func dimension(attributes []syntax.Attribute, name string) (int, bool) {
 
 func reservedImageAttribute(name string) bool {
 	switch strings.ToLower(name) {
-	case srcAttribute, altAttribute, widthAttribute, heightAttribute, eagerAttribute:
+	case srcAttribute, altAttribute, widthAttribute, heightAttribute, eagerAttribute, plainAttribute:
 		return true
 	default:
 		return false

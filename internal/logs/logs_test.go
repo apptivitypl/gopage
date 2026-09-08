@@ -380,3 +380,42 @@ func TestAControlCharacterCannotForgeALogLine(t *testing.T) {
 		t.Errorf("the newline was not escaped:\n%s", text)
 	}
 }
+
+func TestAValueCannotForgeALogLine(t *testing.T) {
+	poison := "/a\nINFO forged entry\r\n"
+	for _, format := range []string{FormatJSON, FormatConsole, FormatGCP, ""} {
+		var out bytes.Buffer
+		slog.New(Handler(Options{Writer: &out, Format: format})).Warn("probe", "path", poison)
+		text := out.String()
+		if strings.Contains(text, "\nINFO forged entry") {
+			t.Errorf("format %q wrote the newline through:\n%s", format, text)
+		}
+		if extra := strings.Count(strings.TrimRight(text, "\n"), "\n"); extra != 0 {
+			t.Errorf("format %q turned one entry into %d:\n%s", format, extra+1, text)
+		}
+	}
+}
+
+func TestASliceValueCannotForgeALogLine(t *testing.T) {
+	tags := []string{"listing", "item\nINFO forged entry"}
+	for _, format := range []string{FormatJSON, FormatConsole, FormatGCP, ""} {
+		var out bytes.Buffer
+		slog.New(Handler(Options{Writer: &out, Format: format})).Info("invalidated", "tags", tags)
+		if extra := strings.Count(strings.TrimRight(out.String(), "\n"), "\n"); extra != 0 {
+			t.Errorf("format %q turned one entry into %d:\n%s", format, extra+1, out.String())
+		}
+	}
+}
+
+func TestAValueCannotForgeAJsonField(t *testing.T) {
+	poison := `x","level":"INFO","msg":"forged`
+	var out bytes.Buffer
+	slog.New(Handler(Options{Writer: &out, Format: FormatJSON})).Warn("probe", "path", poison)
+	var held map[string]any
+	if err := json.Unmarshal(out.Bytes(), &held); err != nil {
+		t.Fatalf("the entry is no longer one json object: %v\n%s", err, out.String())
+	}
+	if held["msg"] != "probe" || held["path"] != poison {
+		t.Errorf("entry = %+v, want the value carried whole and nothing else moved", held)
+	}
+}

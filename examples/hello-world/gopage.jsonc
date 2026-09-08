@@ -15,7 +15,7 @@
 
   // Prefixes the router refuses to give to a page.
   "routing": {
-    "reserved": ["/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/llms.txt"]
+    "reserved": ["/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/sitemap", "/favicon.ico", "/llms.txt"]
   },
 
   // A stylesheet smaller than inlineLimit is written into the document; anything
@@ -25,6 +25,15 @@
 
   // "partial" sends only the part of the document that changed.
   "nav": {"mode": "partial"},
+
+  // /sitemap.xml and /robots.txt are served without this block. Name crawler
+  // rules and extra sitemaps here, or set a mode to "off" to answer the path
+  // with a route of your own.
+  // "seo": {"robots": {"groups": [{"userAgent": ["*"], "disallow": ["/api"]}]}},
+
+  // "on" serves /_gopage/image and points <Image> at it, so a phone downloads
+  // a phone-sized file. "hosts" lists the remote sources the endpoint may read.
+  // "images": {"mode": "on", "widths": [320, 640, 960, 1280], "hosts": []},
 
   // How a deferred fragment reaches the page: the browser asks for it.
   "fragments": {"deferred": "fetch"},

@@ -7,6 +7,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/diag"
 	"github.com/apptivitypl/gopage/internal/schema"
 	"github.com/apptivitypl/gopage/internal/syntax"
+	"github.com/apptivitypl/gopage/internal/vocab"
 )
 
 const (
@@ -18,6 +19,8 @@ const (
 type Linker struct {
 	patterns []string
 	files    map[string]bool
+	words    vocab.Table
+	locales  []string
 }
 
 func NewLinker(routes []Route) *Linker {
@@ -26,6 +29,14 @@ func NewLinker(routes []Route) *Linker {
 		patterns = append(patterns, route.Pattern)
 	}
 	return &Linker{patterns: patterns, files: map[string]bool{}}
+}
+
+func (l *Linker) Speaking(words vocab.Table, locales []string) *Linker {
+	l.words = words
+	if len(locales) > 1 {
+		l.locales = locales
+	}
+	return l
 }
 
 func (l *Linker) Serving(paths ...string) *Linker {
@@ -120,6 +131,29 @@ func linkPath(attribute *syntax.Attribute) (string, bool) {
 }
 
 func (l *Linker) match(segments []string) bool {
+	if l.matches(segments) {
+		return true
+	}
+	for _, locale := range l.locales {
+		if l.matches(l.spoken(locale, segments)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *Linker) spoken(locale string, segments []string) []string {
+	rest := segments
+	if len(rest) > 0 && rest[0] == locale {
+		rest = rest[1:]
+	}
+	if !l.words.Speaks(locale) {
+		return rest
+	}
+	return patternSegments(l.words.Canonical(locale, "/"+strings.Join(rest, "/")))
+}
+
+func (l *Linker) matches(segments []string) bool {
 	for _, pattern := range l.patterns {
 		if matchSegments(patternSegments(pattern), segments) {
 			return true

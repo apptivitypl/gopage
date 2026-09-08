@@ -759,3 +759,51 @@ func TestGeneratedOutputNeverTriggersARebuild(t *testing.T) {
 		}
 	}
 }
+
+type flaky struct {
+	refuse int
+}
+
+func (f *flaky) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
+	if f.refuse > 0 {
+		f.refuse--
+		if attempt, ok := w.(retryable); ok && attempt.retry(errors.New("connection refused")) {
+			return
+		}
+	}
+	_, _ = w.Write([]byte("hello"))
+}
+
+func flakyServer(t *testing.T, refuse int) *Server {
+	t.Helper()
+	handler := &flaky{refuse: refuse}
+	server := New(func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
+		return handler, nil, nil, nil
+	}, nil)
+	if !server.Rebuild() {
+		t.Fatal("the build must succeed")
+	}
+	return server
+}
+
+func TestARefusedConnectionIsRetried(t *testing.T) {
+	got := get(t, flakyServer(t, Retries))
+	if got.Code != http.StatusOK || got.Body.String() != "hello" {
+		t.Errorf("status = %d, body = %q, want the retry to reach the new process", got.Code, got.Body.String())
+	}
+}
+
+func TestAProcessThatNeverAnswersStillReports502(t *testing.T) {
+	got := get(t, flakyServer(t, Retries+1))
+	if got.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want 502 once the retries are spent", got.Code)
+	}
+}
+
+func TestOnlyASafeMethodIsRetried(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	flakyServer(t, 1).ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/", nil))
+	if recorder.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want 502 because a post may not be sent twice", recorder.Code)
+	}
+}

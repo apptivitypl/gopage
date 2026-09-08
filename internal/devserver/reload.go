@@ -77,13 +77,28 @@ func (s *Server) reload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type retryable interface {
+	retry(error) bool
+}
+
 type injector struct {
 	http.ResponseWriter
 	injected bool
+	started  bool
+	failure  error
 	carry    []byte
 }
 
+func (i *injector) retry(err error) bool {
+	if i.started {
+		return false
+	}
+	i.failure = err
+	return true
+}
+
 func (i *injector) Write(p []byte) (int, error) {
+	i.started = true
 	if i.injected || !plainHTML(i.Header()) {
 		return i.ResponseWriter.Write(p)
 	}
@@ -131,6 +146,7 @@ func (i *injector) Flush() {
 }
 
 func (i *injector) WriteHeader(status int) {
+	i.started = true
 	if plainHTML(i.Header()) {
 		i.Header().Del("Content-Length")
 	}

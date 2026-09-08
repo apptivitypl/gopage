@@ -1,6 +1,7 @@
 package build
 
 import (
+	"errors"
 	"go/parser"
 	"go/token"
 	"os"
@@ -292,5 +293,203 @@ func TestNoMetaProviderWithoutAMetaFunction(t *testing.T) {
 	registry := read(t, dir, "internal/gen/registry.go")
 	if !strings.Contains(registry, "func Meta() map[string]gopage.MetaProvider") {
 		t.Errorf("the registry always declares Meta:\n%s", registry)
+	}
+}
+
+const sitemapPage = `---
+type Props struct {
+	Title string
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Title: "hello"}, nil
+}
+
+func Sitemap(ctx *gopage.Ctx) (gopage.SitemapSeq, error) {
+	return gopage.SitemapOf([]gopage.SitemapEntry{{Path: "/features/one"}}), nil
+}
+---
+<h1>{{ Title }}</h1>
+`
+
+func TestASitemapHookReachesTheRegistry(t *testing.T) {
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": sitemapPage})
+
+	provider := read(t, dir, "internal/gen/features/provider.go")
+	mustParse(t, provider)
+	for _, want := range []string{
+		"func SitemapProvider(request *http.Request) (gopage.SitemapSeq, error)",
+		"return Sitemap(gopage.NewCtx(request, nil))",
+	} {
+		if !strings.Contains(provider, want) {
+			t.Errorf("provider is missing %s:\n%s", want, provider)
+		}
+	}
+	registry := read(t, dir, "internal/gen/registry.go")
+	mustParse(t, registry)
+	for _, want := range []string{
+		"func Sitemap() map[string]gopage.SitemapProvider {",
+		"features.Route: features.SitemapProvider,",
+	} {
+		if !strings.Contains(registry, want) {
+			t.Errorf("registry is missing %s:\n%s", want, registry)
+		}
+	}
+	if app := read(t, dir, "internal/gen/app.go"); !strings.Contains(app, "Sitemap:  Sitemap(),") {
+		t.Errorf("options are missing the sitemap map:\n%s", app)
+	}
+}
+
+func TestASitemapHookIsNotADeferredProp(t *testing.T) {
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": sitemapPage})
+	page := read(t, dir, "internal/gen/features/page.go")
+	mustParse(t, page)
+	if strings.Contains(page, "deferredSitemap") {
+		t.Errorf("Sitemap is a hook, not a deferred prop:\n%s", page)
+	}
+}
+
+func TestAPageWithOnlyASitemapHookIsGenerated(t *testing.T) {
+	source := "---\ntype Props struct{}\n\n" +
+		"func Sitemap(ctx *gopage.Ctx) (gopage.SitemapSeq, error) { return nil, nil }\n---\n<h1>static</h1>\n"
+	dir := buildProject(t, map[string]string{"app/features/page.gopage": source})
+	provider := read(t, dir, "internal/gen/features/provider.go")
+	mustParse(t, provider)
+	if !strings.Contains(provider, "SitemapProvider") {
+		t.Errorf("provider = %q", provider)
+	}
+}
+
+func TestABrokenSitemapHookStopsTheBuild(t *testing.T) {
+	source := "---\ntype Props struct{}\n\n" +
+		"func Sitemap(ctx *gopage.Ctx) error { return nil }\n---\n<h1>static</h1>\n"
+	dir := project(t, withModule(map[string]string{"app/features/page.gopage": source}))
+	_, err := Run(Options{Dir: dir, Runner: &recorder{}})
+	var failure *Error
+	if !errors.As(err, &failure) || !strings.Contains(failure.Render(), "C325") {
+		t.Fatalf("Run: %v, want C325", err)
+	}
+}
+
+const chromePage = `---
+import "example.com/demo/server/chrome"
+
+type Props struct {
+	Nav chrome.Nav
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Nav: chrome.Nav{Home: "/"}}, nil
+}
+---
+<p>{{ Nav.Home }}</p>
+{% for link in Nav.Links %}<a href="/">{{ link.Label }}</a>{% endfor %}
+`
+
+func TestAPropFromAnotherPackageIsGenerated(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/page.gopage": chromePage,
+		"server/chrome/chrome.go": `package chrome
+
+type Nav struct {
+	Home  string
+	Links []Link
+}
+
+type Link struct {
+	Label string
+	Href  string
+}
+`,
+	})
+	page := read(t, dir, "internal/gen/index/page.go")
+	mustParse(t, page)
+	for _, want := range []string{
+		"type extChromeNav struct {",
+		"inner chrome.Nav",
+		"type extChromeNavSeq []chrome.Nav",
+		"gopage.Object((extChromeNav{v.Nav}))",
+		"extChromeLinkSeq(v.inner.Links)",
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("generated page is missing %q:\n%s", want, page)
+		}
+	}
+}
+
+func TestALayoutLoaderGetsItsOwnPackage(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage": "---\ntype Props struct{ Home string }\n\n" +
+			"func Load(ctx *gopage.Ctx) (Props, error) { return Props{Home: \"/\"}, nil }\n---\n" +
+			"<nav>{{ layout.Home }}</nav>{% outlet %}",
+		"app/page.gopage": "<p>home</p>",
+	})
+	source := read(t, dir, RegistryGo)
+	mustParse(t, source)
+	if !strings.Contains(source, "func Layouts() map[string]gopage.PropsProvider") {
+		t.Errorf("registry = %q, want a layout registry", source)
+	}
+	if !strings.Contains(source, "layout.Route:") || !strings.Contains(source, "layout.Provider") {
+		t.Errorf("registry = %q, want the layout wired in", source)
+	}
+	if !strings.Contains(read(t, dir, AppGo), "Layouts:  Layouts(),") {
+		t.Error("the options must carry the layout registry")
+	}
+	provider := read(t, dir, paths.GenRoot+"/layout/provider.go")
+	mustParse(t, provider)
+	if !strings.Contains(provider, "const Route = \"layout\"") {
+		t.Errorf("provider = %q", provider)
+	}
+	mustParse(t, read(t, dir, paths.GenRoot+"/layout/layout.go"))
+}
+
+func TestALayoutWithoutALoaderGetsNoPackage(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage": "<nav>site</nav>{% outlet %}",
+		"app/page.gopage":   "<p>home</p>",
+	})
+	if _, err := os.Stat(filepath.Join(dir, paths.GenRoot, "layout")); err == nil {
+		t.Error("a layout that loads nothing needs no generated package")
+	}
+	if strings.Contains(read(t, dir, RegistryGo), "layout.Route") {
+		t.Error("the registry must name no layout")
+	}
+}
+
+func TestGroupedLayoutsAreNamedApart(t *testing.T) {
+	loader := "---\ntype Props struct{ Home string }\n\n" +
+		"func Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\n---\n" +
+		"<nav>{{ layout.Home }}</nav>{% outlet %}"
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage":            loader,
+		"app/(auth)/layout.gopage":     loader,
+		"app/(auth)/login/page.gopage": "<p>login</p>",
+		"app/page.gopage":              "<p>home</p>",
+	})
+	source := read(t, dir, RegistryGo)
+	for _, want := range []string{"layout.Route:", "layout_auth.Route:", "layout_auth.Provider"} {
+		if !strings.Contains(source, want) {
+			t.Errorf("registry = %q, want %s", source, want)
+		}
+	}
+}
+
+func TestImageSupportIsLinkedOnlyWhenAsked(t *testing.T) {
+	plain := buildProject(t, map[string]string{"app/page.gopage": "<h1>home</h1>"})
+	if got := read(t, plain, AppGo); strings.Contains(got, "images.Support") {
+		t.Errorf("options = %q, want no image support in a project that asks for none", got)
+	}
+
+	optimising := buildProject(t, map[string]string{
+		"app/page.gopage": `<Image src="/photo.jpg" width="400" height="200" alt="a photo" />`,
+		"gopage.jsonc":    `{"images": {"mode": "on", "widths": [320, 640]}}`,
+	})
+	source := read(t, optimising, AppGo)
+	mustParse(t, source)
+	if !strings.Contains(source, "Images:   images.Support(nil),") {
+		t.Errorf("options = %q, want the image support wired in", source)
+	}
+	if !strings.Contains(source, `"github.com/apptivitypl/gopage/images"`) {
+		t.Errorf("options = %q, want the import that links the decoders", source)
 	}
 }

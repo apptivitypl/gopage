@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"fmt"
+	"net/url"
 	"sync"
+	"time"
 
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"github.com/apptivitypl/gopage/internal/ir"
@@ -65,6 +67,10 @@ func (b *Buffer) WriteURL(s string) {
 	b.buf = AppendEscaped(b.buf, s)
 }
 
+func (b *Buffer) WriteQuery(s string) {
+	b.buf = append(b.buf, url.QueryEscape(s)...)
+}
+
 func (b *Buffer) Bytes() []byte {
 	return b.buf
 }
@@ -113,7 +119,10 @@ type Options struct {
 	Markers   bool
 	Catalog   *ir.Catalog
 	Plural    i18n.Rule
+	Now       func() time.Time
+	Zone      *time.Location
 	Preload   string
+	Layouts   []Accessible
 
 	recording int
 }
@@ -137,7 +146,7 @@ type cursor struct {
 
 func renderPlan(chain []*ir.Plan, planIndex int, props Accessible, out *Buffer, opts *Options) error {
 	plan := chain[planIndex]
-	state := scope{plan: plan, props: props}
+	state := scope{plan: plan, props: layered(props, planIndex, opts), clock: opts.Now, zone: opts.Zone}
 	if len(plan.Messages) > 0 {
 		state.catalog = opts.Catalog
 		state.plural = opts.Plural
@@ -188,6 +197,13 @@ func runRange(chain []*ir.Plan, planIndex int, state *scope, out *Buffer, opts *
 				return err
 			}
 			out.WriteURL(value)
+			pc++
+		case ir.OpQuery:
+			value, err := state.text(op.A)
+			if err != nil {
+				return err
+			}
+			out.WriteQuery(value)
 			pc++
 		case ir.OpRaw:
 			value, err := state.text(op.A)

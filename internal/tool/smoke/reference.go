@@ -34,6 +34,7 @@ func ReferenceChecks() []Check {
 		{Path: FeedPath, Status: http.StatusOK, Contains: "event: done"},
 		{Path: "/sitemap.xml", Status: http.StatusOK, Contains: "<loc>http://", ContentType: "application/xml"},
 		{Path: "/robots.txt", Status: http.StatusOK, Contains: "Sitemap: http://"},
+		{Path: "/sitemap.xml", Status: http.StatusOK, Header: "Cache-Control", HeaderValue: "public, max-age=3600, stale-while-revalidate=86400"},
 		{Path: "/en", Status: http.StatusMovedPermanently},
 	}
 }

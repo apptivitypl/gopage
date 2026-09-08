@@ -10,6 +10,7 @@ const (
 	KindInt
 	KindFloat
 	KindString
+	KindTime
 	KindSlice
 	KindOptional
 	KindStruct
@@ -22,6 +23,7 @@ var kindNames = map[Kind]string{
 	KindInt:      "whole number",
 	KindFloat:    "number",
 	KindString:   "string",
+	KindTime:     "time",
 	KindSlice:    "slice",
 	KindOptional: "optional",
 	KindStruct:   "struct",
@@ -56,7 +58,7 @@ func (t Type) GoString() string {
 
 func (t Type) Scalar() bool {
 	switch t.Kind {
-	case KindBool, KindInt, KindFloat, KindString:
+	case KindBool, KindInt, KindFloat, KindString, KindTime:
 		return true
 	default:
 		return false
@@ -75,8 +77,17 @@ type Field struct {
 }
 
 type Struct struct {
-	Name   string
-	Fields []Field
+	Name     string
+	Fields   []Field
+	External bool
+	Local    string
+}
+
+func (s Struct) Display() string {
+	if s.External {
+		return s.Local
+	}
+	return s.Name
 }
 
 func (s Struct) Field(name string) (Field, bool) {

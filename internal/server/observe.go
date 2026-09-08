@@ -47,6 +47,37 @@ func (r *Recorder) Status() int {
 	return r.status
 }
 
+type Trace struct {
+	Route    string
+	Locale   string
+	Path     string
+	Method   string
+	Status   int
+	Cache    string
+	Duration time.Duration
+}
+
+type Reporter func(Trace)
+
+func (a *App) report(recorder *Recorder, r *http.Request, elapsed time.Duration) {
+	if a.onRequest == nil {
+		return
+	}
+	route := ""
+	if matched, _, ok := a.router.Match(r.URL.Path); ok {
+		route = matched.Name
+	}
+	a.onRequest(Trace{
+		Route:    route,
+		Locale:   LocaleOf(r),
+		Path:     r.URL.Path,
+		Method:   r.Method,
+		Status:   recorder.Status(),
+		Cache:    recorder.Header().Get(CacheHeader),
+		Duration: elapsed,
+	})
+}
+
 func (a *App) observe(next http.Handler) http.Handler {
 	project := os.Getenv(logs.ProjectVar)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +94,9 @@ func (a *App) observe(next http.Handler) http.Handler {
 			if raised := recover(); raised != nil {
 				a.panicked(recorder, request, logger, raised, debug.Stack())
 			}
-			a.access(recorder, request, logger, time.Since(started))
+			elapsed := time.Since(started)
+			a.access(recorder, request, logger, elapsed)
+			a.report(recorder, request, elapsed)
 		}()
 		next.ServeHTTP(recorder, request)
 	})

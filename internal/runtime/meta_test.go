@@ -100,3 +100,43 @@ func TestMetaExposesItsAlternates(t *testing.T) {
 		t.Errorf("value = %+v, ok = %v", value, ok)
 	}
 }
+
+func TestTheWiderMetaFieldsAreReadable(t *testing.T) {
+	meta := Meta{Type: "article", URL: "https://x/a", Locale: "pl", Card: "summary", Site: "@x"}
+	for field, want := range map[string]string{
+		"Type": "article", "URL": "https://x/a", "Locale": "pl", "Card": "summary", "Site": "@x",
+	} {
+		value, ok := meta.Get([]string{field})
+		if !ok || value.Str != want {
+			t.Errorf("%s = %q, ok = %v", field, value.Str, ok)
+		}
+	}
+	if _, ok := meta.Get([]string{"Nope"}); ok {
+		t.Error("an unknown field is missing")
+	}
+}
+
+func TestAQueryValueIsPercentEncoded(t *testing.T) {
+	var buffer Buffer
+	buffer.WriteQuery("/photos/a b&c.jpg")
+	if got := string(buffer.Bytes()); got != "%2Fphotos%2Fa+b%26c.jpg" {
+		t.Errorf("query = %q", got)
+	}
+}
+
+func TestLocaleAlternatesReadAsASequenceOfStrings(t *testing.T) {
+	list := Locales{"en", "pl"}
+	if list.Len() != 2 || list.At(1).Str != "pl" {
+		t.Fatalf("list = %+v", list)
+	}
+	for _, index := range []int{-1, 2} {
+		if got := list.At(index); got.Kind != KindNil {
+			t.Errorf("At(%d) = %+v", index, got)
+		}
+	}
+	meta := Meta{LocaleAlternates: list}
+	value, ok := meta.Get([]string{LocaleAlternatesField})
+	if !ok || value.Sequence().Len() != 2 {
+		t.Errorf("value = %+v, ok = %v", value, ok)
+	}
+}

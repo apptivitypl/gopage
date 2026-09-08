@@ -8,7 +8,11 @@ import (
 	"github.com/apptivitypl/gopage/internal/diag"
 )
 
-const Debounce = 120 * time.Millisecond
+const (
+	Debounce = 120 * time.Millisecond
+	Backoff  = 50 * time.Millisecond
+	Retries  = 3
+)
 
 type Build func() (http.Handler, []diag.Diagnostic, map[string]string, error)
 
@@ -88,8 +92,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wrapped := &injector{ResponseWriter: w}
-	held.handler.ServeHTTP(wrapped, r)
+	handler := held.handler
+	for attempt := 0; handler != nil; attempt++ {
+		handler.ServeHTTP(wrapped, r)
+		if wrapped.failure == nil || attempt == Retries || !repeatable(r) {
+			break
+		}
+		wrapped.failure = nil
+		time.Sleep(Backoff)
+		handler = s.current.Load().handler
+	}
+	if wrapped.failure != nil {
+		http.Error(w, "gopage dev: the application is not answering: "+wrapped.failure.Error(), http.StatusBadGateway)
+		return
+	}
 	wrapped.finish()
+}
+
+func repeatable(r *http.Request) bool {
+	return r.Method == http.MethodGet || r.Method == http.MethodHead
 }
 
 func errorsIn(diagnostics []diag.Diagnostic) bool {

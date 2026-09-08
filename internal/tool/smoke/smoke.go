@@ -52,6 +52,7 @@ func Checks() []Check {
 		{Path: "/nope", Status: http.StatusNotFound, Contains: "place-items-center"},
 		{Path: "/sitemap.xml", Status: http.StatusOK, Contains: "<loc>http://", ContentType: "application/xml"},
 		{Path: "/robots.txt", Status: http.StatusOK, Contains: "Sitemap: http://", ContentType: "text/plain"},
+		{Path: "/sitemap.xml", Status: http.StatusOK, Header: "Cache-Control", HeaderValue: "public, max-age=3600, stale-while-revalidate=86400"},
 		{Path: "/llms.txt", Status: http.StatusOK, Contains: "## Pages", ContentType: "text/plain"},
 		{Path: "/api/stories", Status: http.StatusOK, ContentType: "application/json", Contains: `"title"`},
 	}

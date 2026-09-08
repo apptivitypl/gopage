@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -8,7 +9,10 @@ import (
 	"github.com/apptivitypl/gopage/internal/ir"
 )
 
-const CountPlaceholder = "{count}"
+const (
+	CountArgument    = "count"
+	CountPlaceholder = "{" + CountArgument + "}"
+)
 
 func (s *scope) message(node ir.ExprNode) (Value, error) {
 	form := i18n.FormOther
@@ -30,6 +34,26 @@ func (s *scope) message(node ir.ExprNode) (Value, error) {
 		return String(text), nil
 	}
 	return String(strings.ReplaceAll(text, CountPlaceholder, countText)), nil
+}
+
+func (s *scope) substitute(node ir.ExprNode) (Value, error) {
+	text, err := s.text(node.A)
+	if err != nil {
+		return Nil(), err
+	}
+	pair, ok := s.plan.Expr(node.B)
+	if !ok || pair.Kind != ir.ExprPair {
+		return Nil(), fmt.Errorf("expression %d is not an argument pair", node.B)
+	}
+	name, err := s.text(pair.A)
+	if err != nil {
+		return Nil(), err
+	}
+	value, err := s.text(pair.B)
+	if err != nil {
+		return Nil(), err
+	}
+	return String(strings.ReplaceAll(text, "{"+name+"}", value)), nil
 }
 
 func (s *scope) formOf(number float64) i18n.Form {

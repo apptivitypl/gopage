@@ -23,11 +23,14 @@ These are not style preferences. Every one of them fails a build.
 6. **The config schema and the Go struct move together.** `schema/gopage.schema.json` is checked
    against `internal/config` by reflection; a field added to one and not the other fails the build.
 7. **The committed examples are the templates' output.** `gopagetool example` regenerates
-   `examples/hello-world` and `examples/blog` and fails on any difference. Fix one by changing the
-   template and running `gopagetool example --update`, never by editing the example. They require a
-   published gopage, so to build one against your checkout write a workspace first:
-   `gopagetool example --workspace`. It names the version the example's own `go.mod` pins, and
-   `GOWORK=off` runs the tool while the workspace is broken.
+   `examples/hello-world`, `examples/blog` and `examples/catalog`, and fails on any difference. Fix
+   one by changing the template and running `gopagetool example --update`, never by editing the
+   example. They require a published gopage, so to build one against your checkout write a workspace
+   first: `gopagetool example --workspace`. It names the version the example's own `go.mod` pins,
+   and `GOWORK=off` runs the tool while the workspace is broken. `gopagetool example --verify`
+   builds them with the published gopage they pin rather than with this checkout, because that is
+   what someone outside the repository has; a branch that changes generated code therefore does not
+   fail it, and the examples are re-pinned after the release that publishes the change.
 8. **The version lives in the tag, not in the tree.** See Releases below.
 9. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
@@ -66,9 +69,18 @@ internal/compile/    the compiler frontend, and every diagnostic
 internal/ir/         the render plan and its codec
 internal/runtime/    the plan interpreter
 internal/server/     routing, caching, fragments, the HTTP surface
+internal/cache/      the bounded response cache and the policy a loader records
+internal/reply/      the status, headers and cookies a loader asks for
+internal/vocab/      locale prefixes, and the segment each locale publishes
+internal/seo/        the sitemap and robots.txt documents
+internal/image/      decoding, scaling and re-encoding behind /_gopage/image
+internal/og/         the open graph card
+og/                  the public wrapper an app imports to draw one
+images/              the public wrapper the generated code imports when images are on
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
 internal/scaffold/   the templates gopage new writes
+internal/devserver/  the process gopage dev supervises, and the proxy in front of it
 internal/demo/       the node server the demo target ships
 examples/            the templates' output, committed and checked
 npm/                 the hand-written half of the npm packages
@@ -97,7 +109,7 @@ nothing the second time. That makes a half-finished release recoverable: dispatc
 tool skips what already landed.
 
 Nothing in CI checks whether main has changes waiting for a release, because a repository that
-carries no version has nothing to compare against. The consequence is deliberate — `gopagetool ci`
+carries no version has nothing to compare against. The consequence is deliberate: `gopagetool ci`
 neither reaches the network nor reads git history, so it answers the same question offline and on a
 shallow clone as it does on a release runner.
 

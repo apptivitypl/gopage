@@ -267,7 +267,6 @@ func TestMalformedMessageCallsAreReported(t *testing.T) {
 		"{{ t() }}",
 		"{{ t(key) }}",
 		`{{ t("a", 3) }}`,
-		`{{ t("a", other = 3) }}`,
 		`{{ t("a", count 3) }}`,
 		`{{ t("a", count = ) }}`,
 		`{{ t("a" }}`,
@@ -278,6 +277,23 @@ func TestMalformedMessageCallsAreReported(t *testing.T) {
 		if !bag.HasErrors() {
 			t.Errorf("%q was accepted", source)
 		}
+	}
+}
+
+func TestAMessageTakesNamedArguments(t *testing.T) {
+	doc, bag := parse(t, `{{ t("jobs.in_city", city = City, count = 3) }}`)
+	if bag.HasErrors() {
+		t.Fatalf("diagnostics = %+v", bag.Items())
+	}
+	call, ok := doc.Nodes[0].(*Interpolation).Expr.(*MessageCall)
+	if !ok {
+		t.Fatalf("node = %#v", doc.Nodes[0])
+	}
+	if len(call.Args) != 1 || call.Args[0].Name != "city" {
+		t.Errorf("args = %+v", call.Args)
+	}
+	if call.Count == nil {
+		t.Error("count keeps its own place")
 	}
 }
 

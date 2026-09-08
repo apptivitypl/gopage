@@ -424,3 +424,28 @@ func TestServeReportsAFailureAfterTheListenerIsUp(t *testing.T) {
 		t.Error("a certificate that does not exist must be reported")
 	}
 }
+
+func TestAnOrphanedDevServerGivesUp(t *testing.T) {
+	plain := context.Background()
+	if got := untilOrphaned(plain, time.Millisecond); got != plain {
+		t.Error("outside dev the context passes through untouched")
+	}
+	t.Setenv(logs.DevVar, "1")
+	ctx, cancel := context.WithCancel(context.Background())
+	watched := untilOrphaned(ctx, time.Millisecond)
+	if watched.Err() != nil {
+		t.Fatal("the watch must not fire while the parent is alive")
+	}
+	cancel()
+	<-watched.Done()
+}
+
+func TestADeadParentEndsTheDevServer(t *testing.T) {
+	parent := 4242
+	watched := watchParent(context.Background(), time.Millisecond, func() int { return parent })
+	if watched.Err() != nil {
+		t.Fatal("the watch must not fire while the parent is alive")
+	}
+	parent = 1
+	<-watched.Done()
+}

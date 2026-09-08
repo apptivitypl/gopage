@@ -119,6 +119,7 @@ func (b *builder) attributeValue(attribute syntax.Attribute, field schema.Field)
 	if attribute.Bound {
 		return b.expr(attribute.Value)
 	}
+	b.interpolated(attribute)
 	if attribute.Value == nil && attribute.Text == "" && field.Type.Kind == schema.KindBool {
 		return b.boolean(true)
 	}

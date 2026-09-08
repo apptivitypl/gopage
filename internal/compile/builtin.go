@@ -12,14 +12,15 @@ import (
 )
 
 const (
-	FormComponent  = "Form"
-	FieldComponent = "Field"
-	ImageComponent = "Image"
-	nameAttribute  = "name"
-	labelAttribute = "label"
-	typeAttribute  = "type"
-	asAttribute    = "as"
-	textareaTag    = "textarea"
+	methodAttribute = "method"
+	FormComponent   = "Form"
+	FieldComponent  = "Field"
+	ImageComponent  = "Image"
+	nameAttribute   = "name"
+	labelAttribute  = "label"
+	typeAttribute   = "type"
+	asAttribute     = "as"
+	textareaTag     = "textarea"
 )
 
 var builtins = map[string]bool{FormComponent: true, FieldComponent: true, ImageComponent: true}
@@ -51,11 +52,19 @@ func (b *builder) formComponent(node *syntax.Component) {
 	for _, attribute := range node.Attributes {
 		b.attribute(attribute)
 	}
-	b.static(`><input type="hidden" name="` + csrf.Field + `" value="`)
-	b.emit(ir.Op{Kind: ir.OpText, A: b.rootPath(form.Root, "Token")})
-	b.static(`">`)
+	b.static(">")
+	if !Reading(node.Attributes) {
+		b.static(`<input type="hidden" name="` + csrf.Field + `" value="`)
+		b.emit(ir.Op{Kind: ir.OpText, A: b.rootPath(form.Root, "Token")})
+		b.static(`">`)
+	}
 	b.nodes(node.Children)
 	b.static("</form>")
+}
+
+func Reading(attributes []syntax.Attribute) bool {
+	method, ok := literal(attributes, methodAttribute)
+	return ok && strings.EqualFold(method, "get")
 }
 
 func (b *builder) fieldComponent(node *syntax.Component) {

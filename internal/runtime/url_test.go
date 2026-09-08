@@ -83,3 +83,23 @@ func TestRenderRejectsADanglingURLExpression(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+func TestRenderEncodesAQueryOp(t *testing.T) {
+	plan := planOf(`<img src="/i?src=">`, []ir.Op{
+		{Kind: ir.OpStatic, A: 0, B: 17},
+		{Kind: ir.OpQuery, A: 0},
+		{Kind: ir.OpStatic, A: 17, B: 2},
+	}, [][]string{{"Src"}})
+
+	got := render(t, []*ir.Plan{plan}, Map{"Src": String("/photos/a b.jpg")})
+	if got != `<img src="/i?src=%2Fphotos%2Fa+b.jpg">` {
+		t.Errorf("render = %q", got)
+	}
+}
+
+func TestRenderRejectsADanglingQueryExpression(t *testing.T) {
+	plan := planOf("", []ir.Op{{Kind: ir.OpQuery, A: 7}}, nil)
+	if err := Render([]*ir.Plan{plan}, Map{}, NewBuffer(8)); err == nil {
+		t.Error("a dangling expression was accepted")
+	}
+}

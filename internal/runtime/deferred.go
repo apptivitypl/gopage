@@ -63,7 +63,7 @@ func RenderFragment(plan *ir.Plan, fragment ir.Fragment, props Accessible, out *
 	if !ok {
 		return nil
 	}
-	state := scope{plan: plan, props: props}
+	state := scope{plan: plan, props: layered(props, 0, &opts)}
 	if len(plan.Messages) > 0 {
 		state.catalog = opts.Catalog
 		state.plural = opts.Plural

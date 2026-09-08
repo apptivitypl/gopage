@@ -56,5 +56,5 @@ gopage build --target native && ./dist/server
 
 ---
 
-Generated from the `blog` template. Change the template rather than this folder; see
-[CONTRIBUTING](../../CONTRIBUTING.md).
+Everything here but this page is generated from the `blog` template. Change the template
+rather than the folder; see [CONTRIBUTING](../../CONTRIBUTING.md).

@@ -37,6 +37,11 @@ type Security struct {
 	MaxBodySize    string   `json:"maxBodySize,omitempty"`
 	TrustedOrigins []string `json:"trustedOrigins,omitempty"`
 	MaxConnections int      `json:"maxConnections,omitempty"`
+	PrivateCookies []string `json:"privateCookies,omitempty"`
+}
+
+func (s Security) Personal(name string) bool {
+	return slices.Contains(s.PrivateCookies, name)
 }
 
 const (
@@ -61,6 +66,18 @@ type I18n struct {
 	DefaultLocale string   `json:"defaultLocale,omitempty"`
 	Locales       []string `json:"locales,omitempty"`
 	PrefixDefault bool     `json:"prefixDefault,omitempty"`
+	Timezone      string   `json:"timezone,omitempty"`
+}
+
+func (i I18n) Zone() *time.Location {
+	if i.Timezone == "" {
+		return time.UTC
+	}
+	zone, err := time.LoadLocation(i.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return zone
 }
 
 type NavMode string
@@ -79,7 +96,43 @@ func (n Nav) Differential() bool {
 }
 
 type Routing struct {
-	Reserved []string `json:"reserved,omitempty"`
+	Reserved  []string                     `json:"reserved,omitempty"`
+	Aliases   map[string]map[string]string `json:"aliases,omitempty"`
+	Normalize Normalize                    `json:"normalize,omitempty"`
+}
+
+type Normalize struct {
+	TrailingSlash string `json:"trailingSlash,omitempty"`
+	Case          string `json:"case,omitempty"`
+	Diacritics    string `json:"diacritics,omitempty"`
+}
+
+const (
+	SlashStrip   = "strip"
+	SlashKeep    = "keep"
+	CaseLower    = "lower"
+	FoldMarks    = "fold"
+	NormalizeOff = "off"
+)
+
+func (n Normalize) Strips() bool {
+	return n.TrailingSlash == SlashStrip
+}
+
+func (n Normalize) Keeps() bool {
+	return n.TrailingSlash == SlashKeep
+}
+
+func (n Normalize) Lowers() bool {
+	return n.Case == CaseLower
+}
+
+func (n Normalize) Folds() bool {
+	return n.Diacritics == FoldMarks
+}
+
+func (n Normalize) Any() bool {
+	return n.Strips() || n.Keeps() || n.Lowers() || n.Folds()
 }
 
 type Host struct {
@@ -144,6 +197,12 @@ type Client struct {
 	React string `json:"react,omitempty"`
 }
 
+type Cache struct {
+	Variants int `json:"variants,omitempty"`
+}
+
+const DefaultVariants = 16
+
 const (
 	ReactEngine  = "react"
 	PreactEngine = "preact"
@@ -192,6 +251,144 @@ func (f Fragments) Wait() time.Duration {
 	return budget
 }
 
+type SEOMode string
+
+const (
+	SEOAuto SEOMode = "auto"
+	SEOOff  SEOMode = "off"
+)
+
+type ProbeMode string
+
+const (
+	ProbeMeta ProbeMode = "meta"
+	ProbeOff  ProbeMode = "off"
+)
+
+const (
+	DefaultSitemapLimit = 50000
+	DefaultSEOTTL       = time.Hour
+	DefaultSEOStale     = 24 * time.Hour
+)
+
+var changeFrequencies = []string{"always", "hourly", "daily", "weekly", "monthly", "yearly", "never"}
+
+type Sitemap struct {
+	Mode       SEOMode   `json:"mode,omitempty"`
+	Limit      int       `json:"limit,omitempty"`
+	Probe      ProbeMode `json:"probe,omitempty"`
+	TTL        string    `json:"ttl,omitempty"`
+	Stale      string    `json:"stale,omitempty"`
+	ChangeFreq string    `json:"changefreq,omitempty"`
+	Priority   float64   `json:"priority,omitempty"`
+	Exclude    []string  `json:"exclude,omitempty"`
+}
+
+func (s Sitemap) Enabled() bool {
+	return s.Mode != SEOOff
+}
+
+func (s Sitemap) Probes() bool {
+	return s.Enabled() && s.Probe != ProbeOff
+}
+
+func (s Sitemap) Entries() int {
+	if s.Limit <= 0 || s.Limit > DefaultSitemapLimit {
+		return DefaultSitemapLimit
+	}
+	return s.Limit
+}
+
+func (s Sitemap) Freshness() (time.Duration, time.Duration) {
+	return freshness(s.TTL, s.Stale)
+}
+
+type RobotsGroup struct {
+	UserAgent  []string `json:"userAgent,omitempty"`
+	Allow      []string `json:"allow,omitempty"`
+	Disallow   []string `json:"disallow,omitempty"`
+	CrawlDelay int      `json:"crawlDelay,omitempty"`
+}
+
+type Robots struct {
+	Mode     SEOMode       `json:"mode,omitempty"`
+	TTL      string        `json:"ttl,omitempty"`
+	Stale    string        `json:"stale,omitempty"`
+	Groups   []RobotsGroup `json:"groups,omitempty"`
+	Sitemaps []string      `json:"sitemaps,omitempty"`
+}
+
+func (r Robots) Enabled() bool {
+	return r.Mode != SEOOff
+}
+
+func (r Robots) Freshness() (time.Duration, time.Duration) {
+	return freshness(r.TTL, r.Stale)
+}
+
+type ImageMode string
+
+const (
+	ImagesOn  ImageMode = "on"
+	ImagesOff ImageMode = "off"
+)
+
+type Images struct {
+	Mode    ImageMode `json:"mode,omitempty"`
+	Widths  []int     `json:"widths,omitempty"`
+	Quality int       `json:"quality,omitempty"`
+	Formats []string  `json:"formats,omitempty"`
+	Hosts   []string  `json:"hosts,omitempty"`
+	TTL     string    `json:"ttl,omitempty"`
+}
+
+var defaultWidths = []int{320, 640, 960, 1280, 1920}
+
+func (i Images) Enabled() bool {
+	return i.Mode == ImagesOn
+}
+
+func (i Images) Sizes() []int {
+	if len(i.Widths) == 0 {
+		return defaultWidths
+	}
+	return i.Widths
+}
+
+func (i Images) Sharpness() int {
+	if i.Quality <= 0 || i.Quality > 100 {
+		return DefaultImageQuality
+	}
+	return i.Quality
+}
+
+func (i Images) Freshness() (time.Duration, time.Duration) {
+	return freshness(i.TTL, "")
+}
+
+func (i Images) Serves(host string) bool {
+	return slices.Contains(i.Hosts, host)
+}
+
+const DefaultImageQuality = 75
+
+type SEO struct {
+	Sitemap Sitemap `json:"sitemap,omitempty"`
+	Robots  Robots  `json:"robots,omitempty"`
+}
+
+func freshness(ttl, stale string) (time.Duration, time.Duration) {
+	fresh, err := time.ParseDuration(ttl)
+	if ttl == "" || err != nil || fresh < 0 {
+		fresh = DefaultSEOTTL
+	}
+	held, err := time.ParseDuration(stale)
+	if stale == "" || err != nil || held < 0 {
+		held = DefaultSEOStale
+	}
+	return fresh, held
+}
+
 type Config struct {
 	Schema    string     `json:"$schema,omitempty"`
 	App       App        `json:"app,omitempty"`
@@ -200,14 +397,17 @@ type Config struct {
 	I18n      I18n       `json:"i18n,omitempty"`
 	Routing   Routing    `json:"routing,omitempty"`
 	Nav       Nav        `json:"nav,omitempty"`
+	SEO       SEO        `json:"seo,omitempty"`
+	Images    Images     `json:"images,omitempty"`
 	Hosts     []Host     `json:"hosts,omitempty"`
 	Security  Security   `json:"security,omitempty"`
 	Client    Client     `json:"client,omitempty"`
+	Cache     Cache      `json:"cache,omitempty"`
 	Redirects []Redirect `json:"redirects,omitempty"`
 	Rewrites  []Rewrite  `json:"rewrites,omitempty"`
 }
 
-var defaultReserved = []string{"/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/favicon.ico"}
+var defaultReserved = []string{"/api", "/_gopage", "/robots.txt", "/sitemap.xml", "/sitemap", "/favicon.ico"}
 
 func Default() Config {
 	return Config{
@@ -217,7 +417,12 @@ func Default() Config {
 			Locales:       []string{"en"},
 		},
 		Routing:   Routing{Reserved: slices.Clone(defaultReserved)},
+		Cache:     Cache{Variants: DefaultVariants},
 		Fragments: Fragments{Deferred: DeferredFetch},
+		SEO: SEO{
+			Sitemap: Sitemap{Mode: SEOAuto, Limit: DefaultSitemapLimit, Probe: ProbeMeta},
+			Robots:  Robots{Mode: SEOAuto},
+		},
 	}
 }
 
@@ -269,6 +474,9 @@ func describe(source []byte, err error) error {
 }
 
 func normalize(config *Config) {
+	if config.Cache.Variants == 0 {
+		config.Cache.Variants = DefaultVariants
+	}
 	if config.Fragments.Deferred == "" {
 		config.Fragments.Deferred = DeferredFetch
 	}
@@ -286,6 +494,18 @@ func normalize(config *Config) {
 	}
 	if config.Nav.Mode == "" {
 		config.Nav.Mode = NavOff
+	}
+	if config.SEO.Sitemap.Mode == "" {
+		config.SEO.Sitemap.Mode = SEOAuto
+	}
+	if config.SEO.Sitemap.Probe == "" {
+		config.SEO.Sitemap.Probe = ProbeMeta
+	}
+	if config.SEO.Sitemap.Limit == 0 {
+		config.SEO.Sitemap.Limit = DefaultSitemapLimit
+	}
+	if config.SEO.Robots.Mode == "" {
+		config.SEO.Robots.Mode = SEOAuto
 	}
 	if len(config.Routing.Reserved) == 0 {
 		config.Routing.Reserved = slices.Clone(defaultReserved)
@@ -340,6 +560,11 @@ func validateSecurity(security Security) error {
 		return fmt.Errorf("%s: security.maxConnections %d must not be negative, drop the key for no limit",
 			FileName, security.MaxConnections)
 	}
+	for _, name := range security.PrivateCookies {
+		if name == "" || strings.ContainsAny(name, " \t;=,") {
+			return fmt.Errorf("%s: security.privateCookies entry %q is not a cookie name", FileName, name)
+		}
+	}
 	if security.MaxBodySize == "" {
 		return nil
 	}
@@ -354,6 +579,185 @@ func validateSecurity(security Security) error {
 	return nil
 }
 
+func validateSEO(seo SEO) error {
+	if err := validateSitemap(seo.Sitemap); err != nil {
+		return err
+	}
+	return validateRobots(seo.Robots)
+}
+
+func validateSitemap(sitemap Sitemap) error {
+	if err := seoMode(sitemap.Mode, "seo.sitemap.mode"); err != nil {
+		return err
+	}
+	switch sitemap.Probe {
+	case "", ProbeMeta, ProbeOff:
+	default:
+		return fmt.Errorf("%s: unknown seo.sitemap.probe %q, want meta or off", FileName, sitemap.Probe)
+	}
+	if sitemap.Limit < 0 || sitemap.Limit > DefaultSitemapLimit {
+		return fmt.Errorf("%s: seo.sitemap.limit %d must be between 1 and %d, the ceiling the sitemap protocol sets",
+			FileName, sitemap.Limit, DefaultSitemapLimit)
+	}
+	if sitemap.ChangeFreq != "" && !slices.Contains(changeFrequencies, sitemap.ChangeFreq) {
+		return fmt.Errorf("%s: unknown seo.sitemap.changefreq %q, want one of %s",
+			FileName, sitemap.ChangeFreq, strings.Join(changeFrequencies, ", "))
+	}
+	if sitemap.Priority < 0 || sitemap.Priority > 1 {
+		return fmt.Errorf("%s: seo.sitemap.priority %v must be between 0 and 1", FileName, sitemap.Priority)
+	}
+	if err := freshnessFields(sitemap.TTL, sitemap.Stale, "seo.sitemap"); err != nil {
+		return err
+	}
+	return absolutePaths(sitemap.Exclude, "seo.sitemap.exclude")
+}
+
+func validateRobots(robots Robots) error {
+	if err := seoMode(robots.Mode, "seo.robots.mode"); err != nil {
+		return err
+	}
+	if err := freshnessFields(robots.TTL, robots.Stale, "seo.robots"); err != nil {
+		return err
+	}
+	for _, group := range robots.Groups {
+		if len(group.UserAgent) == 0 {
+			return fmt.Errorf("%s: a robots group needs at least one userAgent, write [\"*\"] for every crawler", FileName)
+		}
+		if group.CrawlDelay < 0 {
+			return fmt.Errorf("%s: seo.robots crawlDelay %d must not be negative", FileName, group.CrawlDelay)
+		}
+		if err := absolutePaths(group.Allow, "seo.robots allow"); err != nil {
+			return err
+		}
+		if err := absolutePaths(group.Disallow, "seo.robots disallow"); err != nil {
+			return err
+		}
+	}
+	for _, entry := range robots.Sitemaps {
+		if strings.HasPrefix(entry, "/") || strings.HasPrefix(entry, "http://") || strings.HasPrefix(entry, "https://") {
+			continue
+		}
+		return fmt.Errorf("%s: seo.robots.sitemaps entry %q must start with / or with a scheme", FileName, entry)
+	}
+	return nil
+}
+
+func seoMode(mode SEOMode, field string) error {
+	switch mode {
+	case "", SEOAuto, SEOOff:
+		return nil
+	default:
+		return fmt.Errorf("%s: unknown %s %q, want auto or off", FileName, field, mode)
+	}
+}
+
+func freshnessFields(ttl, stale, field string) error {
+	for name, value := range map[string]string{"ttl": ttl, "stale": stale} {
+		if value == "" {
+			continue
+		}
+		span, err := time.ParseDuration(value)
+		if err != nil {
+			return fmt.Errorf("%s: %s.%s %q is not a duration, want something like \"1h\"", FileName, field, name, value)
+		}
+		if span < 0 {
+			return fmt.Errorf("%s: %s.%s %q must not be negative", FileName, field, name, value)
+		}
+	}
+	return nil
+}
+
+func absolutePaths(paths []string, field string) error {
+	for _, path := range paths {
+		if !strings.HasPrefix(path, "/") {
+			return fmt.Errorf("%s: %s entry %q must start with /", FileName, field, path)
+		}
+	}
+	return nil
+}
+
+func validateAliases(config Config) error {
+	for locale, aliases := range config.Routing.Aliases {
+		if !slices.Contains(config.I18n.Locales, locale) {
+			return fmt.Errorf("%s: routing.aliases names %q, which is not a configured locale", FileName, locale)
+		}
+		taken := make(map[string]string, len(aliases))
+		for canonical, public := range aliases {
+			if err := segment(canonical, locale); err != nil {
+				return err
+			}
+			if err := segment(public, locale); err != nil {
+				return err
+			}
+			if other, clash := taken[public]; clash {
+				return fmt.Errorf("%s: routing.aliases maps %s and %s of %q onto the same segment %q",
+					FileName, other, canonical, locale, public)
+			}
+			taken[public] = canonical
+		}
+		for canonical := range aliases {
+			if other, clash := taken[canonical]; clash && other != canonical {
+				return fmt.Errorf("%s: routing.aliases for %q gives %q two meanings", FileName, locale, canonical)
+			}
+		}
+	}
+	return nil
+}
+
+func segment(value, locale string) error {
+	if value == "" || strings.ContainsAny(value, "/[]?# ") {
+		return fmt.Errorf("%s: routing.aliases for %q holds %q, which is not a path segment", FileName, locale, value)
+	}
+	return nil
+}
+
+func validateNormalize(normalize Normalize) error {
+	switch normalize.TrailingSlash {
+	case "", NormalizeOff, SlashStrip, SlashKeep:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.trailingSlash %q, want strip or keep",
+			FileName, normalize.TrailingSlash)
+	}
+	switch normalize.Case {
+	case "", NormalizeOff, CaseLower:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.case %q, want lower", FileName, normalize.Case)
+	}
+	switch normalize.Diacritics {
+	case "", NormalizeOff, FoldMarks:
+	default:
+		return fmt.Errorf("%s: unknown routing.normalize.diacritics %q, want fold", FileName, normalize.Diacritics)
+	}
+	return nil
+}
+
+func validateImages(images Images) error {
+	switch images.Mode {
+	case "", ImagesOn, ImagesOff:
+	default:
+		return fmt.Errorf("%s: unknown images.mode %q, want on or off", FileName, images.Mode)
+	}
+	if images.Quality < 0 || images.Quality > 100 {
+		return fmt.Errorf("%s: images.quality %d must be between 1 and 100", FileName, images.Quality)
+	}
+	for _, width := range images.Widths {
+		if width < 1 || width > MaxImageWidth {
+			return fmt.Errorf("%s: images.widths holds %d, want a width between 1 and %d", FileName, width, MaxImageWidth)
+		}
+	}
+	for _, host := range images.Hosts {
+		if host == "" || strings.ContainsAny(host, "/:") {
+			return fmt.Errorf("%s: images.hosts entry %q is not a host name", FileName, host)
+		}
+	}
+	if err := freshnessFields(images.TTL, "", "images"); err != nil {
+		return err
+	}
+	return nil
+}
+
+const MaxImageWidth = 4096
+
 func validate(config Config) error {
 	if config.CSS.Engine != "" && config.CSS.Engine != EnginePlain && config.CSS.Engine != EngineTailwind {
 		return fmt.Errorf("%s: unknown css engine %q, want plain or tailwind", FileName, config.CSS.Engine)
@@ -364,6 +768,10 @@ func validate(config Config) error {
 	if config.Client.React != "" && !slices.Contains(reactEngines, config.Client.React) {
 		return fmt.Errorf("%s: unknown react engine %q, want react or preact", FileName, config.Client.React)
 	}
+	if config.Cache.Variants < 0 {
+		return fmt.Errorf("%s: cache.variants is %d, and a route holds at least one entry",
+			FileName, config.Cache.Variants)
+	}
 	if err := validateFragments(config.Fragments); err != nil {
 		return err
 	}
@@ -373,10 +781,28 @@ func validate(config Config) error {
 	if err := validateCSS(config.CSS); err != nil {
 		return err
 	}
+	if err := validateSEO(config.SEO); err != nil {
+		return err
+	}
+	if err := validateAliases(config); err != nil {
+		return err
+	}
+	if err := validateImages(config.Images); err != nil {
+		return err
+	}
+	if err := validateNormalize(config.Routing.Normalize); err != nil {
+		return err
+	}
 	switch config.I18n.Mode {
 	case ModePath, ModeSubdomain, ModeSingle:
 	default:
 		return fmt.Errorf("%s: unknown i18n mode %q, want path, subdomain or single", FileName, config.I18n.Mode)
+	}
+	if config.I18n.Timezone != "" {
+		if _, err := time.LoadLocation(config.I18n.Timezone); err != nil {
+			return fmt.Errorf("%s: i18n.timezone %q is not a zone the system knows: %w",
+				FileName, config.I18n.Timezone, err)
+		}
 	}
 	for _, locale := range config.I18n.Locales {
 		if reserved := config.Reserves("/" + locale); reserved {

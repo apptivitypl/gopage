@@ -9,7 +9,8 @@ import (
 )
 
 var metaFields = []string{"Title", "Description", "Canonical", "Image", "Robots",
-	runtime.HeadField, runtime.AlternatesField}
+	"Type", "URL", "Locale", "Card", "Site",
+	runtime.HeadField, runtime.AlternatesField, runtime.LocaleAlternatesField}
 
 var formSections = []string{"Values", "Errors"}
 
@@ -47,5 +48,5 @@ func formPath(rest []string) bool {
 }
 
 func RootNames() []string {
-	return []string{action.FlashRoot, form.Root, runtime.LocaleRoot, runtime.MetaRoot}
+	return []string{action.FlashRoot, form.Root, runtime.LayoutRoot, runtime.LocaleRoot, runtime.MetaRoot}
 }
