@@ -62,13 +62,30 @@ func TestAContextWithoutARecorderStillAnswers(t *testing.T) {
 
 func TestKeyIsStableAndSeparated(t *testing.T) {
 	key := Key{Host: "example.com", Locale: "pl", Path: "/listings/1", Query: "page=2", Variant: "v1"}
-	if got := key.String(); got != "example.com|pl|/listings/1|page=2|v1" {
+	if got := key.String(); got != "11:example.com2:pl11:/listings/16:page=22:v1" {
 		t.Errorf("key = %q", got)
 	}
-	first := Key{Path: "/a|b"}.String()
-	second := Key{Path: "/a", Query: "b"}.String()
-	if first == second {
-		t.Errorf("keys must not collide: %q", first)
+	if key.String() != (Key{Host: "example.com", Locale: "pl", Path: "/listings/1",
+		Query: "page=2", Variant: "v1"}).String() {
+		t.Error("the same request must name the same entry")
+	}
+}
+
+func TestNoRequestCanNameAnotherRequestsEntry(t *testing.T) {
+	victim := Key{Host: "h", Locale: "en", Path: "/search", Query: "tags=a|b"}
+	for _, forged := range []Key{
+		{Host: "h", Locale: "en", Path: "/search|tags=a", Query: "b"},
+		{Host: "h", Locale: "en", Path: "/search", Query: "tags=a", Variant: "b"},
+		{Host: "h", Locale: "en|/search", Path: "tags=a", Query: "b"},
+		{Host: "h", Locale: "en", Path: "/a|b"},
+		{Host: "h", Locale: "en", Path: "/a", Query: "b"},
+	} {
+		if forged.String() == victim.String() {
+			t.Errorf("%+v names the entry of %+v: %q", forged, victim, victim.String())
+		}
+	}
+	if (Key{Path: "/a|b"}).String() == (Key{Path: "/a", Query: "b"}).String() {
+		t.Error("a separator inside a path must not shift the split")
 	}
 }
 

@@ -25,7 +25,9 @@ crosses a boundary it should not.
   outside that machinery by design: it writes bytes verbatim and gopage validates nothing about the
   payload. A value reaching the document unescaped **without** a `{% raw %}` in the template is a
   vulnerability; a `{% raw %}` block emitting what it was handed is not.
-- **Cache boundaries.** A response cached under one key that is served for another: a per-user
+- **Cache boundaries.** A cache key is built from length-prefixed parts, so no request can name the
+  entry of another by moving a separator from one part into the next. A response cached under one
+  key that is served for another: a per-user
   value reaching a shared fragment, a locale bleeding across hosts, a cached page answering a
   request whose loader would have returned something else. A response is personal, and so never
   stored, when the request carries a cookie named in `security.privateCookies`, when a loader reads
@@ -48,7 +50,9 @@ crosses a boundary it should not.
   refuses a source larger than 24 MB or an image over 40 megapixels. A request that makes it fetch
   elsewhere, or exhaust the process, is one of these. What it cannot decide for you is whether a
   host you listed is worth trusting: a listed name that resolves to an address inside your network
-  is a fetch you asked for. The invalidation endpoint
+  is a fetch you asked for. The endpoint reads an image's dimensions from its header and refuses an
+  oversized one before it decodes, so a small file that unpacks into gigabytes is turned away rather
+  than allocated. The invalidation endpoint
   drops cache entries and is served only when a bearer token is configured; dropping an entry
   without that token is too.
 - **Generated projects.** A default in a scaffolded project that is unsafe in production, such as

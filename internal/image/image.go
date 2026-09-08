@@ -63,13 +63,16 @@ func Transform(source []byte, opts Options, extra map[string]Encoder) ([]byte, s
 	if len(source) > MaxSourceSize {
 		return nil, "", ErrTooLarge
 	}
-	decoded, kind, err := image.Decode(bytes.NewReader(source))
+	shape, _, err := image.DecodeConfig(bytes.NewReader(source))
 	if err != nil {
 		return nil, "", fmt.Errorf("%w: %w", ErrUnsupported, err)
 	}
-	bounds := decoded.Bounds()
-	if bounds.Dx()*bounds.Dy() > MaxPixels {
+	if int64(shape.Width)*int64(shape.Height) > MaxPixels {
 		return nil, "", ErrTooLarge
+	}
+	decoded, kind, err := image.Decode(bytes.NewReader(source))
+	if err != nil {
+		return nil, "", fmt.Errorf("%w: %w", ErrUnsupported, err)
 	}
 	format := opts.Format
 	if format == "" {
