@@ -27,7 +27,10 @@ These are not style preferences. Every one of them fails a build.
    one by changing the template and running `gopagetool example --update`, never by editing the
    example. They require a published gopage, so to build one against your checkout write a workspace
    first: `gopagetool example --workspace`. It names the version the example's own `go.mod` pins,
-   and `GOWORK=off` runs the tool while the workspace is broken.
+   and `GOWORK=off` runs the tool while the workspace is broken. `gopagetool example --verify`
+   builds them with the published gopage they pin rather than with this checkout, because that is
+   what someone outside the repository has; a branch that changes generated code therefore does not
+   fail it, and the examples are re-pinned after the release that publishes the change.
 8. **The version lives in the tag, not in the tree.** See Releases below.
 9. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against the
    figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say

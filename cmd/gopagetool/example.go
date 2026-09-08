@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/apptivitypl/gopage/internal/build"
+	"github.com/apptivitypl/gopage/internal/codegen"
 	"github.com/apptivitypl/gopage/internal/scaffold"
 	"github.com/apptivitypl/gopage/internal/tool/examplecheck"
 	"github.com/apptivitypl/gopage/internal/tool/shell"
@@ -105,17 +106,23 @@ func verifyExamples(root string) error {
 		if _, err := os.Stat(filepath.Join(dir, "go.sum")); err != nil {
 			return fmt.Errorf("example: %s has no go.sum, so nobody outside this repo can build it: %w", example.Dir(), err)
 		}
+		version, err := example.PinnedVersion(root)
+		if err != nil {
+			return err
+		}
 		command := build.Command{
 			Dir:  root,
 			Env:  outsideEnv,
 			Name: "go",
-			Args: []string{"run", "./cmd/gopage", "build", "--dir", example.Dir()},
+			Args: []string{"run", codegen.GopageImport + "/cmd/gopage@" + version,
+				"build", "--dir", example.Dir()},
 		}
 		if err := runner.Run(command); err != nil {
-			return fmt.Errorf("example: %s does not build without the workspace: %w", example.Dir(), err)
+			return fmt.Errorf("example: %s does not build with the published gopage %s that it pins: %w",
+				example.Dir(), version, err)
 		}
 	}
-	fmt.Println("example: every committed example builds from the registry, without the workspace")
+	fmt.Println("example: every committed example builds with the gopage it pins, without the workspace")
 	return nil
 }
 
