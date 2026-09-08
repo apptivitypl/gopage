@@ -206,6 +206,42 @@ type Route struct {
 	Plan        uint32
 	LayoutChain []uint32
 	Class       RouteClass
+	Vary        []Vary
+}
+
+type Layout struct {
+	Name string
+	Plan uint32
+}
+
+type VaryKind uint8
+
+const (
+	VaryCookie VaryKind = iota
+	VaryHeader
+)
+
+type Vary struct {
+	Kind   VaryKind
+	Name   string
+	Values []string
+}
+
+func (v Vary) Bucket(value string) string {
+	for _, held := range v.Values {
+		if held == value {
+			return held
+		}
+	}
+	return ""
+}
+
+func Variants(dimensions []Vary) int {
+	total := 1
+	for _, dimension := range dimensions {
+		total *= len(dimension.Values) + 1
+	}
+	return total
 }
 
 type Fragment struct {
@@ -264,9 +300,10 @@ type Manifest struct {
 	Routes    []Route
 	Plans     []Plan
 	Fallbacks []Fallback
+	Layouts   []Layout
 }
 
-const Version uint32 = 8
+const Version uint32 = 9
 
 func (m *Manifest) Catalog(locale string) (*Catalog, bool) {
 	for i := range m.Catalogs {

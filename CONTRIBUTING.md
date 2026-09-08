@@ -75,6 +75,7 @@ internal/og/         the open graph card
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
 internal/scaffold/   the templates gopage new writes
+internal/devserver/  the process gopage dev supervises, and the proxy in front of it
 internal/demo/       the node server the demo target ships
 examples/            the templates' output, committed and checked
 npm/                 the hand-written half of the npm packages

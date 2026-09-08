@@ -8,6 +8,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
 )
 
@@ -148,13 +149,26 @@ func (a *App) probe(r *http.Request, derived seo.Derived, policy *seo.Policy) (s
 		return derived.Entry, true
 	}
 	recorder := cache.NewRecorder()
-	meta, err := provider(a.probeRequest(r, derived, recorder), Params{})
-	policy.Add(recorder)
-	if err != nil {
-		a.logger.Warn("sitemap probe failed", "route", derived.Route, "locale", derived.Locale, "error", err)
-		return derived.Entry, true
+	request := a.probeRequest(r, derived, recorder)
+	props, err := a.probeProps(request, derived)
+	if err == nil {
+		var meta runtime.Meta
+		if meta, err = provider(request, Params{}, props); err == nil {
+			policy.Add(recorder)
+			return seo.FromMeta(derived.Entry, meta)
+		}
 	}
-	return seo.FromMeta(derived.Entry, meta)
+	policy.Add(recorder)
+	a.logger.Warn("sitemap probe failed", "route", derived.Route, "locale", derived.Locale, "error", err)
+	return derived.Entry, true
+}
+
+func (a *App) probeProps(r *http.Request, derived seo.Derived) (runtime.Accessible, error) {
+	provider, ok := a.props[derived.Route]
+	if !ok {
+		return runtime.Empty{}, nil
+	}
+	return provider(r, Params{})
 }
 
 func (a *App) probeRequest(r *http.Request, derived seo.Derived, recorder *cache.Recorder) *http.Request {

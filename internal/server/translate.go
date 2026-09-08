@@ -55,3 +55,9 @@ func (a *App) translator(r *http.Request) Translator {
 		return strings.ReplaceAll(text, runtime.CountPlaceholder, strconv.Itoa(count))
 	}
 }
+
+func (a *App) translating(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(WithTranslator(r.Context(), a.translator(r))))
+	})
+}

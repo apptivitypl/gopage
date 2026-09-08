@@ -84,7 +84,13 @@ func (a *App) rerender(w http.ResponseWriter, r *http.Request, route ir.Route, p
 		a.fail(w, r, ir.FallbackError, http.StatusInternalServerError)
 		return
 	}
-	body, err := a.renderResolved(route, form.With(rooted, result, token), nil,
+	layouts, err := a.layoutChain(r, route, params)
+	if err != nil {
+		a.logger.Error("render failed", "route", route.Name, "error", err)
+		a.fail(w, r, ir.FallbackError, http.StatusInternalServerError)
+		return
+	}
+	body, err := a.renderResolved(route, form.With(rooted, result, token), layouts, nil,
 		LocaleOf(r), a.resolved(r, params, route))
 	if err != nil {
 		a.logger.Error("render failed", "route", route.Name, "error", err)

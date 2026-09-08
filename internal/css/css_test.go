@@ -87,7 +87,7 @@ func TestTailwindReportsWhatTheBinarySaid(t *testing.T) {
 
 func TestTailwindUsesTheCachedBinary(t *testing.T) {
 	cache := t.TempDir()
-	target := filepath.Join(cache, "tailwind", Version, binaryName(runtime.GOOS))
+	target := filepath.Join(cache, "tailwind", Version, binaryName(runtime.GOOS, Tailwind{}.musl()))
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestTailwindDownloadsWhenTheCacheIsEmpty(t *testing.T) {
 	if !strings.Contains(asked, Version) {
 		t.Errorf("url = %q, want the pinned version", asked)
 	}
-	build, err := Asset(runtime.GOOS, runtime.GOARCH)
+	build, err := Asset(runtime.GOOS, runtime.GOARCH, Tailwind{}.musl())
 	if err != nil {
 		t.Skipf("no standalone build for this platform: %v", err)
 	}
@@ -164,13 +164,27 @@ func TestAssetKnowsTheSupportedPlatforms(t *testing.T) {
 	}
 	for pair, want := range cases {
 		goos, arch, _ := strings.Cut(pair, "/")
-		got, err := Asset(goos, arch)
+		got, err := Asset(goos, arch, false)
 		if err != nil || got.Name != want {
 			t.Errorf("Asset(%q) = %q, %v, want %q", pair, got.Name, err, want)
 		}
 	}
-	if _, err := Asset("plan9", "mips"); err == nil {
+	musl := map[string]string{
+		"linux/amd64": "tailwindcss-linux-x64-musl",
+		"linux/arm64": "tailwindcss-linux-arm64-musl",
+	}
+	for pair, want := range musl {
+		goos, arch, _ := strings.Cut(pair, "/")
+		got, err := Asset(goos, arch, true)
+		if err != nil || got.Name != want {
+			t.Errorf("Asset(%q, musl) = %q, %v, want %q", pair, got.Name, err, want)
+		}
+	}
+	if _, err := Asset("plan9", "mips", false); err == nil {
 		t.Error("an unsupported platform must be reported")
+	}
+	if _, err := Asset("darwin", "arm64", true); err == nil {
+		t.Error("only linux has a musl build")
 	}
 }
 
@@ -285,13 +299,16 @@ func TestCommonRootWalksUpUntilItContains(t *testing.T) {
 }
 
 func TestTheCachedBinaryCarriesAnExtensionWhereWindowsNeedsOne(t *testing.T) {
-	if got := binaryName("windows"); got != "tailwindcss.exe" {
+	if got := binaryName("windows", false); got != "tailwindcss.exe" {
 		t.Errorf("binaryName(windows) = %q", got)
 	}
 	for _, goos := range []string{"linux", "darwin"} {
-		if got := binaryName(goos); got != "tailwindcss" {
+		if got := binaryName(goos, false); got != "tailwindcss" {
 			t.Errorf("binaryName(%s) = %q", goos, got)
 		}
+	}
+	if got := binaryName("linux", true); got != "tailwindcss-musl" {
+		t.Errorf("binaryName(linux, musl) = %q, want a name of its own so the two never share a file", got)
 	}
 }
 
@@ -319,18 +336,28 @@ func TestMuslIsRecognisedByItsLoader(t *testing.T) {
 	}
 }
 
-func TestAMuslSystemIsToldWhy(t *testing.T) {
+func TestAMuslSystemFetchesTheMuslBuild(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("the refusal only applies to linux")
+		t.Skip("the musl build only applies to linux")
 	}
+	var asked string
 	tailwind := Tailwind{
 		CacheDir: t.TempDir(),
 		Root:     fstest.MapFS{"lib/ld-musl-x86_64.so.1": &fstest.MapFile{}},
-		Fetch:    func(string, string, string) error { return nil },
+		Fetch: func(url, target, _ string) error {
+			asked = url
+			return os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0o755)
+		},
 	}
-	_, err := tailwind.Install()
-	if err == nil || !strings.Contains(err.Error(), "glibc") {
-		t.Errorf("error = %v, want the libc named", err)
+	path, err := tailwind.Install()
+	if err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if !strings.HasSuffix(asked, "-musl") {
+		t.Errorf("fetched %q, want the musl build", asked)
+	}
+	if !strings.HasSuffix(path, "tailwindcss-musl") {
+		t.Errorf("path = %q, want a cache entry of its own", path)
 	}
 }
 
@@ -351,3 +378,19 @@ func TestTheLibcRootDefaultsToTheSystem(t *testing.T) {
 type brokenFS struct{}
 
 func (brokenFS) Open(string) (fs.File, error) { return nil, fs.ErrInvalid }
+
+func TestAnUnrunnableBinaryFailsTheInstall(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the loader check is a unix idea")
+	}
+	tailwind := Tailwind{
+		CacheDir: t.TempDir(),
+		Root:     fstest.MapFS{},
+		Fetch: func(_, target, _ string) error {
+			return os.WriteFile(target, []byte("\x7fELF not really"), 0o755)
+		},
+	}
+	if _, err := tailwind.Install(); err == nil {
+		t.Error("a binary this system cannot exec must fail at install, not at the first build")
+	}
+}

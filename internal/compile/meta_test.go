@@ -119,3 +119,22 @@ func TestALayoutPlacesTheHeadPayloadItself(t *testing.T) {
 		t.Errorf("out = %q, want the payload verbatim", out.String())
 	}
 }
+
+func TestOpenGraphNamesTheOtherLocales(t *testing.T) {
+	got := renderMeta(t, runtime.Meta{Locale: "pl", LocaleAlternates: runtime.Locales{"en", "de"}})
+	for _, want := range []string{
+		`<meta property="og:locale" content="pl">`,
+		`<meta property="og:locale:alternate" content="en">`,
+		`<meta property="og:locale:alternate" content="de">`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("render is missing %s:\n%s", want, got)
+		}
+	}
+}
+
+func TestNoOtherLocaleEmitsNoAlternateTag(t *testing.T) {
+	if got := renderMeta(t, runtime.Meta{Locale: "en"}); strings.Contains(got, "og:locale:alternate") {
+		t.Errorf("render = %q", got)
+	}
+}

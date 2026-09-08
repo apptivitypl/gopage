@@ -96,7 +96,7 @@ func TestRootPathsAreRecognised(t *testing.T) {
 			t.Errorf("%v was accepted", path)
 		}
 	}
-	if len(RootNames()) != 4 {
+	if len(RootNames()) != 5 {
 		t.Errorf("roots = %v", RootNames())
 	}
 	for _, path := range [][]string{{"locale", "Tag"}, {"locale", "Dir"}, {"locale", "Prefix"}, {"locale", "Default"}} {

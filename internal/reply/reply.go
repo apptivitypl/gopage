@@ -85,6 +85,35 @@ func (r *Recorder) Vary(names ...string) {
 	}
 }
 
+func (r *Recorder) Merge(other *Recorder) {
+	if other == nil {
+		return
+	}
+	other.mu.Lock()
+	status, rejected := other.status, other.rejected
+	header := other.header.Clone()
+	cookies := slices.Clone(other.cookies)
+	names := slices.Clone(other.vary)
+	other.mu.Unlock()
+
+	r.mu.Lock()
+	if status != 0 {
+		r.status = status
+	}
+	if rejected != 0 {
+		r.rejected = rejected
+	}
+	for name, values := range header {
+		if r.header == nil {
+			r.header = http.Header{}
+		}
+		r.header[name] = values
+	}
+	r.cookies = append(r.cookies, cookies...)
+	r.mu.Unlock()
+	r.Vary(names...)
+}
+
 func (r *Recorder) Touched() bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()

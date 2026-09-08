@@ -47,9 +47,10 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
 - **Reserved and static first.** Assets, `public/` files and redirects are answered before any
   render is considered.
 - **The cache.** `internal/cache` is bounded by bytes, not entries, and evicts by least recent use.
-  A cache key carries everything that changes the answer — route, locale, host, and the loader's
-  own declared inputs. What may not enter a key is the point of the `I2` invariant test. A response
-  that belongs to one visitor never becomes an entry at all: a request carrying a cookie named in
+  A cache key carries everything that changes the answer — route, locale, host, the loader's own
+  declared inputs, and the bucket of every `{% vary %}` dimension the route declares. What may not
+  enter a key is the point of the `I2` invariant test. A response that belongs to one visitor never
+  becomes an entry at all: a request carrying a cookie named in
   `security.privateCookies`, a loader that reads a cookie which is there, and a loader that sets one
   are each enough to keep it out.
 - **Partial navigation.** When the browser sends the partial header, the server compares the chain
@@ -58,8 +59,14 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
 - **Fragments.** A deferred fragment is either inlined, flushed in the tail of the same response,
   or fetched by the browser on its own, depending on `fragments.deferred`. The shell is cacheable
   even when the body is not, which is why the mode exists.
+- **Loading.** The loaders a route needs are independent of one another, so the page and every
+  layout in the chain run at once, each with its own policy and response recorder; the server merges
+  them in chain order afterwards, which keeps the answer the same whichever finishes first. A route
+  with one loader runs it in place, without a goroutine. `Meta` is given what `Load` returned rather
+  than calling it a second time.
 - **Render.** `internal/runtime` interprets the plan. It writes into a pooled buffer and escapes on
-  the way out; there is no intermediate string.
+  the way out; there is no intermediate string. A layout with a loader of its own is resolved per
+  plan in the chain, so `layout.` in one layout can never read another's.
 - **The rest of the answer.** `internal/vocab` turns a canonical path into the address a locale
   publishes and back, `internal/reply` carries the status, headers and cookies a loader asked for,
   and `internal/seo` answers `/sitemap.xml` and `/robots.txt` from the same route table.

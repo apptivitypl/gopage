@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/fetch"
 	"github.com/apptivitypl/gopage/internal/gotoolchain"
 	"github.com/apptivitypl/gopage/internal/initui"
+	"github.com/apptivitypl/gopage/internal/ir"
 	"github.com/apptivitypl/gopage/internal/lsp"
 	"github.com/apptivitypl/gopage/internal/paths"
 	"github.com/apptivitypl/gopage/internal/scaffold"
@@ -372,7 +374,7 @@ func dev(args []string) error {
 		return err
 	}
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		<-signals
 		_ = listener.Close()
@@ -403,7 +405,8 @@ func dev(args []string) error {
 }
 
 func devBuild(dir string, out *printer, about *summary) (devserver.Build, func()) {
-	var running *devserver.App
+	var guard sync.Mutex
+	var running, retiring *devserver.App
 	tool, resolving := gotool(out)
 	build := func() (http.Handler, []diag.Diagnostic, map[string]string, error) {
 		if resolving != nil {
@@ -432,11 +435,18 @@ func devBuild(dir string, out *printer, about *summary) (devserver.Build, func()
 		if err != nil {
 			return nil, report.Diagnostics, nil, err
 		}
-		running.Stop()
-		running = next
+		guard.Lock()
+		retiring.Stop()
+		retiring, running = running, next
+		guard.Unlock()
 		return next.Handler(), report.Diagnostics, nil, nil
 	}
-	return build, func() { running.Stop() }
+	return build, func() {
+		guard.Lock()
+		defer guard.Unlock()
+		running.Stop()
+		retiring.Stop()
+	}
 }
 
 func lspCommand(args []string) error {
@@ -535,17 +545,32 @@ func routeCoverage(dir string) error {
 	if bag.HasErrors() {
 		return &build.Error{Diagnostics: bag.Sorted(), Sources: readSources(dir, bag.Sorted())}
 	}
-	fmt.Printf("%-6s %-28s %-8s %-6s %-6s %s\n", "kind", "pattern", "class", "load", "meta", "submit")
+	fmt.Printf("%-6s %-28s %-8s %-6s %-6s %-8s %s\n", "kind", "pattern", "class", "load", "meta", "submit", "vary")
 	for _, route := range result.Routes {
 		template := result.Templates[route.File]
 		kind := "page"
 		if route.Kind == compile.RouteAPI {
 			kind = "api"
 		}
-		fmt.Printf("%-6s %-28s %-8s %-6s %-6s %s\n", kind, route.Pattern, classOf(result, route),
-			mark(template.HasLoader()), mark(template.HasMeta()), mark(template.HasSubmit()))
+		fmt.Printf("%-6s %-28s %-8s %-6s %-6s %-8s %s\n", kind, route.Pattern, classOf(result, route),
+			mark(template.HasLoader()), mark(template.HasMeta()), mark(template.HasSubmit()),
+			varyOf(result, route))
 	}
 	return nil
+}
+
+func varyOf(result compile.Result, route compile.Route) string {
+	for _, entry := range result.Manifest.Routes {
+		if entry.Name != route.Name || len(entry.Vary) == 0 {
+			continue
+		}
+		names := make([]string, 0, len(entry.Vary))
+		for _, dimension := range entry.Vary {
+			names = append(names, dimension.Name)
+		}
+		return fmt.Sprintf("%s (%d entries)", strings.Join(names, ", "), ir.Variants(entry.Vary))
+	}
+	return "-"
 }
 
 func classOf(result compile.Result, route compile.Route) string {

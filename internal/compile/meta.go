@@ -29,6 +29,7 @@ var metaTags = []metaTag{
 func (b *builder) meta() {
 	b.metaTags()
 	b.alternates()
+	b.localeAlternates()
 }
 
 func (b *builder) alternates() {
@@ -41,6 +42,22 @@ func (b *builder) alternates() {
 	b.emit(ir.Op{Kind: ir.OpText, A: b.local(slot, []string{"Lang"})})
 	b.static(`" href="`)
 	b.emit(ir.Op{Kind: ir.OpText, A: b.local(slot, []string{"Href"})})
+	b.static(`">`)
+
+	b.emit(ir.Op{Kind: ir.OpIterNext, A: slot, B: body})
+	b.locals = b.locals[:len(b.locals)-1]
+	b.ops[start].C = b.here()
+	b.mergeable = -1
+}
+
+func (b *builder) localeAlternates() {
+	seq := b.emitExpr(ir.ExprNode{Kind: ir.ExprPath, A: b.pathOf([]string{runtime.MetaRoot, runtime.LocaleAlternatesField})})
+	slot := b.declare("__oglocale")
+	start := b.emit(ir.Op{Kind: ir.OpIterStart, A: seq, B: slot})
+	body := b.here()
+
+	b.static(`<meta property="og:locale:alternate" content="`)
+	b.emit(ir.Op{Kind: ir.OpText, A: b.emitExpr(ir.ExprNode{Kind: ir.ExprLocal, A: slot, B: ir.NoPath})})
 	b.static(`">`)
 
 	b.emit(ir.Op{Kind: ir.OpIterNext, A: slot, B: body})

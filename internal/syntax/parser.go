@@ -14,6 +14,7 @@ type parser struct {
 	bag         *diag.Bag
 	tok         Token
 	standalones []diag.Span
+	varies      []Vary
 }
 
 func ClientScriptOf(document *Document) (*ClientScript, bool) {
@@ -60,6 +61,7 @@ func (p *parser) document() *Document {
 	doc.Nodes, _, _ = p.block(nil)
 	doc.Standalones = p.standalones
 	doc.Standalone = len(p.standalones) > 0
+	doc.Varies = p.varies
 	return doc
 }
 
@@ -185,7 +187,8 @@ func (p *parser) endDirective(name string, span diag.Span) bool {
 }
 
 var knownDirectives = []string{"outlet", "children", "slot", "meta", "assets", "raw", "if", "elif", "else", "endif",
-	"for", "endfor", "let", "match", "when", "endmatch", "fragment", "placeholder", "endfragment"}
+	"for", "endfor", "let", "match", "when", "endmatch", "fragment", "placeholder", "endfragment",
+	"standalone", "vary"}
 
 func (p *parser) directive(name string, span diag.Span) Node {
 	switch name {
@@ -215,6 +218,8 @@ func (p *parser) directive(name string, span diag.Span) Node {
 		}
 		p.standalones = append(p.standalones, span)
 		return nil
+	case "vary":
+		return p.varyDirective(span)
 	case "raw":
 		return p.rawDirective(span)
 	case "slot":
@@ -460,6 +465,69 @@ func (p *parser) fragmentDirective(span diag.Span) Node {
 		node.Placeholder, stop, stopSpan = p.block([]string{"endfragment"})
 	}
 	return p.closeBlock(node, "fragment", stop, "endfragment", stopSpan)
+}
+
+const varyForm = `the form is {% vary cookie="theme" values="light, dark" %}`
+
+func (p *parser) varyDirective(span diag.Span) Node {
+	entry := Vary{Span: span}
+	named := false
+	for p.tok.Kind == KindIdent {
+		name := p.tok.Text
+		nameSpan := p.tok.Span
+		p.advance()
+		if p.tok.Kind != KindAssign {
+			p.report(diag.C201, nameSpan, fmt.Sprintf("%s needs a value", name), varyForm)
+			p.recover()
+			return nil
+		}
+		p.advance()
+		if p.tok.Kind != KindString {
+			p.report(diag.C201, p.tok.Span, fmt.Sprintf("the value of %s must be quoted", name), varyForm)
+			p.recover()
+			return nil
+		}
+		switch {
+		case (name == "cookie" || name == "header") && named:
+			p.report(diag.C201, nameSpan, "a vary directive names one cookie or one header", varyForm)
+			p.recover()
+			return nil
+		case name == "cookie", name == "header":
+			named = true
+			entry.Kind = VaryCookie
+			if name == "header" {
+				entry.Kind = VaryHeader
+			}
+			entry.Name = p.tok.Value
+		case name == "values":
+			entry.Values = varyValues(p.tok.Value)
+		default:
+			p.report(diag.C201, nameSpan, fmt.Sprintf("a vary directive has no %s setting", name), varyForm)
+			p.recover()
+			return nil
+		}
+		p.advance()
+	}
+	if !named || entry.Name == "" || len(entry.Values) == 0 {
+		p.report(diag.C201, span, "a vary directive needs a cookie or header and the values it may hold", varyForm)
+		p.recover()
+		return nil
+	}
+	if !p.endDirective("vary", span) {
+		return nil
+	}
+	p.varies = append(p.varies, entry)
+	return nil
+}
+
+func varyValues(text string) []string {
+	var values []string
+	for _, part := range strings.Split(text, ",") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			values = append(values, trimmed)
+		}
+	}
+	return values
 }
 
 func (p *parser) rawDirective(span diag.Span) Node {

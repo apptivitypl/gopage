@@ -268,7 +268,7 @@ func TestMetaProviderFeedsTheMetaPath(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),
 		Meta: map[string]MetaProvider{
-			"index": func(*http.Request, Params) (runtime.Meta, error) {
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{Title: "home"}, nil
 			},
 		},
@@ -288,7 +288,7 @@ func TestMetaProviderErrorBecomesA500(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),
 		Meta: map[string]MetaProvider{
-			"index": func(*http.Request, Params) (runtime.Meta, error) {
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{}, http.ErrNoLocation
 			},
 		},

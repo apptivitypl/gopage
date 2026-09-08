@@ -170,6 +170,10 @@ pages: that is how a login screen, a print view or an embed gets a document of i
 in brackets groups routes without appearing in the address, so `app/(auth)/login/page.gopage`
 answers `/login`.
 
+A layout can load its own data. It declares `Props` and `Load` like a page and reads the result
+under `layout.`, so navigation, a language switcher or a breadcrumb is written once instead of
+being repeated in the props of every page below it.
+
 ## How it works
 
 A build has three steps that are worth knowing about.
@@ -215,6 +219,7 @@ The keys that decide something worth knowing about:
 | `routing.aliases`         | the segment each locale uses in public addresses, so one route answers `/jobs`, `/pl/praca` and `/de/arbeit`                                                                                                                          |
 | `seo`                     | the built-in `/sitemap.xml` and `/robots.txt`: crawler rules, extra sitemaps, and `mode: "off"` on either when a route of yours answers the path                                                                                      |
 | `images`                  | `mode: "on"` serves `/_gopage/image` and points `<Image>` at it, resizing and re-encoding on the way out                                                                                                                              |
+| `cache.variants`          | how many entries one route may hold once its `{% vary %}` directives are multiplied out; a route over the ceiling is a build warning                                                                                                  |
 
 Unknown keys are an error, not a shrug: a misspelled setting names itself and the line it is on.
 The [schema](schema/gopage.schema.json) drives editor completion, and CI fails if it and the Go
@@ -263,6 +268,59 @@ readers who are not signed in.
 canonical form redirects to the public one, so a page has a single address, and `canonical` and
 `hreflang` follow without a second table to maintain. `routing.normalize` folds trailing slashes,
 case and diacritics onto one spelling.
+
+**Chrome data.** A layout declares `Props` and `Load` of its own and reads them under `layout.`:
+
+```gopage
+---
+type Props struct {
+	Sections []Section
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) { return Props{Sections: nav.For(ctx.Locale())}, nil }
+---
+<nav>
+  {% for link in layout.Sections %}<a href="{{ link.Href }}">{{ link.Title }}</a>{% endfor %}
+</nav>
+{% outlet %}
+```
+
+Bare names in a layout still read the props of the page inside it. The layout's freshness folds into
+the page's, taking the shorter lifetime and the union of the tags, and the loader is skipped
+entirely when the browser already holds that layout and asks for a partial navigation.
+
+**One round of loading.** The loaders in a chain do not know about each other, so they run at the
+same time: two layouts and a page that each wait 50 ms on an API answer in a little over 50 ms, not
+150. A page whose only loader is its own runs it in place, without a goroutine. `Meta` is handed
+what `Load` returned rather than loading again, so a route fetches its data once per request.
+
+Work that two of them share is asked for once:
+
+```go
+cities, err := gopage.Once(ctx, "cities:"+ctx.Locale(), catalog.Cities)
+```
+
+The second caller waits for the first and gets the same answer. The scope is one request, so there
+is no lifetime to set and nothing to invalidate. For fanning out inside a single loader, use
+`errgroup` as you would anywhere else in Go.
+
+**Cache variants.** A page that differs by a preference stays shared, one entry per value:
+
+```gopage
+{% vary cookie="theme" values="light, dark" %}
+```
+
+The values are the whole list, so the number of entries is known at build time and a value nobody
+declared falls into a single bucket shared by all of them. `ctx.Cookie` then hands the loader that
+bucket rather than the raw cookie, which is why the response can stay shared without one visitor's
+page reaching another. A dimension in a layout applies to every page below it. For a cookie that
+says who someone is, use `security.privateCookies` instead: naming the same cookie in both is
+`GOPAGE-C330`.
+
+**Testing.** `app.Render(ctx, route, params)` returns the bytes of a route and
+`app.RenderFragment(ctx, route, fragment, params)` the bytes of one deferred fragment, without an
+HTTP round trip. `gopage.TestApp` builds an application that holds nothing in its cache, so a loader
+runs on every call.
 
 **Dates and messages.** `time.Time` is a props type. `{{ Posted | date('date') }}` formats it, and
 `{{ Posted | relative }}` reads `time.days_ago` and its siblings from your catalogs, so a missing

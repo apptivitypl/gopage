@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -28,7 +29,7 @@ import (
 
 type PropsProvider func(*http.Request, Params) (runtime.Accessible, error)
 
-type MetaProvider func(*http.Request, Params) (runtime.Meta, error)
+type MetaProvider func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error)
 
 type SitemapProvider func(*http.Request) (seo.Seq, error)
 
@@ -49,6 +50,7 @@ type Options struct {
 	Sitemap    map[string]SitemapProvider
 	Submit     map[string]SubmitProvider
 	API        map[string]http.Handler
+	Layouts    map[string]PropsProvider
 	Middleware []Middleware
 	Entropy    io.Reader
 	Logger     *slog.Logger
@@ -91,6 +93,7 @@ type App struct {
 	sitemaps   map[string]SitemapProvider
 	submit     map[string]SubmitProvider
 	api        map[string]http.Handler
+	layouts    map[uint32]layoutHook
 	entropy    io.Reader
 	middleware []Middleware
 	logger     *slog.Logger
@@ -137,6 +140,7 @@ func New(opts Options) *App {
 		sitemaps:   opts.Sitemap,
 		submit:     opts.Submit,
 		api:        opts.API,
+		layouts:    layoutPlans(opts.Manifest, opts.Layouts),
 		locals:     opts.Locals,
 		encoders:   opts.Encoders,
 		client:     imageClient(opts.Client),
@@ -193,7 +197,7 @@ func (a *App) MaxConnections() int {
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	for pattern, handler := range a.api {
-		mux.Handle(pattern, handler)
+		mux.Handle(pattern, a.translating(handler))
 	}
 	if a.assets != nil {
 		mux.Handle(assets.Prefix, a.assets)
@@ -268,6 +272,9 @@ func (a *App) renderPage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		a.fail(w, r, ir.FallbackNotFound, http.StatusNotFound)
 		return
+	}
+	if held := bucketsOf(r, route); held != nil {
+		r = r.WithContext(WithBuckets(r.Context(), held))
 	}
 	if r.Method == http.MethodPost {
 		a.submitPage(w, r, route, params)
@@ -413,15 +420,11 @@ func (a *App) Render(route ir.Route, r *http.Request, params Params) (*runtime.B
 	if err != nil {
 		return nil, err
 	}
-	return a.renderWith(route, props)
-}
-
-func (a *App) renderWith(route ir.Route, props runtime.Accessible) (*runtime.Buffer, error) {
-	return a.renderHooked(route, props, nil)
-}
-
-func (a *App) renderHooked(route ir.Route, props runtime.Accessible, hook runtime.Fragments) (*runtime.Buffer, error) {
-	return a.renderLocalised(route, props, hook, a.config.I18n.DefaultLocale)
+	layouts, err := a.layoutChain(r, route, params)
+	if err != nil {
+		return nil, err
+	}
+	return a.renderResolved(route, props, layouts, nil, a.config.I18n.DefaultLocale, nil)
 }
 
 func (a *App) options(hook runtime.Fragments, locale string) runtime.Options {
@@ -438,16 +441,12 @@ func (a *App) options(hook runtime.Fragments, locale string) runtime.Options {
 	return opts
 }
 
-func (a *App) renderLocalised(route ir.Route, props runtime.Accessible, hook runtime.Fragments,
-	locale string) (*runtime.Buffer, error) {
-	return a.renderResolved(route, props, hook, locale, nil)
-}
-
-func (a *App) renderResolved(route ir.Route, props runtime.Accessible, hook runtime.Fragments,
-	locale string, deferred runtime.Deferred) (*runtime.Buffer, error) {
+func (a *App) renderResolved(route ir.Route, props runtime.Accessible, layouts []runtime.Accessible,
+	hook runtime.Fragments, locale string, deferred runtime.Deferred) (*runtime.Buffer, error) {
 	chain := a.chain(route)
 	out := runtime.Acquire(runtime.Capacity(chain))
 	opts := a.options(hook, locale)
+	opts.Layouts = layouts
 	opts.Deferred = deferred
 	opts.Preload = a.preloads[route.Name].tags
 	if err := runtime.RenderOptions(chain, props, out, opts); err != nil {
@@ -472,7 +471,7 @@ func (a *App) providers(route ir.Route, r *http.Request, params Params) (runtime
 		}
 		props = resolved
 	}
-	meta, err := a.metaFor(name, r, params)
+	meta, err := a.metaFor(name, r, params, props)
 	if err != nil {
 		return nil, err
 	}
@@ -491,32 +490,65 @@ func (a *App) localeOf(r *http.Request) runtime.Locale {
 	return locale
 }
 
-func (a *App) metaFor(name string, r *http.Request, params Params) (runtime.Meta, error) {
+func (a *App) metaFor(name string, r *http.Request, params Params, props runtime.Accessible) (runtime.Meta, error) {
 	provider, ok := a.meta[name]
 	if !ok {
 		return runtime.Meta{}, nil
 	}
-	return provider(r, params)
+	return provider(r, params, props)
 }
 
 func (a *App) Routes() []ir.Route {
 	return a.router.Routes()
 }
 
-func (a *App) RenderRoute(ctx context.Context, route ir.Route, params Params) ([]byte, error) {
+func (a *App) synthetic(ctx context.Context, route ir.Route, params Params) *http.Request {
 	request := (&http.Request{
 		Method: http.MethodGet,
 		URL:    &url.URL{Path: patternPath(route.Pattern)},
 		Header: http.Header{},
 	}).WithContext(ctx)
-	locale := a.config.I18n.DefaultLocale
-	request = withLocale(request, locale)
+	request = withLocale(request, a.config.I18n.DefaultLocale)
 	if a.vocab.Localises() {
 		request = request.WithContext(vocab.With(request.Context(), a.vocab))
 	}
 	if filled, err := Fill(route.Pattern, params); err == nil {
 		request.URL = &url.URL{Path: filled}
 	}
+	return request
+}
+
+func (a *App) RenderFragment(ctx context.Context, route ir.Route, params Params, name string) ([]byte, error) {
+	fragment, plan, ok := a.deferredIn(route, name)
+	if !ok {
+		return nil, fmt.Errorf("route %s has no deferred fragment named %q", route.Pattern, name)
+	}
+	provider, ok := a.deferred[name]
+	if !ok {
+		return nil, fmt.Errorf("fragment %q has no loader", name)
+	}
+	request := a.synthetic(ctx, route, params)
+	request = request.WithContext(WithTranslator(request.Context(), a.translator(request)))
+	props, err := a.providers(route, request, params)
+	if err != nil {
+		return nil, err
+	}
+	held, err := provider(request, params)
+	if err != nil {
+		return nil, err
+	}
+	page := a.options(a.fragmentHook(request), LocaleOf(request))
+	out := runtime.Acquire(plan.Capacity)
+	defer runtime.Release(out)
+	body := runtime.Options{Fragments: page.Fragments, Catalog: page.Catalog, Plural: page.Plural}
+	if err := runtime.RenderFragment(plan, fragment, runtime.WithRoot(props, fragment.Name, held), out, body); err != nil {
+		return nil, err
+	}
+	return bytes.Clone(out.Bytes()), nil
+}
+
+func (a *App) RenderRoute(ctx context.Context, route ir.Route, params Params) ([]byte, error) {
+	request := a.synthetic(ctx, route, params)
 	body, err := a.Render(route, request, params)
 	if err != nil {
 		return nil, err

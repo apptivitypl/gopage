@@ -146,7 +146,7 @@ func catalogsPhase(s *state) error {
 }
 
 func reportMissingCatalogs(s *state) {
-	if len(s.catalogs) == 0 {
+	if len(s.catalogs) == 0 && len(s.config.I18n.Locales) < 2 {
 		return
 	}
 	for _, locale := range s.config.I18n.Locales {
@@ -226,13 +226,14 @@ func reportLayoutLoaders(s *state) {
 		if !template.IsLayout {
 			continue
 		}
-		for _, name := range []string{LoaderName, MetaName, SubmitName, SitemapName} {
+		for _, name := range []string{MetaName, SubmitName, SitemapName} {
 			if !strings.Contains(template.Frontmatter, name) {
 				continue
 			}
 			s.bag.Add(diag.New(diag.C328, file, diag.Span{},
 				fmt.Sprintf("a layout carries %s, which never runs", strings.TrimSuffix(strings.TrimPrefix(name, "func "), "("))).
-				WithHelp("a layout renders the props of the page below it; move the function to the page"))
+				WithHelp("only a route answers with meta, a form or a sitemap; move the function to the page, " +
+					"and use Load if the layout needs data of its own"))
 		}
 	}
 }
@@ -245,6 +246,7 @@ func componentsPhase(s *state) error {
 			continue
 		}
 		Check(component.Document, component.File, component.Schema, s.bag)
+		CheckVary(component.Document, component.File, s.config, s.bag)
 		s.linker().Check(component.Document, component.File, s.bag)
 		s.components[name] = component
 	}
@@ -279,9 +281,14 @@ func (s *state) compileTemplate(file string) {
 		return
 	}
 	model := s.model(template)
-	Check(template.Document, file, model, s.bag)
+	if template.IsLayout {
+		CheckLayout(template.Document, file, model, s.bag)
+	} else {
+		Check(template.Document, file, model, s.bag)
+	}
 	CheckContexts(template.Document, file, s.bag)
 	CheckStandalone(template.Document, file, template.IsLayout, s.bag)
+	CheckVary(template.Document, file, s.config, s.bag)
 	CheckFragments(template.Document, file, model, s.bag)
 	CheckIslands(template.Document, file, model, s.components, s.islandNames(), s.bag)
 	s.linker().Check(template.Document, file, s.bag)
@@ -350,12 +357,15 @@ func manifestPhase(s *state) error {
 		if !ok {
 			continue
 		}
+		dimensions := s.varyOf(route)
+		CheckVariants(route.Pattern, dimensions, s.config.Cache.Variants, route.File, s.bag)
 		manifest.Routes = append(manifest.Routes, ir.Route{
 			Pattern:     route.Pattern,
 			Name:        route.Name,
 			Plan:        planIndex,
 			LayoutChain: s.chainOf(route.Layouts),
 			Class:       s.classOf(route),
+			Vary:        dimensions,
 		})
 	}
 	for _, fallback := range s.fallbacks {
@@ -375,6 +385,7 @@ func manifestPhase(s *state) error {
 			LayoutChain: s.chainOf(fallback.Layouts),
 		})
 	}
+	manifest.Layouts = s.loadingLayouts()
 	s.manifest = manifest
 	return nil
 }

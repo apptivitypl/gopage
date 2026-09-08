@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/apptivitypl/gopage/internal/diag"
+	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/schema"
 	"github.com/apptivitypl/gopage/internal/syntax"
 )
@@ -21,16 +22,25 @@ type checker struct {
 	file   string
 	bag    *diag.Bag
 	locals []binding
+	layout bool
 }
 
 func Check(doc *syntax.Document, file string, model *schema.Schema, bag *diag.Bag) {
+	check(doc, file, model, bag, false)
+}
+
+func CheckLayout(doc *syntax.Document, file string, model *schema.Schema, bag *diag.Bag) {
+	check(doc, file, model, bag, true)
+}
+
+func check(doc *syntax.Document, file string, model *schema.Schema, bag *diag.Bag, layout bool) {
 	if model == nil {
 		return
 	}
 	if _, ok := model.Props(); !ok {
 		return
 	}
-	c := &checker{schema: model, file: file, bag: bag}
+	c := &checker{schema: model, file: file, bag: bag, layout: layout}
 	c.nodes(doc.Nodes)
 }
 
@@ -241,13 +251,38 @@ func (c *checker) path(node *syntax.Path) {
 		c.localPath(node, local)
 		return
 	}
+	if node.Segments[0] == runtime.LayoutRoot {
+		c.layoutPath(node)
+		return
+	}
 	if RootPath(node.Segments) {
+		return
+	}
+	if c.layout {
 		return
 	}
 	if _, ok := c.schema.Resolve(schema.PropsName, node.Segments); ok {
 		return
 	}
 	c.reportUnknown(node, schema.PropsName, node.Segments)
+}
+
+func (c *checker) layoutPath(node *syntax.Path) {
+	rest := node.Segments[1:]
+	if !c.layout {
+		c.report(diag.C305, node.Span, "layout is the data a layout loads, and this file is not a layout",
+			"read the value from the page's own props, or move the markup into the layout")
+		return
+	}
+	if len(rest) == 0 {
+		c.report(diag.C305, node.Span, "layout names a whole loader result, not a value",
+			"write layout.Field naming one of the fields Load returns")
+		return
+	}
+	if _, ok := c.schema.Resolve(schema.PropsName, rest); ok {
+		return
+	}
+	c.reportUnknown(node, schema.PropsName, rest)
 }
 
 func (c *checker) localPath(node *syntax.Path, local binding) {

@@ -34,7 +34,23 @@ func (a *App) opengraph(meta runtime.Meta, r *http.Request) runtime.Meta {
 	if meta.Locale == "" {
 		meta.Locale = LocaleOf(r)
 	}
+	if len(meta.LocaleAlternates) == 0 {
+		meta.LocaleAlternates = a.otherLocales(LocaleOf(r))
+	}
 	return meta
+}
+
+func (a *App) otherLocales(current string) runtime.Locales {
+	if len(a.config.I18n.Locales) < 2 {
+		return nil
+	}
+	others := make(runtime.Locales, 0, len(a.config.I18n.Locales)-1)
+	for _, locale := range a.config.I18n.Locales {
+		if locale != current {
+			others = append(others, locale)
+		}
+	}
+	return others
 }
 
 func (a *App) alternates(path, origin, scheme string) runtime.Alternates {

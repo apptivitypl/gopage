@@ -3,10 +3,14 @@ package css
 import (
 	"io/fs"
 	"os"
+	"runtime"
 )
 
-const muslHelp = "the standalone tailwind build needs glibc; on alpine either build on a glibc image " +
-	"such as golang:1.26-bookworm, or set \"css\": {\"engine\": \"plain\"} in "
+const muslHelp = "on a system without a build of its own, set \"css\": {\"engine\": \"plain\"} in "
+
+func (t Tailwind) musl() bool {
+	return runtime.GOOS == "linux" && Musl(t.root())
+}
 
 func Musl(root fs.FS) bool {
 	return glob(root, "lib/ld-musl-*") && !glob(root, "lib/ld-linux-*")

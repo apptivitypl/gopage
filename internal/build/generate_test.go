@@ -416,3 +416,60 @@ type Link struct {
 		}
 	}
 }
+
+func TestALayoutLoaderGetsItsOwnPackage(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage": "---\ntype Props struct{ Home string }\n\n" +
+			"func Load(ctx *gopage.Ctx) (Props, error) { return Props{Home: \"/\"}, nil }\n---\n" +
+			"<nav>{{ layout.Home }}</nav>{% outlet %}",
+		"app/page.gopage": "<p>home</p>",
+	})
+	source := read(t, dir, RegistryGo)
+	mustParse(t, source)
+	if !strings.Contains(source, "func Layouts() map[string]gopage.PropsProvider") {
+		t.Errorf("registry = %q, want a layout registry", source)
+	}
+	if !strings.Contains(source, "layout.Route:") || !strings.Contains(source, "layout.Provider") {
+		t.Errorf("registry = %q, want the layout wired in", source)
+	}
+	if !strings.Contains(read(t, dir, AppGo), "Layouts:  Layouts(),") {
+		t.Error("the options must carry the layout registry")
+	}
+	provider := read(t, dir, paths.GenRoot+"/layout/provider.go")
+	mustParse(t, provider)
+	if !strings.Contains(provider, "const Route = \"layout\"") {
+		t.Errorf("provider = %q", provider)
+	}
+	mustParse(t, read(t, dir, paths.GenRoot+"/layout/layout.go"))
+}
+
+func TestALayoutWithoutALoaderGetsNoPackage(t *testing.T) {
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage": "<nav>site</nav>{% outlet %}",
+		"app/page.gopage":   "<p>home</p>",
+	})
+	if _, err := os.Stat(filepath.Join(dir, paths.GenRoot, "layout")); err == nil {
+		t.Error("a layout that loads nothing needs no generated package")
+	}
+	if strings.Contains(read(t, dir, RegistryGo), "layout.Route") {
+		t.Error("the registry must name no layout")
+	}
+}
+
+func TestGroupedLayoutsAreNamedApart(t *testing.T) {
+	loader := "---\ntype Props struct{ Home string }\n\n" +
+		"func Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\n---\n" +
+		"<nav>{{ layout.Home }}</nav>{% outlet %}"
+	dir := buildProject(t, map[string]string{
+		"app/layout.gopage":            loader,
+		"app/(auth)/layout.gopage":     loader,
+		"app/(auth)/login/page.gopage": "<p>login</p>",
+		"app/page.gopage":              "<p>home</p>",
+	})
+	source := read(t, dir, RegistryGo)
+	for _, want := range []string{"layout.Route:", "layout_auth.Route:", "layout_auth.Provider"} {
+		if !strings.Contains(source, want) {
+			t.Errorf("registry = %q, want %s", source, want)
+		}
+	}
+}

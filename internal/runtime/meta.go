@@ -32,23 +32,37 @@ func (a Alternates) At(index int) Value {
 	return Object(a[index])
 }
 
+type Locales []string
+
+func (l Locales) Len() int { return len(l) }
+
+func (l Locales) At(index int) Value {
+	if index < 0 || index >= len(l) {
+		return Nil()
+	}
+	return String(l[index])
+}
+
 const AlternatesField = "Alternates"
+
+const LocaleAlternatesField = "LocaleAlternates"
 
 const HeadField = "Head"
 
 type Meta struct {
-	Title       string
-	Description string
-	Canonical   string
-	Image       string
-	Robots      string
-	Head        string
-	Type        string
-	URL         string
-	Locale      string
-	Card        string
-	Site        string
-	Alternates  Alternates
+	Title            string
+	Description      string
+	Canonical        string
+	Image            string
+	Robots           string
+	Head             string
+	Type             string
+	URL              string
+	Locale           string
+	Card             string
+	Site             string
+	Alternates       Alternates
+	LocaleAlternates Locales
 }
 
 func (m Meta) Get(path []string) (Value, bool) {
@@ -80,6 +94,8 @@ func (m Meta) Get(path []string) (Value, bool) {
 		return String(m.Head), true
 	case AlternatesField:
 		return Seq(m.Alternates), true
+	case LocaleAlternatesField:
+		return Seq(m.LocaleAlternates), true
 	default:
 		return Nil(), false
 	}

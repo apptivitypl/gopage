@@ -130,7 +130,7 @@ func (a *App) resolved(r *http.Request, params Params, route ir.Route) runtime.D
 }
 
 func (a *App) streamPage(w http.ResponseWriter, r *http.Request, route ir.Route, params Params, names []string) {
-	props, err := a.pageProps(w, r, route, params)
+	props, layouts, err := a.loadChain(w, r, route, params, 0)
 	if err != nil {
 		a.failRender(w, r, route, err)
 		return
@@ -154,6 +154,7 @@ func (a *App) streamPage(w http.ResponseWriter, r *http.Request, route ir.Route,
 	set := a.startDeferred(names, r, params, sink.flush)
 
 	opts := a.options(a.fragmentHook(r), LocaleOf(r))
+	opts.Layouts = layouts
 	opts.Deferred = set
 	opts.Budget = runtime.Budget(a.config.Fragments.Wait())
 	opts.Preload = a.preloads[route.Name].tags

@@ -11,6 +11,21 @@ type Document struct {
 	Nodes       []Node
 	Standalone  bool
 	Standalones []diag.Span
+	Varies      []Vary
+}
+
+type VaryKind uint8
+
+const (
+	VaryCookie VaryKind = iota
+	VaryHeader
+)
+
+type Vary struct {
+	Span   diag.Span
+	Kind   VaryKind
+	Name   string
+	Values []string
 }
 
 type Frontmatter struct {

@@ -110,16 +110,16 @@ func TestANonBooleanAttributeStillBinds(t *testing.T) {
 	}
 }
 
-func TestALayoutWithALoaderIsRejected(t *testing.T) {
+func TestALayoutWithAMetaHookIsRejected(t *testing.T) {
 	_, bag := renderApp(t, map[string]string{
-		"app/layout.gopage": "---\ntype Props struct{}\n\nfunc Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\n---\n<main>{% outlet %}</main>",
+		"app/layout.gopage": "---\ntype Props struct{}\n\nfunc Meta(ctx *gopage.Ctx, props Props) gopage.Meta { return gopage.Meta{} }\n---\n<main>{% outlet %}</main>",
 		"app/page.gopage":   "<p>home</p>",
 	}, runtime.Empty{})
 	item, ok := found(bag, diag.C328)
 	if !ok {
 		t.Fatalf("diagnostics = %+v", bag.Items())
 	}
-	if !strings.Contains(item.Message, "Load") {
+	if !strings.Contains(item.Message, "Meta") {
 		t.Errorf("message = %q", item.Message)
 	}
 }

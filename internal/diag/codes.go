@@ -54,6 +54,9 @@ const (
 	C604 Code = "C604"
 	C113 Code = "C113"
 	W705 Code = "W705"
+	C114 Code = "C114"
+	C330 Code = "C330"
+	W706 Code = "W706"
 )
 
 var titles = map[Code]string{
@@ -104,10 +107,13 @@ var titles = map[Code]string{
 	W704: "seo rule points at no route",
 	C326: "interpolation in a literal attribute",
 	C327: "boolean attribute bound to a value",
-	C328: "loader in a layout",
+	C328: "route hook in a layout",
 	C604: "message argument mismatch",
 	C113: "standalone outside a layout",
 	W705: "standalone layout without a head",
+	C114: "vary outside a page or a layout",
+	C330: "vary on a private cookie",
+	W706: "route asks for too many cache variants",
 }
 
 func (c Code) Title() string {

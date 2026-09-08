@@ -19,8 +19,8 @@ func (p *Policy) Add(recorder *cache.Recorder) {
 		return
 	}
 	policy := recorder.Policy()
-	p.ttl = shorter(p.ttl, policy.TTL)
-	p.stale = shorter(p.stale, policy.Stale)
+	p.ttl = cache.Shorter(p.ttl, policy.TTL)
+	p.stale = cache.Shorter(p.stale, policy.Stale)
 	p.tags = append(p.tags, recorder.Tags()...)
 }
 
@@ -32,15 +32,5 @@ func (p *Policy) Resolve(ttl, stale time.Duration) cache.Policy {
 	if p.private {
 		return cache.Policy{}
 	}
-	return cache.Policy{TTL: shorter(p.ttl, ttl), Stale: shorter(p.stale, stale)}
-}
-
-func shorter(current, candidate time.Duration) time.Duration {
-	if candidate <= 0 {
-		return current
-	}
-	if current <= 0 || candidate < current {
-		return candidate
-	}
-	return current
+	return cache.Policy{TTL: cache.Shorter(p.ttl, ttl), Stale: cache.Shorter(p.stale, stale)}
 }

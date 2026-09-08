@@ -34,6 +34,7 @@ func Start(launch Launch) (*App, error) {
 	}
 	address := fmt.Sprintf("127.0.0.1:%d", port)
 	command := exec.Command(launch.Binary)
+	group(command)
 	command.Dir = launch.Dir
 	command.Env = childEnv(launch.Env, address)
 	output := launch.Output
@@ -46,7 +47,7 @@ func Start(launch Launch) (*App, error) {
 		return nil, err
 	}
 	if err := waitPort(address, launch.Timeout, launch.Pause); err != nil {
-		_ = command.Process.Kill()
+		terminate(command)
 		_, _ = command.Process.Wait()
 		return nil, err
 	}
@@ -71,6 +72,9 @@ func (a *App) Handler() http.Handler {
 			r.Out.Header.Del("Accept-Encoding")
 		},
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
+			if attempt, ok := w.(retryable); ok && attempt.retry(err) {
+				return
+			}
 			http.Error(w, "gopage dev: the application is not answering: "+err.Error(), http.StatusBadGateway)
 		},
 	}
@@ -81,7 +85,7 @@ func (a *App) Stop() {
 	if a == nil || a.command == nil || a.command.Process == nil {
 		return
 	}
-	_ = a.command.Process.Kill()
+	terminate(a.command)
 	_, _ = a.command.Process.Wait()
 }
 

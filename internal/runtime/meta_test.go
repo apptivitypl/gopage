@@ -123,3 +123,20 @@ func TestAQueryValueIsPercentEncoded(t *testing.T) {
 		t.Errorf("query = %q", got)
 	}
 }
+
+func TestLocaleAlternatesReadAsASequenceOfStrings(t *testing.T) {
+	list := Locales{"en", "pl"}
+	if list.Len() != 2 || list.At(1).Str != "pl" {
+		t.Fatalf("list = %+v", list)
+	}
+	for _, index := range []int{-1, 2} {
+		if got := list.At(index); got.Kind != KindNil {
+			t.Errorf("At(%d) = %+v", index, got)
+		}
+	}
+	meta := Meta{LocaleAlternates: list}
+	value, ok := meta.Get([]string{LocaleAlternatesField})
+	if !ok || value.Sequence().Len() != 2 {
+		t.Errorf("value = %+v, ok = %v", value, ok)
+	}
+}

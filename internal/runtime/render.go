@@ -122,6 +122,7 @@ type Options struct {
 	Now       func() time.Time
 	Zone      *time.Location
 	Preload   string
+	Layouts   []Accessible
 
 	recording int
 }
@@ -145,7 +146,7 @@ type cursor struct {
 
 func renderPlan(chain []*ir.Plan, planIndex int, props Accessible, out *Buffer, opts *Options) error {
 	plan := chain[planIndex]
-	state := scope{plan: plan, props: props, clock: opts.Now, zone: opts.Zone}
+	state := scope{plan: plan, props: layered(props, planIndex, opts), clock: opts.Now, zone: opts.Zone}
 	if len(plan.Messages) > 0 {
 		state.catalog = opts.Catalog
 		state.plural = opts.Plural

@@ -28,6 +28,7 @@ const (
 	IdleTimeout    = 2 * time.Minute
 	GraceTimeout   = 10 * time.Second
 	MaxHeaderBytes = 1 << 20
+	OrphanCheck    = 2 * time.Second
 )
 
 func Serve(addr string, app *App) error {
@@ -36,8 +37,9 @@ func Serve(addr string, app *App) error {
 
 func ServeTLS(addr string, app *App, certificate, key string) error {
 	server := Server(addr, app)
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
+	ctx = untilOrphaned(ctx, OrphanCheck)
 
 	if os.Getenv(logs.DevVar) == "" {
 		app.Log().Info("listening", "addr", addr)
@@ -64,6 +66,34 @@ func ServeTLS(addr string, app *App, certificate, key string) error {
 		app.Log().Info("shutting down", "grace", GraceTimeout)
 		return shutdown(server, GraceTimeout)
 	}
+}
+
+func untilOrphaned(ctx context.Context, every time.Duration) context.Context {
+	if os.Getenv(logs.DevVar) == "" {
+		return ctx
+	}
+	return watchParent(ctx, every, os.Getppid)
+}
+
+func watchParent(ctx context.Context, every time.Duration, parentOf func() int) context.Context {
+	parent := parentOf()
+	watched, give := context.WithCancel(ctx)
+	go func() {
+		ticker := time.NewTicker(every)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-watched.Done():
+				return
+			case <-ticker.C:
+				if parentOf() != parent {
+					give()
+					return
+				}
+			}
+		}
+	}()
+	return watched
 }
 
 func Listen(addr string, limit int) (net.Listener, error) {

@@ -91,24 +91,9 @@ func writeGenerated(dir, module string, result compile.Result) ([]generated, err
 	var packages []generated
 	for _, route := range targets {
 		template := result.Templates[route.File]
-		pkg := codegen.PackageName(route.Name)
-		source, err := codegen.Render(codegen.File{
-			Package:    pkg,
-			SourceFile: route.File,
-			SourceLine: template.FirstLine,
-			Source:     template.Frontmatter,
-			Schema:     result.Schemas[route.File],
-		})
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", route.File, err)
-		}
-		target := filepath.Join(dir, paths.GenRoot, pkg, "page.go")
-		if err := writeFile(target, source); err != nil {
-			return nil, err
-		}
 		var bag diag.Bag
 		entry := generated{
-			Package:  pkg,
+			Package:  codegen.PackageName(route.Name),
 			Route:    route.Name,
 			Meta:     template.HasMeta(),
 			Sitemap:  template.Sitemap(&bag),
@@ -121,7 +106,7 @@ func writeGenerated(dir, module string, result compile.Result) ([]generated, err
 		if bag.HasErrors() {
 			return nil, &Error{Diagnostics: bag.Sorted(), Sources: map[string]string{route.File: template.Source}}
 		}
-		if err := writeGo(filepath.Join(dir, paths.GenRoot, pkg, "provider.go"), provider(entry)); err != nil {
+		if err := writeUnit(dir, "page.go", route.File, template, result.Schemas[route.File], entry); err != nil {
 			return nil, err
 		}
 		packages = append(packages, entry)
@@ -134,9 +119,13 @@ func writeGenerated(dir, module string, result compile.Result) ([]generated, err
 		}
 		handlers = append(handlers, generated{Package: pkg, Route: handler.Route})
 	}
+	layouts, err := writeLayouts(dir, result)
+	if err != nil {
+		return nil, err
+	}
 	sort.Slice(packages, func(i, j int) bool { return packages[i].Package < packages[j].Package })
 	sort.Slice(handlers, func(i, j int) bool { return handlers[i].Package < handlers[j].Package })
-	if err := writeGo(filepath.Join(dir, filepath.FromSlash(RegistryGo)), registry(module, packages, handlers)); err != nil {
+	if err := writeGo(filepath.Join(dir, filepath.FromSlash(RegistryGo)), registry(module, packages, handlers, layouts)); err != nil {
 		return nil, err
 	}
 	if err := writeGo(filepath.Join(dir, filepath.FromSlash(EmbedGo)), embedded()); err != nil {
@@ -154,7 +143,7 @@ func Bootstrap(dir string) error {
 		return err
 	}
 	sources := map[string][]byte{
-		RegistryGo: registry(module, nil, nil),
+		RegistryGo: registry(module, nil, nil, nil),
 		AppGo:      app(),
 		EmbedGo:    embedded(),
 		ServedGo:   served(),
@@ -190,7 +179,7 @@ func app() []byte {
 	b.WriteString("func Options() gopage.Options {\n")
 	b.WriteString("\treturn gopage.Options{\n")
 	b.WriteString("\t\tManifest: Manifest,\n\t\tConfig:   Config,\n\t\tPreload:  Preload,\n\t\tStatic:   Static,\n\t\tBundles:  Bundles,\n\t\tPublic:   Public,\n")
-	b.WriteString("\t\tProps:    Props(),\n\t\tMeta:     Meta(),\n\t\tSitemap:  Sitemap(),\n\t\tSubmit:   Submit(),\n\t\tAPI:      API(),\n\t\tDeferred: Deferred(),\n")
+	b.WriteString("\t\tProps:    Props(),\n\t\tLayouts:  Layouts(),\n\t\tMeta:     Meta(),\n\t\tSitemap:  Sitemap(),\n\t\tSubmit:   Submit(),\n\t\tAPI:      API(),\n\t\tDeferred: Deferred(),\n")
 	b.WriteString("\t}\n}\n")
 	return []byte(b.String())
 }
@@ -211,6 +200,45 @@ func served() []byte {
 	b.WriteString("import \"embed\"\n\n")
 	b.WriteString("var (\n\tStatic  embed.FS\n\tBundles embed.FS\n\tPublic  embed.FS\n)\n")
 	return []byte(b.String())
+}
+
+func writeUnit(dir, name, file string, template compile.Template, model *schema.Schema, entry generated) error {
+	source, err := codegen.Render(codegen.File{
+		Package:    entry.Package,
+		SourceFile: file,
+		SourceLine: template.FirstLine,
+		Source:     template.Frontmatter,
+		Schema:     model,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", file, err)
+	}
+	if err := writeFile(filepath.Join(dir, paths.GenRoot, entry.Package, name), source); err != nil {
+		return err
+	}
+	return writeGo(filepath.Join(dir, paths.GenRoot, entry.Package, "provider.go"), provider(entry))
+}
+
+func writeLayouts(dir string, result compile.Result) ([]generated, error) {
+	var layouts []generated
+	for file, template := range result.Templates {
+		if !template.IsLayout || !template.HasLoader() {
+			continue
+		}
+		name := compile.LayoutName(file)
+		entry := generated{
+			Package: codegen.PackageName(name),
+			Route:   name,
+			Loader:  true,
+			Params:  template.LoaderTakesParams(),
+		}
+		if err := writeUnit(dir, "layout.go", file, template, result.Schemas[file], entry); err != nil {
+			return nil, err
+		}
+		layouts = append(layouts, entry)
+	}
+	sort.Slice(layouts, func(i, j int) bool { return layouts[i].Package < layouts[j].Package })
+	return layouts, nil
 }
 
 func loaderRoutes(result compile.Result) []compile.Route {
@@ -249,11 +277,11 @@ func provider(entry generated) []byte {
 		b.WriteString("\treturn props, nil\n}\n")
 	}
 	if entry.Meta {
-		b.WriteString("\nfunc MetaProvider(request *http.Request, params gopage.Params) (gopage.Meta, error) {\n")
-		b.WriteString("\tctx := gopage.NewCtx(request, params)\n")
-		fmt.Fprintf(&b, "\tprops, err := Load(%s)\n", metaLoaderArgs(entry))
-		b.WriteString("\tif err != nil {\n\t\treturn gopage.Meta{}, nil\n\t}\n")
-		b.WriteString("\treturn Meta(ctx, props), nil\n}\n")
+		b.WriteString("\nfunc MetaProvider(request *http.Request, params gopage.Params, " +
+			"held gopage.Accessible) (gopage.Meta, error) {\n")
+		b.WriteString("\tprops, ok := held.(Props)\n")
+		b.WriteString("\tif !ok {\n\t\treturn gopage.Meta{}, nil\n\t}\n")
+		b.WriteString("\treturn Meta(gopage.NewCtx(request, params), props), nil\n}\n")
 	}
 	for _, name := range entry.Deferred {
 		fmt.Fprintf(&b, "\nfunc %sProvider(request *http.Request, params gopage.Params) (gopage.Accessible, error) {\n", name)
@@ -316,20 +344,13 @@ func loaderArgs(entry generated) string {
 	return "gopage.NewCtx(request, params)"
 }
 
-func metaLoaderArgs(entry generated) string {
-	if entry.Params {
-		return "ctx, params"
-	}
-	return "ctx"
-}
-
-func registry(module string, packages, handlers []generated) []byte {
+func registry(module string, packages, handlers, layouts []generated) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "// Code generated by gopage. DO NOT EDIT.\n\npackage %s\n\n", packageName)
 	b.WriteString("import (\n")
 	b.WriteString("\t\"net/http\"\n\n")
 	fmt.Fprintf(&b, "\t%q\n", codegen.GopageImport)
-	for _, pkg := range append(append([]generated{}, packages...), handlers...) {
+	for _, pkg := range append(append(append([]generated{}, packages...), handlers...), layouts...) {
 		fmt.Fprintf(&b, "\t%q\n", module+"/"+paths.GenRoot+"/"+pkg.Package)
 	}
 	b.WriteString(")\n\n")
@@ -339,6 +360,12 @@ func registry(module string, packages, handlers []generated) []byte {
 		if pkg.Loader {
 			fmt.Fprintf(&b, "\t\t%s.Route: %s.Provider,\n", pkg.Package, pkg.Package)
 		}
+	}
+	b.WriteString("\t}\n}\n\n")
+	b.WriteString("func Layouts() map[string]gopage.PropsProvider {\n")
+	b.WriteString("\treturn map[string]gopage.PropsProvider{\n")
+	for _, pkg := range layouts {
+		fmt.Fprintf(&b, "\t\t%s.Route: %s.Provider,\n", pkg.Package, pkg.Package)
 	}
 	b.WriteString("\t}\n}\n\n")
 	b.WriteString("func Meta() map[string]gopage.MetaProvider {\n")

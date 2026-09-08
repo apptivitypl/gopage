@@ -42,7 +42,7 @@ func (a *App) sharedLevel(from string, target ir.Route) int {
 func (a *App) writePartial(w http.ResponseWriter, r *http.Request, route ir.Route, params Params) {
 	level := a.sharedLevel(r.Header.Get(PartialHeader), route)
 
-	props, err := a.pageProps(w, r, route, params)
+	props, layouts, err := a.loadChain(w, r, route, params, level)
 	if err != nil {
 		a.logger.Error("render failed", "route", route.Name, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -52,6 +52,7 @@ func (a *App) writePartial(w http.ResponseWriter, r *http.Request, route ir.Rout
 	body := runtime.Acquire(runtime.Capacity(chain))
 	defer runtime.Release(body)
 	opts := a.options(a.fragmentHook(r), LocaleOf(r))
+	opts.Layouts = layouts
 	opts.Deferred = a.resolved(r, params, route)
 	if err := runtime.RenderOptions(chain[level:], props, body, opts); err != nil {
 		a.logger.Error("render failed", "route", route.Name, "error", err)

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -50,6 +51,12 @@ func metaOf(t *testing.T, app *App, target string) runtime.Meta {
 			lang, _ := entry.Get([]string{"Lang"})
 			href, _ := entry.Get([]string{"Href"})
 			meta.Alternates = append(meta.Alternates, runtime.Alternate{Lang: lang.Str, Href: href.Str})
+		}
+	}
+	tongues, _ := props.Get([]string{runtime.MetaRoot, runtime.LocaleAlternatesField})
+	if seq := tongues.Sequence(); seq != nil {
+		for i := range seq.Len() {
+			meta.LocaleAlternates = append(meta.LocaleAlternates, seq.At(i).Str)
 		}
 	}
 	return meta
@@ -148,7 +155,7 @@ func TestAnExplicitCanonicalIsKept(t *testing.T) {
 		Manifest: metaChain(),
 		Config:   settings(t, "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}"),
 		Meta: map[string]MetaProvider{
-			"index": func(*http.Request, Params) (runtime.Meta, error) {
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{Canonical: "https://elsewhere.test/x"}, nil
 			},
 		},
@@ -228,7 +235,7 @@ func TestAnExplicitCanonicalOnASingleLocaleSiteIsUntouched(t *testing.T) {
 	app := New(Options{
 		Manifest: metaChain(),
 		Meta: map[string]MetaProvider{
-			"index": func(*http.Request, Params) (runtime.Meta, error) {
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{Canonical: "https://elsewhere.test/x"}, nil
 			},
 		},
@@ -271,6 +278,16 @@ func TestOpenGraphFollowsTheCanonical(t *testing.T) {
 	if meta.Locale != "pl" {
 		t.Errorf("og:locale = %q", meta.Locale)
 	}
+	if !slices.Equal(meta.LocaleAlternates, runtime.Locales{"en"}) {
+		t.Errorf("og:locale:alternate = %v, want the other configured locales", meta.LocaleAlternates)
+	}
+}
+
+func TestASingleLocaleHasNoOpenGraphAlternates(t *testing.T) {
+	meta := metaOf(t, seoApp(t, ""), "/")
+	if len(meta.LocaleAlternates) != 0 {
+		t.Errorf("og:locale:alternate = %v, want none", meta.LocaleAlternates)
+	}
 }
 
 func TestAnAppMayNameItsOwnOpenGraph(t *testing.T) {
@@ -278,7 +295,7 @@ func TestAnAppMayNameItsOwnOpenGraph(t *testing.T) {
 		Manifest: metaChain(),
 		Config:   settings(t, ""),
 		Meta: map[string]MetaProvider{
-			"index": func(*http.Request, Params) (runtime.Meta, error) {
+			"index": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 				return runtime.Meta{URL: "https://cdn.example.com/x", Locale: "de", Card: "summary_large_image"}, nil
 			},
 		},
@@ -289,4 +306,60 @@ func TestAnAppMayNameItsOwnOpenGraph(t *testing.T) {
 		t.Errorf("meta = %+v", meta)
 	}
 	_ = app
+}
+
+func TestMetaReadsWhatTheLoaderReturned(t *testing.T) {
+	loads := 0
+	var seen runtime.Accessible
+	app := New(Options{
+		Manifest: metaChain(),
+		Config:   settings(t, ""),
+		Props: map[string]PropsProvider{
+			"index": func(*http.Request, Params) (runtime.Accessible, error) {
+				loads++
+				return runtime.Map{"Title": runtime.String("home")}, nil
+			},
+		},
+		Meta: map[string]MetaProvider{
+			"index": func(_ *http.Request, _ Params, props runtime.Accessible) (runtime.Meta, error) {
+				seen = props
+				return runtime.Meta{Title: "home"}, nil
+			},
+		},
+	})
+	get(t, app.Handler(), "/")
+	if loads != 1 {
+		t.Errorf("the loader ran %d times, want once per request", loads)
+	}
+	value, ok := seen.Get([]string{"Title"})
+	if !ok || value.Str != "home" {
+		t.Errorf("meta saw %+v, want the props the loader returned", seen)
+	}
+}
+
+func TestTheProbeLoadsThePropsMetaNeeds(t *testing.T) {
+	loads := 0
+	app := New(Options{
+		Manifest: metaChain(),
+		Config:   settings(t, ""),
+		Props: map[string]PropsProvider{
+			"index": func(*http.Request, Params) (runtime.Accessible, error) {
+				loads++
+				return runtime.Map{"Title": runtime.String("home")}, nil
+			},
+		},
+		Meta: map[string]MetaProvider{
+			"index": func(_ *http.Request, _ Params, props runtime.Accessible) (runtime.Meta, error) {
+				value, _ := props.Get([]string{"Title"})
+				return runtime.Meta{Canonical: "https://example.com/" + value.Str}, nil
+			},
+		},
+	})
+	body := get(t, app.Handler(), "/sitemap.xml").Body.String()
+	if !strings.Contains(body, "https://example.com/home") {
+		t.Errorf("sitemap = %q, want the canonical the probe read", body)
+	}
+	if loads == 0 {
+		t.Error("the probe must load the props its meta reads")
+	}
 }

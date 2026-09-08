@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -518,5 +519,179 @@ func TestAnOpenGraphCardIsRendered(t *testing.T) {
 	}
 	if len(data) < 1000 || string(data[1:4]) != "PNG" {
 		t.Errorf("card = %d bytes, header = %q", len(data), data[:8])
+	}
+}
+
+func deferredDemo(t *testing.T) []byte {
+	t.Helper()
+	return build(t, fstest.MapFS{
+		"app/layout.gopage": {Data: []byte("<main>{% outlet %}</main>")},
+		"app/page.gopage": {Data: []byte("---\ntype Props struct{}\n\ntype Review struct{ Text string }\n\n" +
+			"func Reviews(ctx *gopage.Ctx) (Review, error) { return Review{}, nil }\n---\n" +
+			"{% fragment \"Reviews\" defer %}<p>{{ Reviews.Text }}</p>{% endfragment %}")},
+	})
+}
+
+func TestRenderFragmentByName(t *testing.T) {
+	app, err := TestApp(Options{
+		Manifest: deferredDemo(t),
+		Deferred: map[string]DeferredProvider{
+			"Reviews": func(*http.Request, Params) (Accessible, error) {
+				return Props{"Text": String("late")}, nil
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("TestApp: %v", err)
+	}
+	body, err := app.RenderFragment(t.Context(), "index", "Reviews", Params{})
+	if err != nil {
+		t.Fatalf("RenderFragment: %v", err)
+	}
+	if string(body) != "<p>late</p>" {
+		t.Errorf("body = %q", body)
+	}
+	if _, err := app.RenderFragment(t.Context(), "nope", "Reviews", Params{}); err == nil {
+		t.Error("expected an error for an unknown route name")
+	}
+}
+
+func TestATestAppHoldsNothingInItsCache(t *testing.T) {
+	app, err := TestApp(Options{Manifest: demo(t), CacheBytes: 1 << 20})
+	if err != nil {
+		t.Fatalf("TestApp: %v", err)
+	}
+	for range 2 {
+		recorder := httptest.NewRecorder()
+		app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+		if got := recorder.Header().Get(server.CacheHeader); got == "hit" {
+			t.Errorf("cache = %q, want a test app that never answers from the store", got)
+		}
+	}
+}
+
+func TestADeclaredCookieReachesTheLoaderAsItsBucket(t *testing.T) {
+	var seen []string
+	app, err := New(Options{
+		Manifest: build(t, fstest.MapFS{
+			"app/page.gopage": {Data: []byte(`{% vary cookie="theme" values="light, dark" %}<p>home</p>`)},
+		}),
+		CacheBytes: 1 << 20,
+		Props: map[string]PropsProvider{
+			"index": func(r *http.Request, params Params) (Accessible, error) {
+				ctx := NewCtx(r, params)
+				ctx.Cache().TTL(time.Minute)
+				held, ok := ctx.Cookie("theme")
+				if !ok {
+					seen = append(seen, "-")
+					return Props{}, nil
+				}
+				seen = append(seen, held.Value)
+				return Props{}, nil
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	ask := func(value string) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		request.AddCookie(&http.Cookie{Name: "theme", Value: value})
+		recorder := httptest.NewRecorder()
+		app.Handler().ServeHTTP(recorder, request)
+		return recorder
+	}
+	answer := ask("dark")
+	if got := answer.Header().Get("Cache-Control"); strings.Contains(got, "private") {
+		t.Errorf("cache-control = %q, want a declared cookie to leave the response shareable", got)
+	}
+	ask("chartreuse")
+	if len(seen) != 2 || seen[0] != "dark" || seen[1] != "-" {
+		t.Errorf("loader saw %v, want the bucket and then nothing for an unlisted value", seen)
+	}
+}
+
+func TestOnceRunsSharedWorkOnce(t *testing.T) {
+	var calls atomic.Int64
+	fetch := func(context.Context) (string, error) {
+		calls.Add(1)
+		time.Sleep(20 * time.Millisecond)
+		return "cities", nil
+	}
+	var seen [2]string
+	app, err := New(Options{
+		Manifest: build(t, fstest.MapFS{
+			"app/layout.gopage": {Data: []byte("---\ntype Props struct{ Home string }\n\n" +
+				"func Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\n---\n" +
+				"<nav>{{ layout.Home }}</nav>{% outlet %}")},
+			"app/page.gopage": {Data: []byte("<p>home</p>")},
+		}),
+		CacheBytes: 1 << 20,
+		Layouts: map[string]PropsProvider{
+			"layout": func(r *http.Request, params Params) (Accessible, error) {
+				held, err := Once(NewCtx(r, params), "cities", fetch)
+				seen[0] = held
+				return Props{"Home": String(held)}, err
+			},
+		},
+		Props: map[string]PropsProvider{
+			"index": func(r *http.Request, params Params) (Accessible, error) {
+				held, err := Once(NewCtx(r, params), "cities", fetch)
+				seen[1] = held
+				return Props{}, err
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	recorder := httptest.NewRecorder()
+	app.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	if calls.Load() != 1 {
+		t.Errorf("the work ran %d times, want once for the whole request", calls.Load())
+	}
+	if seen[0] != "cities" || seen[1] != "cities" {
+		t.Errorf("loaders saw %v, want both to get the same answer", seen)
+	}
+}
+
+func TestOnceWithoutARequestStillRuns(t *testing.T) {
+	held, err := Once(NewCtx(nil, nil), "cities", func(context.Context) (int, error) { return 7, nil })
+	if err != nil || held != 7 {
+		t.Errorf("Once = %d, err = %v", held, err)
+	}
+	if _, err := Once(NewCtx(nil, nil), "bad", func(context.Context) (int, error) {
+		return 0, errors.New("nope")
+	}); err == nil {
+		t.Error("an error must travel back")
+	}
+}
+
+func TestRenderCarriesTheLayoutProps(t *testing.T) {
+	app, err := TestApp(Options{
+		Manifest: build(t, fstest.MapFS{
+			"app/layout.gopage": {Data: []byte("---\ntype Props struct{ Home string }\n\n" +
+				"func Load(ctx *gopage.Ctx) (Props, error) { return Props{}, nil }\n---\n" +
+				"<nav>{{ layout.Home }}</nav>{% outlet %}")},
+			"app/page.gopage": {Data: []byte("<p>home</p>")},
+		}),
+		Layouts: map[string]PropsProvider{
+			"layout": func(*http.Request, Params) (Accessible, error) {
+				return Props{"Home": String("/start")}, nil
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("TestApp: %v", err)
+	}
+	body, err := app.Render(t.Context(), "index", Params{})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if string(body) != "<nav>/start</nav><p>home</p>" {
+		t.Errorf("body = %q, want the layout data the chain needs", body)
 	}
 }

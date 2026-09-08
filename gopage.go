@@ -84,6 +84,7 @@ type Options struct {
 	Public     fs.FS
 	CacheBytes int64
 	Props      map[string]PropsProvider
+	Layouts    map[string]PropsProvider
 	Deferred   map[string]DeferredProvider
 	Meta       map[string]MetaProvider
 	Sitemap    map[string]SitemapProvider
@@ -125,6 +126,14 @@ func (a *App) Log() *slog.Logger {
 	return a.logger
 }
 
+func TestApp(opts Options) (*App, error) {
+	opts.CacheBytes = 0
+	if opts.Logger == nil {
+		opts.Logger = slog.New(slog.DiscardHandler)
+	}
+	return New(opts)
+}
+
 func New(opts Options) (*App, error) {
 	manifest, err := ir.Decode(opts.Manifest)
 	if err != nil {
@@ -159,6 +168,7 @@ func New(opts Options) (*App, error) {
 			AssetLink:  link,
 			Public:     public,
 			Props:      opts.Props,
+			Layouts:    opts.Layouts,
 			Deferred:   opts.Deferred,
 			Meta:       opts.Meta,
 			Sitemap:    opts.Sitemap,
@@ -289,6 +299,17 @@ func RedirectError(status int, location string) error {
 	return redirect.Fail(status, location)
 }
 
+func Once[T any](c *Ctx, name string, load func(context.Context) (T, error)) (T, error) {
+	ctx := c.Context()
+	group := cache.Shared(ctx)
+	if group == nil {
+		return load(ctx)
+	}
+	value, err, _ := group.Do(name, func() (any, error) { return load(ctx) })
+	held, _ := value.(T)
+	return held, err
+}
+
 func LocalsOf[T any](c *Ctx) (T, bool) {
 	value, ok := server.LocalsFrom(c.Context()).(T)
 	return value, ok
@@ -325,22 +346,37 @@ func (a *App) Routes() []Route {
 	return routes
 }
 
-func (a *App) Render(ctx context.Context, name string, params Params) ([]byte, error) {
+func (a *App) routeNamed(name string) (ir.Route, error) {
 	for _, route := range a.manifest.Routes {
 		if route.Name == name {
-			return a.inner.RenderRoute(ctx, route, params)
+			return route, nil
 		}
 	}
-	return nil, fmt.Errorf("gopage: no route named %q", name)
+	return ir.Route{}, fmt.Errorf("gopage: no route named %q", name)
+}
+
+func (a *App) Render(ctx context.Context, name string, params Params) ([]byte, error) {
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
+	}
+	return a.inner.RenderRoute(ctx, route, params)
+}
+
+func (a *App) RenderFragment(ctx context.Context, name, fragment string, params Params) ([]byte, error) {
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
+	}
+	return a.inner.RenderFragment(ctx, route, params, fragment)
 }
 
 func (a *App) RenderStatic(name string) ([]byte, error) {
-	for _, route := range a.manifest.Routes {
-		if route.Name == name {
-			return a.inner.RenderStatic(route)
-		}
+	route, err := a.routeNamed(name)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("gopage: no route named %q", name)
+	return a.inner.RenderStatic(route)
 }
 
 type Sequence = runtime.Sequence
@@ -488,6 +524,12 @@ func (c *Ctx) Vary(headers ...string) {
 func (c *Ctx) Cookie(name string) (*http.Cookie, bool) {
 	if c.request == nil {
 		return nil, false
+	}
+	if bucket, declared := server.BucketsFrom(c.Context()).Cookie(name); declared {
+		if bucket == "" {
+			return nil, false
+		}
+		return &http.Cookie{Name: name, Value: bucket}, true
 	}
 	held, err := c.request.Cookie(name)
 	if err != nil {

@@ -49,6 +49,11 @@ func Encode(m *Manifest) []byte {
 			w.u32(index)
 		}
 	}
+	w.u32(uint32(len(m.Layouts)))
+	for _, layout := range m.Layouts {
+		w.str(layout.Name)
+		w.u32(layout.Plan)
+	}
 	return w.buf
 }
 
@@ -120,6 +125,15 @@ func encodeRoute(w *writer, r Route) {
 		w.u32(index)
 	}
 	w.u8(uint8(r.Class))
+	w.u32(uint32(len(r.Vary)))
+	for _, dimension := range r.Vary {
+		w.u8(uint8(dimension.Kind))
+		w.str(dimension.Name)
+		w.u32(uint32(len(dimension.Values)))
+		for _, value := range dimension.Values {
+			w.str(value)
+		}
+	}
 }
 
 func Decode(data []byte) (*Manifest, error) {
@@ -182,6 +196,19 @@ func Decode(data []byte) (*Manifest, error) {
 	m.Fallbacks = makeSlice[Fallback](fallbackCount)
 	for i := range m.Fallbacks {
 		if m.Fallbacks[i], err = decodeFallback(r); err != nil {
+			return nil, err
+		}
+	}
+	layoutCount, err := r.count(lengthSize)
+	if err != nil {
+		return nil, err
+	}
+	m.Layouts = makeSlice[Layout](layoutCount)
+	for i := range m.Layouts {
+		if m.Layouts[i].Name, err = r.str(); err != nil {
+			return nil, err
+		}
+		if m.Layouts[i].Plan, err = r.u32(); err != nil {
 			return nil, err
 		}
 	}
@@ -461,7 +488,39 @@ func decodeRoute(r *reader) (Route, error) {
 		return route, err
 	}
 	route.Class = RouteClass(class[0])
+	if route.Vary, err = decodeVary(r); err != nil {
+		return route, err
+	}
 	return route, nil
+}
+
+func decodeVary(r *reader) ([]Vary, error) {
+	count, err := r.count(lengthSize)
+	if err != nil {
+		return nil, err
+	}
+	dimensions := makeSlice[Vary](count)
+	for i := range dimensions {
+		kind, err := r.bytes(1)
+		if err != nil {
+			return nil, err
+		}
+		dimensions[i].Kind = VaryKind(kind[0])
+		if dimensions[i].Name, err = r.str(); err != nil {
+			return nil, err
+		}
+		values, err := r.count(lengthSize)
+		if err != nil {
+			return nil, err
+		}
+		dimensions[i].Values = makeSlice[string](values)
+		for v := range dimensions[i].Values {
+			if dimensions[i].Values[v], err = r.str(); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return dimensions, nil
 }
 
 const (

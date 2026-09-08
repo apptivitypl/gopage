@@ -30,7 +30,10 @@ crosses a boundary it should not.
   request whose loader would have returned something else. A response is personal, and so never
   stored, when the request carries a cookie named in `security.privateCookies`, when a loader reads
   a cookie that is there, or when a loader sets one; a personal response that lands in the cache
-  anyway belongs here. The `I2` invariant test exists for exactly this class.
+  anyway belongs here. The `I2` invariant test exists for exactly this class. A cookie a route
+  declares with `{% vary %}` is the deliberate exception: the response is shared, one entry per
+  declared value, and the loader is handed the matched value rather than the cookie, so a value
+  nobody declared cannot become an entry of its own. A loader seeing anything else there is a bug.
 - **Path traversal.** A request that reads outside `public/`, or a build that writes outside the
   project directory.
 - **Forms.** A submission accepted without its CSRF token, or a token that is valid across

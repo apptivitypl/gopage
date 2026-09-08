@@ -894,3 +894,85 @@ func TestACacheableDeferredLoaderStillAdvertisesItsAge(t *testing.T) {
 		t.Errorf("cache control = %q", got)
 	}
 }
+
+func TestRenderFragmentMatchesTheHttpAnswer(t *testing.T) {
+	app := streamApp(t, 0, config.DeferredFetch)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set(FragmentHeader, "Reviews")
+	app.Handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	got, err := app.RenderFragment(t.Context(), app.manifest.Routes[0], Params{}, "Reviews")
+	if err != nil {
+		t.Fatalf("RenderFragment: %v", err)
+	}
+	if string(got) != recorder.Body.String() {
+		t.Errorf("RenderFragment = %q, http = %q", got, recorder.Body.String())
+	}
+}
+
+func TestRenderFragmentNamesWhatItCannotFind(t *testing.T) {
+	app := streamApp(t, 0, config.DeferredFetch)
+	route := app.manifest.Routes[0]
+	if _, err := app.RenderFragment(t.Context(), route, Params{}, "Absent"); err == nil {
+		t.Error("a fragment that is not in the plan must be an error")
+	}
+	loaderless := New(Options{
+		Manifest: &ir.Manifest{
+			Plans:  []ir.Plan{*streamPlan()},
+			Routes: []ir.Route{{Pattern: "/", Name: "home", Plan: 0}},
+		},
+		Config: streamConfig(config.DeferredFetch),
+	})
+	if _, err := loaderless.RenderFragment(t.Context(), route, Params{}, "Reviews"); err == nil {
+		t.Error("a fragment without a loader must be an error")
+	}
+}
+
+func TestRenderFragmentPassesOnAFailingLoader(t *testing.T) {
+	broken := errors.New("no reviews")
+	manifest := &ir.Manifest{
+		Plans:  []ir.Plan{*streamPlan()},
+		Routes: []ir.Route{{Pattern: "/", Name: "home", Plan: 0}},
+	}
+	app := New(Options{
+		Manifest: manifest,
+		Config:   streamConfig(config.DeferredFetch),
+		Props: map[string]PropsProvider{
+			"home": func(*http.Request, Params) (runtime.Accessible, error) { return runtime.Map{}, nil },
+		},
+		Deferred: map[string]DeferredProvider{
+			"Reviews": func(*http.Request, Params) (runtime.Accessible, error) { return nil, broken },
+		},
+	})
+	if _, err := app.RenderFragment(t.Context(), manifest.Routes[0], Params{}, "Reviews"); !errors.Is(err, broken) {
+		t.Errorf("err = %v, want the loader error", err)
+	}
+
+	failing := New(Options{
+		Manifest: manifest,
+		Config:   streamConfig(config.DeferredFetch),
+		Props: map[string]PropsProvider{
+			"home": func(*http.Request, Params) (runtime.Accessible, error) { return nil, broken },
+		},
+		Deferred: map[string]DeferredProvider{
+			"Reviews": func(*http.Request, Params) (runtime.Accessible, error) { return slow("late"), nil },
+		},
+	})
+	if _, err := failing.RenderFragment(t.Context(), manifest.Routes[0], Params{}, "Reviews"); !errors.Is(err, broken) {
+		t.Errorf("err = %v, want the page loader error", err)
+	}
+
+	unreadable := New(Options{
+		Manifest: manifest,
+		Config:   streamConfig(config.DeferredFetch),
+		Deferred: map[string]DeferredProvider{
+			"Reviews": func(*http.Request, Params) (runtime.Accessible, error) { return runtime.Empty{}, nil },
+		},
+	})
+	if _, err := unreadable.RenderFragment(t.Context(), manifest.Routes[0], Params{}, "Reviews"); err == nil {
+		t.Error("a fragment whose plan reads what the loader did not return must fail")
+	}
+}

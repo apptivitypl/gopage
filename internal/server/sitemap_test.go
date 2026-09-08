@@ -25,7 +25,7 @@ func sitemapApp(t *testing.T, text string, opts Options) *App {
 }
 
 func metaProvider(meta runtime.Meta, err error, calls *atomic.Int64) MetaProvider {
-	return func(*http.Request, Params) (runtime.Meta, error) {
+	return func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
 		if calls != nil {
 			calls.Add(1)
 		}
@@ -76,7 +76,7 @@ func TestAFailingProbeKeepsTheDerivedEntry(t *testing.T) {
 func TestTheProbeSeesTheLocalisedPath(t *testing.T) {
 	var seen []string
 	app := sitemapApp(t, `{"i18n": {"locales": ["en", "pl"]}}`, Options{
-		Meta: map[string]MetaProvider{"index": func(r *http.Request, _ Params) (runtime.Meta, error) {
+		Meta: map[string]MetaProvider{"index": func(r *http.Request, _ Params, _ runtime.Accessible) (runtime.Meta, error) {
 			seen = append(seen, r.URL.Path+" "+LocaleOf(r))
 			return runtime.Meta{}, nil
 		}},

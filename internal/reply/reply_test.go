@@ -164,3 +164,52 @@ func TestCheckLeavesADeliberateShapeAlone(t *testing.T) {
 		t.Errorf("cookie = %+v", shaped)
 	}
 }
+
+func TestMergeTakesTheOtherRecorderInOrder(t *testing.T) {
+	page := NewRecorder()
+	page.Header().Set("X-Owner", "page")
+	page.Status(http.StatusTeapot)
+	page.Vary("Accept")
+	page.SetCookie(&http.Cookie{Name: "a", Value: "1"})
+
+	layout := NewRecorder()
+	layout.Header().Set("X-Owner", "layout")
+	layout.Header().Set("X-Layout", "yes")
+	layout.Vary("Cookie")
+	layout.SetCookie(&http.Cookie{Name: "b", Value: "2"})
+
+	merged := NewRecorder()
+	merged.Merge(layout)
+	merged.Merge(page)
+
+	headers := merged.Headers()
+	if got := headers.Get("X-Owner"); got != "page" {
+		t.Errorf("x-owner = %q, want the later recorder to win", got)
+	}
+	if got := headers.Get("X-Layout"); got != "yes" {
+		t.Errorf("x-layout = %q, want what only the first one set", got)
+	}
+	if got := headers.Get(VaryHeader); got != "Cookie, Accept" {
+		t.Errorf("vary = %q, want both names once each", got)
+	}
+	if got := merged.Code(); got != http.StatusTeapot {
+		t.Errorf("status = %d", got)
+	}
+	if len(merged.cookies) != 2 {
+		t.Errorf("cookies = %v, want both", merged.cookies)
+	}
+	merged.Merge(nil)
+}
+
+func TestMergeCarriesARejectedStatus(t *testing.T) {
+	broken := NewRecorder()
+	broken.Status(42)
+	merged := NewRecorder()
+	merged.Merge(broken)
+	if merged.Touched() != true {
+		t.Error("a rejected status still counts as a touch")
+	}
+	if merged.Code() != 0 {
+		t.Errorf("status = %d, want a rejected code to stay unset", merged.Code())
+	}
+}

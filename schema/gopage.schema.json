@@ -243,6 +243,13 @@
         "react": {"type": "string", "enum": ["react", "preact"], "description": "Which engine islands are bundled against."}
       }
     },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "variants": {"type": "integer", "minimum": 1, "description": "How many cache entries one route may hold once its vary directives are multiplied out."}
+      }
+    },
     "redirects": {
       "type": "array",
       "items": {

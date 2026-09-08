@@ -32,6 +32,7 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C111](C111.md) | link points at no route |
 | [C112](C112.md) | route claims a built-in endpoint |
 | [C113](C113.md) | standalone outside a layout |
+| [C114](C114.md) | vary outside a page or a layout |
 | [C201](C201.md) | malformed expression |
 | [C202](C202.md) | unclosed group |
 | [C301](C301.md) | unreadable go block |
@@ -61,7 +62,8 @@ through, and how to fix it — including the escape hatch where one exists.
 | [C325](C325.md) | malformed sitemap hook |
 | [C326](C326.md) | interpolation in a literal attribute |
 | [C327](C327.md) | boolean attribute bound to a value |
-| [C328](C328.md) | loader in a layout |
+| [C328](C328.md) | route hook in a layout |
+| [C330](C330.md) | vary on a private cookie |
 | [C503](C503.md) | private value in a cached fragment |
 | [C601](C601.md) | missing translation |
 | [C602](C602.md) | plural form mismatch |
@@ -70,3 +72,4 @@ through, and how to fix it — including the escape hatch where one exists.
 | [W703](W703.md) | class built at request time |
 | [W704](W704.md) | seo rule points at no route |
 | [W705](W705.md) | standalone layout without a head |
+| [W706](W706.md) | route asks for too many cache variants |

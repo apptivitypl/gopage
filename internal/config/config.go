@@ -197,6 +197,12 @@ type Client struct {
 	React string `json:"react,omitempty"`
 }
 
+type Cache struct {
+	Variants int `json:"variants,omitempty"`
+}
+
+const DefaultVariants = 16
+
 const (
 	ReactEngine  = "react"
 	PreactEngine = "preact"
@@ -396,6 +402,7 @@ type Config struct {
 	Hosts     []Host     `json:"hosts,omitempty"`
 	Security  Security   `json:"security,omitempty"`
 	Client    Client     `json:"client,omitempty"`
+	Cache     Cache      `json:"cache,omitempty"`
 	Redirects []Redirect `json:"redirects,omitempty"`
 	Rewrites  []Rewrite  `json:"rewrites,omitempty"`
 }
@@ -410,6 +417,7 @@ func Default() Config {
 			Locales:       []string{"en"},
 		},
 		Routing:   Routing{Reserved: slices.Clone(defaultReserved)},
+		Cache:     Cache{Variants: DefaultVariants},
 		Fragments: Fragments{Deferred: DeferredFetch},
 		SEO: SEO{
 			Sitemap: Sitemap{Mode: SEOAuto, Limit: DefaultSitemapLimit, Probe: ProbeMeta},
@@ -466,6 +474,9 @@ func describe(source []byte, err error) error {
 }
 
 func normalize(config *Config) {
+	if config.Cache.Variants == 0 {
+		config.Cache.Variants = DefaultVariants
+	}
 	if config.Fragments.Deferred == "" {
 		config.Fragments.Deferred = DeferredFetch
 	}
@@ -756,6 +767,10 @@ func validate(config Config) error {
 	}
 	if config.Client.React != "" && !slices.Contains(reactEngines, config.Client.React) {
 		return fmt.Errorf("%s: unknown react engine %q, want react or preact", FileName, config.Client.React)
+	}
+	if config.Cache.Variants < 0 {
+		return fmt.Errorf("%s: cache.variants is %d, and a route holds at least one entry",
+			FileName, config.Cache.Variants)
 	}
 	if err := validateFragments(config.Fragments); err != nil {
 		return err

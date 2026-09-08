@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/apptivitypl/gopage/internal/action"
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
@@ -67,12 +69,13 @@ func (a *App) renderFresh(w http.ResponseWriter, r *http.Request, route ir.Route
 type recorders struct {
 	policy cache.Recorder
 	answer reply.Recorder
+	shared singleflight.Group
 	slot   cache.Slot
 }
 
 func recording(ctx context.Context) (context.Context, *cache.Recorder, *reply.Recorder) {
 	pair := &recorders{}
-	pair.slot = cache.Slot{Policy: &pair.policy, Response: &pair.answer}
+	pair.slot = cache.Slot{Policy: &pair.policy, Response: &pair.answer, Shared: &pair.shared}
 	return cache.With(ctx, &pair.slot), &pair.policy, &pair.answer
 }
 
@@ -100,16 +103,19 @@ func (a *App) failRender(w http.ResponseWriter, r *http.Request, route ir.Route,
 }
 
 func (a *App) renderPageBody(w http.ResponseWriter, r *http.Request, route ir.Route, params Params) (*runtime.Buffer, error) {
-	props, err := a.pageProps(w, r, route, params)
+	props, layouts, err := a.loadChain(w, r, route, params, 0)
 	if err != nil {
 		return nil, err
 	}
-	return a.renderResolved(route, props, a.fragmentHook(r), LocaleOf(r), a.resolved(r, params, route))
+	return a.renderResolved(route, props, layouts, a.fragmentHook(r), LocaleOf(r), a.resolved(r, params, route))
 }
 
 func (a *App) writeBytes(w http.ResponseWriter, r *http.Request, value cache.Value, status cache.Status) {
 	reply.Apply(w, value.Header)
 	vary(w)
+	if names := BucketsFrom(r.Context()).Headers(); len(names) > 0 {
+		reply.AddVary(w, names...)
+	}
 	personal := a.personal(r)
 	if personal {
 		reply.AddVary(w, reply.CookieVary)
@@ -166,6 +172,7 @@ func (a *App) key(r *http.Request) cache.Key {
 	if !a.config.Reserves(r.URL.Path) {
 		key.Locale = LocaleOf(r)
 	}
+	key.Variant = BucketsFrom(r.Context()).Variant()
 	return key
 }
 

@@ -65,6 +65,8 @@ func TestRedirectsAreExportedForTheStaticEdge(t *testing.T) {
 	dir := buildProject(t, map[string]string{
 		"app/page.gopage": "<h1>home</h1>",
 		"gopage.jsonc":    "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}, \"redirects\": [{\"from\": \"/old\", \"to\": \"/\", \"status\": 302}]}",
+		"locales/en.json": "{}",
+		"locales/pl.json": "{}",
 	})
 	got := read(t, dir, paths.Redirects)
 	for _, want := range []string{"/old / 302", "/en/* /:splat 301"} {
@@ -617,8 +619,11 @@ func TestALoaderCanTakeTheRouteParams(t *testing.T) {
 	if !strings.Contains(provider, "Load(gopage.NewCtx(request, params), params)") {
 		t.Errorf("provider = %q, want the params passed on", provider)
 	}
-	if !strings.Contains(provider, "Load(ctx, params)") {
-		t.Errorf("provider = %q, want the meta provider to pass them too", provider)
+	if strings.Count(provider, "Load(") != 1 {
+		t.Errorf("provider = %q, want the loader called once per request", provider)
+	}
+	if !strings.Contains(provider, "props, ok := held.(Props)") {
+		t.Errorf("provider = %q, want the meta provider to reuse what the loader returned", provider)
 	}
 }
 

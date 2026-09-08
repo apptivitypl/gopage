@@ -1,6 +1,7 @@
 package compile
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -209,14 +210,33 @@ func TestAConfiguredLocaleWithoutACatalogIsRejected(t *testing.T) {
 	}
 }
 
-func TestAProjectWithoutCatalogsNeedsNone(t *testing.T) {
+func TestASingleLocaleWithoutCatalogsNeedsNone(t *testing.T) {
 	files := app(map[string]string{"app/page.gopage": "<p>home</p>"})
-	files["gopage.jsonc"] = &fstest.MapFile{Data: []byte(`{"i18n": {"locales": ["en", "pl"]}}`)}
+	files["gopage.jsonc"] = &fstest.MapFile{Data: []byte(`{"i18n": {"locales": ["en"]}}`)}
 	var bag diag.Bag
 	if _, err := Compile(files, &bag); err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if bag.HasErrors() {
 		t.Errorf("diagnostics = %+v", bag.Items())
+	}
+}
+
+func TestAnEmptyLocalesDirectoryIsReportedPerLocale(t *testing.T) {
+	files := app(map[string]string{"app/page.gopage": "<p>home</p>"})
+	files["gopage.jsonc"] = &fstest.MapFile{Data: []byte(`{"i18n": {"locales": ["en", "pl", "de", "uk"]}}`)}
+	var bag diag.Bag
+	if _, err := Compile(files, &bag); err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	var missing []string
+	for _, item := range bag.Sorted() {
+		if item.Code == diag.C601 {
+			missing = append(missing, item.File)
+		}
+	}
+	want := []string{"locales/de.json", "locales/en.json", "locales/pl.json", "locales/uk.json"}
+	if !slices.Equal(missing, want) {
+		t.Errorf("missing = %v, want %v", missing, want)
 	}
 }
