@@ -309,3 +309,48 @@ func TestARemoteBodyThatBreaksIsReported(t *testing.T) {
 		t.Errorf("status = %d", code)
 	}
 }
+
+func redirecting(t *testing.T, to string) (*App, string) {
+	t.Helper()
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/a.jpg" {
+			http.Redirect(w, r, to, http.StatusFound)
+			return
+		}
+		_, _ = w.Write(jpegBytes(t, 200, 100))
+	}))
+	t.Cleanup(upstream.Close)
+	host := strings.Split(strings.TrimPrefix(upstream.URL, "http://"), ":")[0]
+	app := New(Options{
+		Manifest: manifest(),
+		Config:   settings(t, `{"images": {"mode": "on", "hosts": ["`+host+`"]}}`),
+		Cache:    cache.New(cache.Options{Limit: 4 << 20}),
+		Images:   gimage.Support{},
+	})
+	app.client = imageClient(&http.Client{Transport: rewriting{to: upstream.URL}}, app.config.Images.Serves)
+	return app, host
+}
+
+func TestARedirectOffTheAllowlistIsRefused(t *testing.T) {
+	app, host := redirecting(t, "https://elsewhere.example.net/secret")
+	response := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2F"+host+"%2Fa.jpg&w=40")
+	if response.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want the hop off the allowlist refused", response.Code)
+	}
+}
+
+func TestARedirectToPlainHttpIsRefused(t *testing.T) {
+	app, host := redirecting(t, "http://127.0.0.1/b.jpg")
+	response := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2F"+host+"%2Fa.jpg&w=40")
+	if response.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want a hop that drops tls refused", response.Code)
+	}
+}
+
+func TestARedirectInsideTheAllowlistIsFollowed(t *testing.T) {
+	app, host := redirecting(t, "https://127.0.0.1/b.jpg")
+	response := get(t, app.Handler(), ImagePath+"?src=https%3A%2F%2F"+host+"%2Fa.jpg&w=40")
+	if response.Code != http.StatusOK {
+		t.Errorf("status = %d, want a hop that stays on the allowlist followed", response.Code)
+	}
+}

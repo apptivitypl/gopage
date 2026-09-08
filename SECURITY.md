@@ -43,8 +43,12 @@ crosses a boundary it should not.
   project, execute something, or loop forever. Templates are trusted input in most projects, so
   this is lower severity, but it is still a bug worth reporting.
 - **The built-in endpoints.** The image endpoint reads a remote source only from a host named in
-  `images.hosts`, and refuses a source larger than 24 MB or an image over 40 megapixels; a request
-  that makes it fetch elsewhere, or exhaust the process, is one of these. The invalidation endpoint
+  `images.hosts`, over https, and it holds that rule on every hop: a redirect to a host that is not
+  listed, or one that drops tls, is refused rather than followed, and five hops end the chase. It
+  refuses a source larger than 24 MB or an image over 40 megapixels. A request that makes it fetch
+  elsewhere, or exhaust the process, is one of these. What it cannot decide for you is whether a
+  host you listed is worth trusting: a listed name that resolves to an address inside your network
+  is a fetch you asked for. The invalidation endpoint
   drops cache entries and is served only when a bearer token is configured; dropping an entry
   without that token is too.
 - **Generated projects.** A default in a scaffolded project that is unsafe in production, such as

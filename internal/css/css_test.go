@@ -114,10 +114,11 @@ func TestTailwindUsesTheCachedBinary(t *testing.T) {
 func TestTailwindDownloadsWhenTheCacheIsEmpty(t *testing.T) {
 	cache := t.TempDir()
 	var asked, wanted string
-	processor := Tailwind{CacheDir: cache, Fetch: func(url, target, digest string) error {
-		asked, wanted = url, digest
-		return os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0o755)
-	}}
+	processor := Tailwind{CacheDir: cache, Verify: func(string) error { return nil },
+		Fetch: func(url, target, digest string) error {
+			asked, wanted = url, digest
+			return os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0o755)
+		}}
 	if _, err := processor.Install(); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
@@ -344,6 +345,7 @@ func TestAMuslSystemFetchesTheMuslBuild(t *testing.T) {
 	tailwind := Tailwind{
 		CacheDir: t.TempDir(),
 		Root:     fstest.MapFS{"lib/ld-musl-x86_64.so.1": &fstest.MapFile{}},
+		Verify:   func(string) error { return nil },
 		Fetch: func(url, target, _ string) error {
 			asked = url
 			return os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0o755)
@@ -392,5 +394,27 @@ func TestAnUnrunnableBinaryFailsTheInstall(t *testing.T) {
 	}
 	if _, err := tailwind.Install(); err == nil {
 		t.Error("a binary this system cannot exec must fail at install, not at the first build")
+	}
+}
+
+func TestACachedBinaryIsNotProbedAgain(t *testing.T) {
+	cache := t.TempDir()
+	target := filepath.Join(cache, "tailwind", Version, binaryName(runtime.GOOS, Tailwind{}.musl()))
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(target, []byte("cached"), 0o755); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	probed := false
+	processor := Tailwind{CacheDir: cache, Verify: func(string) error {
+		probed = true
+		return nil
+	}}
+	if _, err := processor.Install(); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if probed {
+		t.Error("a binary that was already on disk was checked when it was fetched")
 	}
 }

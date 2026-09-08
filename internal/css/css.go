@@ -37,6 +37,7 @@ func (Passthrough) Process(input, output, _ string) error {
 type Tailwind struct {
 	Binary   string
 	Fetch    Fetcher
+	Verify   func(binary string) error
 	CacheDir string
 	Minify   bool
 	Root     fs.FS
@@ -110,19 +111,25 @@ func (t Tailwind) resolve() (string, error) {
 			"run gopage css install again, or set \"css\": {\"engine\": \"plain\"} in %s",
 			Version, err, paths.Config)
 	}
-	return target, os.Chmod(target, 0o755)
+	if err := os.Chmod(target, 0o755); err != nil {
+		return "", err
+	}
+	return target, t.verify(target)
 }
 
 func (t Tailwind) Install() (string, error) {
-	binary, err := t.resolve()
-	if err != nil {
-		return "", err
+	return t.resolve()
+}
+
+func (t Tailwind) verify(binary string) error {
+	if t.Verify != nil {
+		return t.Verify(binary)
 	}
 	var exit *exec.ExitError
 	if err := exec.Command(binary, "--help").Run(); err != nil && !errors.As(err, &exit) {
-		return "", fmt.Errorf("tailwind %s does not run here: %w\n%s%s", Version, err, muslHelp, paths.Config)
+		return fmt.Errorf("tailwind %s does not run here: %w\n%s%s", Version, err, muslHelp, paths.Config)
 	}
-	return binary, nil
+	return nil
 }
 
 func (t Tailwind) path() (string, error) {

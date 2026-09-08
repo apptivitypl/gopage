@@ -142,7 +142,7 @@ func New(opts Options) *App {
 		layouts:    layoutPlans(opts.Manifest, opts.Layouts),
 		locals:     opts.Locals,
 		images:     opts.Images,
-		client:     imageClient(opts.Client),
+		client:     imageClient(opts.Client, opts.Config.Images.Serves),
 		token:      opts.Invalidate,
 		onRequest:  opts.OnRequest,
 		entropy:    opts.Entropy,
@@ -219,11 +219,22 @@ func (a *App) Handler() http.Handler {
 	return a.observe(a.compressed(a.guard(a.secure(a.crossOrigin(a.limited(a.reroute(handler)))))))
 }
 
-func imageClient(client *http.Client) *http.Client {
+func imageClient(client *http.Client, allowed func(host string) bool) *http.Client {
+	held := &http.Client{Timeout: 10 * time.Second}
 	if client != nil {
-		return client
+		copied := *client
+		held = &copied
 	}
-	return &http.Client{Timeout: 10 * time.Second}
+	held.CheckRedirect = func(request *http.Request, via []*http.Request) error {
+		if len(via) >= MaxImageHops {
+			return errTooManyHops
+		}
+		if request.URL.Scheme != "https" || !allowed(request.URL.Hostname()) {
+			return errNoSource
+		}
+		return nil
+	}
+	return held
 }
 
 func (a *App) serveSEO(mux *http.ServeMux) {

@@ -16,6 +16,7 @@ import (
 const (
 	ImagePath      = "/_gopage/image"
 	ImageFreshness = "public, max-age=31536000, immutable"
+	MaxImageHops   = 5
 )
 
 type ImageSupport interface {
@@ -25,8 +26,9 @@ type ImageSupport interface {
 }
 
 var (
-	errNoSource = errors.New("no such image")
-	errTooLarge = errors.New("image is too large")
+	errNoSource    = errors.New("no such image")
+	errTooLarge    = errors.New("image is too large")
+	errTooManyHops = errors.New("image redirected too many times")
 )
 
 type imageRequest struct {

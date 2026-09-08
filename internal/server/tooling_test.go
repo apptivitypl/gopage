@@ -97,8 +97,27 @@ func TestEveryRequestIsReported(t *testing.T) {
 	if trace.Route != "index" || trace.Status != http.StatusOK || trace.Method != http.MethodGet {
 		t.Errorf("trace = %+v", trace)
 	}
-	if trace.Cache == "" || trace.Duration <= 0 {
+	if trace.Cache == "" || trace.Duration < 0 {
 		t.Errorf("trace = %+v", trace)
+	}
+}
+
+func TestASlowRouteReportsTheTimeItTook(t *testing.T) {
+	const wait = 5 * time.Millisecond
+	var seen []Trace
+	app := New(Options{
+		Manifest: manifest(),
+		Props: map[string]PropsProvider{
+			"index": func(*http.Request, Params) (runtime.Accessible, error) {
+				time.Sleep(wait)
+				return runtime.Empty{}, nil
+			},
+		},
+		OnRequest: func(trace Trace) { seen = append(seen, trace) },
+	})
+	get(t, app.Handler(), "/")
+	if len(seen) != 1 || seen[0].Duration < wait {
+		t.Errorf("traces = %+v, want at least %v", seen, wait)
 	}
 }
 
