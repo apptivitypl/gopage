@@ -46,6 +46,11 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
 
 - **Reserved and static first.** Assets, `public/` files and redirects are answered before any
   render is considered.
+- **The chain.** Refusing an unknown host, the security headers, cross-origin protection and the
+  body limit wrap everything. Inside them run `Options.Entry`, then the redirects and rewrites of
+  the configuration, then the locale prefix, then `Options.Middleware`, then the router. Entry
+  middleware sees the address as it arrived; the later slot sees the path a route matches, and reads
+  the address it arrived with from the request context.
 - **The cache.** `internal/cache` is bounded by bytes, not entries, and evicts by least recent use.
   A cache key carries everything that changes the answer — route, locale, host, the loader's own
   declared inputs, and the bucket of every `{% vary %}` dimension the route declares. What may not
@@ -54,8 +59,11 @@ holds. The plan is what makes "send less" a lookup rather than a special case.
   `security.privateCookies`, a loader that reads a cookie which is there, and a loader that sets one
   are each enough to keep it out.
 - **Partial navigation.** When the browser sends the partial header, the server compares the chain
-  of layouts it holds against the one this route needs and sends only the suffix that differs. A
-  missing or malformed header is not an error; it answers with the whole document.
+  of layouts it holds against the one this route needs and sends only the suffix that differs. That
+  answer takes the same path through the cache as the document: the level the two pages share is
+  part of the cache key, so one entry serves every page that shares it, and the document and the
+  tail of the same address never overwrite each other. A missing or malformed header is not an
+  error; it answers with the whole document, which fills the entry the next navigation reads.
 - **Fragments.** A deferred fragment is either inlined, flushed in the tail of the same response,
   or fetched by the browser on its own, depending on `fragments.deferred`. The shell is cacheable
   even when the body is not, which is why the mode exists.

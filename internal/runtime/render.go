@@ -117,6 +117,7 @@ type Options struct {
 	Budget    Budget
 	Fetched   bool
 	Markers   bool
+	Depth     int
 	Catalog   *ir.Catalog
 	Plural    i18n.Rule
 	Now       func() time.Time
@@ -214,7 +215,7 @@ func runRange(chain []*ir.Plan, planIndex int, state *scope, out *Buffer, opts *
 			pc++
 		case ir.OpOutlet:
 			if opts.Markers {
-				out.Write(openMarker(planIndex))
+				out.Write(openMarker(planIndex + opts.Depth))
 			}
 			if planIndex+1 < len(chain) {
 				if err := renderPlan(chain, planIndex+1, state.props, out, opts); err != nil {
@@ -222,7 +223,7 @@ func runRange(chain []*ir.Plan, planIndex int, state *scope, out *Buffer, opts *
 				}
 			}
 			if opts.Markers {
-				out.Write(closeMarker(planIndex))
+				out.Write(closeMarker(planIndex + opts.Depth))
 			}
 			pc++
 		case ir.OpJSON:

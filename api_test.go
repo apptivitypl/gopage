@@ -276,3 +276,60 @@ func TestUnreadableBundlesAreReported(t *testing.T) {
 		t.Error("an unreadable bundle store must be reported")
 	}
 }
+
+func TestTheRequestRemembersTheAddressItArrivedWith(t *testing.T) {
+	seen := map[string]string{}
+	watch := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen[AskedPath(r)] = AskedPrefix(r)
+			next.ServeHTTP(w, r)
+		})
+	}
+	app, err := New(Options{
+		Manifest:   demo(t),
+		Config:     []byte(`{"i18n": {"locales": ["en", "pl"], "prefixDefault": true}}`),
+		Middleware: []Middleware{watch},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	handler := app.Handler()
+	for _, target := range []string{"/", "/en"} {
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, target, nil))
+	}
+	if got := seen["/"]; got != "" {
+		t.Errorf("/ was seen with prefix %q, want none", got)
+	}
+	if got := seen["/en"]; got != "/en" {
+		t.Errorf("/en was seen with prefix %q", got)
+	}
+	outside := httptest.NewRequest(http.MethodGet, "/", nil)
+	if got := AskedPrefix(outside); got != "" {
+		t.Errorf("prefix outside the chain = %q", got)
+	}
+	if got := AskedPath(outside); got != "" {
+		t.Errorf("asked path outside the chain = %q", got)
+	}
+}
+
+func TestEntryMiddlewareSeesTheAddressBeforeTheRedirects(t *testing.T) {
+	var seen string
+	watch := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen = r.URL.Path
+			next.ServeHTTP(w, r)
+		})
+	}
+	app, err := New(Options{
+		Manifest: demo(t),
+		Config:   []byte(`{"redirects": [{"from": "/old", "to": "/", "status": 302}]}`),
+		Entry:    []Middleware{watch},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	app.Handler().ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/old", nil))
+	if seen != "/old" {
+		t.Errorf("entry middleware saw %q, want the address as it arrived", seen)
+	}
+}

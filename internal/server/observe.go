@@ -64,12 +64,12 @@ func (a *App) report(recorder *Recorder, r *http.Request, elapsed time.Duration)
 		return
 	}
 	route := ""
-	if matched, _, ok := a.router.Match(r.URL.Path); ok {
+	if matched, _, ok := a.router.Match(a.split(r.URL.Path).rest); ok {
 		route = matched.Name
 	}
 	a.onRequest(Trace{
 		Route:    route,
-		Locale:   LocaleOf(r),
+		Locale:   recorder.Header().Get(LocaleHeader),
 		Path:     r.URL.Path,
 		Method:   r.Method,
 		Status:   recorder.Status(),

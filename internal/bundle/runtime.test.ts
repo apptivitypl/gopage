@@ -492,6 +492,173 @@ describe("navigation", () => {
 		release(null);
 		await vi.waitFor(() => expect(document.documentElement.hasAttribute("aria-busy")).toBe(false));
 	});
+
+	function nested(): void {
+		document.body.innerHTML = "";
+		const nav = document.createElement("nav");
+		nav.textContent = "menu";
+		document.body.append(nav);
+		document.body.append(document.createComment("gopage:o0"));
+		const aside = document.createElement("aside");
+		aside.textContent = "side";
+		document.body.append(aside);
+		document.body.append(document.createComment("gopage:o1"));
+		const page = document.createElement("h1");
+		page.textContent = "page one";
+		document.body.append(page);
+		document.body.append(document.createComment("/gopage:o1"));
+		document.body.append(document.createComment("/gopage:o0"));
+	}
+
+	function scrolls(): ReturnType<typeof vi.fn> {
+		const spy = vi.fn();
+		vi.stubGlobal("scrollTo", spy);
+		return spy;
+	}
+
+	it("follows a link that only changes the query", async () => {
+		nested();
+		history.replaceState(null, "", "/items");
+		const link = anchor("/items?page=2");
+		respond("<h1>page two</h1>", { "GOPAGE-Level": "2" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(document.querySelector("h1")?.textContent).toBe("page two"));
+
+		expect(document.querySelector("aside")?.textContent).toBe("side");
+		expect(location.pathname + location.search).toBe("/items?page=2");
+		const [, init] = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+		expect((init.headers as Record<string, string>)["GOPAGE-Partial"]).toBe("/items");
+	});
+
+	it("leaves a link to the same path and query alone", () => {
+		shell();
+		history.replaceState(null, "", "/items?page=2");
+		const link = anchor("/items?page=2");
+		respond("<h1>again</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
+	it("leaves a hash-only link to the browser", () => {
+		shell();
+		history.replaceState(null, "", "/items");
+		const link = anchor("/items#section");
+		respond("<h1>again</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+
+	it("asks for a deferred fragment on the address it moved to", async () => {
+		shell();
+		history.replaceState(null, "", "/items");
+		const link = anchor("/items?page=2");
+		let asked = 0;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				const first = asked++ === 0;
+				return {
+					ok: true,
+					url: "",
+					headers: {
+						get: (name: string) =>
+							name === "content-type"
+								? first
+									? "text/vnd.gopage-partial"
+									: "text/vnd.gopage-fragment"
+								: first
+									? "1"
+									: null,
+					},
+					text: async () => (first ? '<gopage-slot name="Reviews" fetch="load"></gopage-slot>' : "<b>late</b>"),
+				};
+			}),
+		);
+
+		navigation();
+		click(link);
+		await vi.waitFor(() =>
+			expect((fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls).toHaveLength(2),
+		);
+		const [target] = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[1];
+		expect(target).toBe("/items?page=2");
+	});
+
+	it("jumps to the top when the path changes", async () => {
+		shell();
+		history.replaceState(null, "", "/");
+		const spy = scrolls();
+		const link = anchor("/docs");
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(spy).toHaveBeenCalled());
+		expect(spy).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+	});
+
+	it("keeps the place when only the query changes", async () => {
+		shell();
+		history.replaceState(null, "", "/items");
+		const spy = scrolls();
+		const link = anchor("/items?page=2");
+		respond("<h1>page two</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(document.querySelector("h1")?.textContent).toBe("page two"));
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	it("obeys the scroll the link asks for", async () => {
+		const wanted: Record<string, unknown> = {
+			top: { top: 0, behavior: "auto" },
+			smooth: { top: 0, behavior: "smooth" },
+		};
+		for (const [mode, call] of Object.entries(wanted)) {
+			shell();
+			history.replaceState(null, "", "/items");
+			const spy = scrolls();
+			const link = anchor("/items?page=2", { "data-gopage-scroll": mode });
+			respond("<h1>page two</h1>", { "GOPAGE-Level": "1" });
+
+			navigation();
+			click(link);
+			await vi.waitFor(() => expect(spy).toHaveBeenCalled());
+			expect(spy).toHaveBeenCalledWith(call);
+		}
+
+		shell();
+		history.replaceState(null, "", "/items");
+		const spy = scrolls();
+		const link = anchor("/docs", { "data-gopage-scroll": "keep" });
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(document.querySelector("h1")?.textContent).toBe("docs"));
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	it("keeps the hash a link carries and reaches the element", async () => {
+		shell();
+		history.replaceState(null, "", "/");
+		const spy = scrolls();
+		const link = anchor("/docs#part");
+		respond('<h1 id="part">docs</h1>', { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(location.pathname).toBe("/docs"));
+		expect(location.hash).toBe("#part");
+		expect(spy).not.toHaveBeenCalled();
+	});
 });
 
 describe("deferred slots", () => {

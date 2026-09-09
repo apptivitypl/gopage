@@ -89,6 +89,7 @@ type Options struct {
 	Submit     map[string]SubmitProvider
 	API        map[string]http.Handler
 	Middleware []Middleware
+	Entry      []Middleware
 	Logger     *slog.Logger
 	Locals     any
 	Images     ImageSupport
@@ -167,6 +168,7 @@ func New(opts Options) (*App, error) {
 			Submit:     opts.Submit,
 			API:        opts.API,
 			Middleware: opts.Middleware,
+			Entry:      opts.Entry,
 			Locals:     opts.Locals,
 			Images:     opts.Images,
 			Client:     opts.Client,
@@ -244,6 +246,14 @@ func (a *App) CacheStats() CacheStats {
 
 func LocaleOf(r *http.Request) string {
 	return server.LocaleOf(r)
+}
+
+func AskedPath(r *http.Request) string {
+	return server.AskedPath(r)
+}
+
+func AskedPrefix(r *http.Request) string {
+	return server.AskedPrefix(r)
 }
 
 var ErrNotFound = server.ErrNotFound

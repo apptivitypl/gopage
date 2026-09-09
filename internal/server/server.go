@@ -51,6 +51,7 @@ type Options struct {
 	API        map[string]http.Handler
 	Layouts    map[string]PropsProvider
 	Middleware []Middleware
+	Entry      []Middleware
 	Entropy    io.Reader
 	Logger     *slog.Logger
 	AccessLog  bool
@@ -78,35 +79,38 @@ type routePreload struct {
 }
 
 type App struct {
-	manifest   *ir.Manifest
-	config     config.Config
-	assets     http.Handler
-	assetLink  string
-	preloads   map[string]routePreload
-	public     []string
-	cache      *cache.Cache
-	router     *Router
-	props      map[string]PropsProvider
-	deferred   map[string]DeferredProvider
-	meta       map[string]MetaProvider
-	sitemaps   map[string]SitemapProvider
-	submit     map[string]SubmitProvider
-	api        map[string]http.Handler
-	layouts    map[uint32]layoutHook
-	entropy    io.Reader
-	middleware []Middleware
-	logger     *slog.Logger
-	accessLog  bool
-	messages   map[string]uint32
-	chains     map[string][]*ir.Plan
-	deferrals  map[string][]string
-	locals     any
-	vocab      vocab.Table
-	zone       *time.Location
-	images     ImageSupport
-	client     *http.Client
-	token      string
-	onRequest  Reporter
+	manifest     *ir.Manifest
+	config       config.Config
+	assets       http.Handler
+	assetLink    string
+	preloads     map[string]routePreload
+	public       []string
+	cache        *cache.Cache
+	router       *Router
+	props        map[string]PropsProvider
+	deferred     map[string]DeferredProvider
+	meta         map[string]MetaProvider
+	sitemaps     map[string]SitemapProvider
+	submit       map[string]SubmitProvider
+	api          map[string]http.Handler
+	layouts      map[uint32]layoutHook
+	entropy      io.Reader
+	middleware   []Middleware
+	entry        []Middleware
+	hostRules    bool
+	mixedLocales bool
+	logger       *slog.Logger
+	accessLog    bool
+	messages     map[string]uint32
+	chains       map[string][]*ir.Plan
+	deferrals    map[string][]string
+	locals       any
+	vocab        vocab.Table
+	zone         *time.Location
+	images       ImageSupport
+	client       *http.Client
+	token        string
+	onRequest    Reporter
 }
 
 func New(opts Options) *App {
@@ -123,36 +127,59 @@ func New(opts Options) *App {
 		settings = config.Default()
 	}
 	app := &App{
-		manifest:   manifest,
-		config:     settings,
-		assets:     opts.Assets,
-		assetLink:  opts.AssetLink,
-		preloads:   preloadsFor(opts.Manifest, opts.Preloads),
-		public:     opts.Public,
-		deferred:   opts.Deferred,
-		cache:      opts.Cache,
-		router:     NewRouter(manifest.Routes),
-		vocab:      vocab.New(settings),
-		zone:       settings.I18n.Zone(),
-		props:      opts.Props,
-		meta:       opts.Meta,
-		sitemaps:   opts.Sitemap,
-		submit:     opts.Submit,
-		api:        opts.API,
-		layouts:    layoutPlans(opts.Manifest, opts.Layouts),
-		locals:     opts.Locals,
-		images:     opts.Images,
-		client:     imageClient(opts.Client, opts.Config.Images.Serves),
-		token:      opts.Invalidate,
-		onRequest:  opts.OnRequest,
-		entropy:    opts.Entropy,
-		middleware: opts.Middleware,
-		logger:     logger,
-		accessLog:  opts.AccessLog,
-		messages:   messageIndex(manifest),
+		manifest:     manifest,
+		config:       settings,
+		assets:       opts.Assets,
+		assetLink:    opts.AssetLink,
+		preloads:     preloadsFor(opts.Manifest, opts.Preloads),
+		public:       opts.Public,
+		deferred:     opts.Deferred,
+		cache:        opts.Cache,
+		router:       NewRouter(manifest.Routes),
+		vocab:        vocab.New(settings),
+		zone:         settings.I18n.Zone(),
+		props:        opts.Props,
+		meta:         opts.Meta,
+		sitemaps:     opts.Sitemap,
+		submit:       opts.Submit,
+		api:          opts.API,
+		layouts:      layoutPlans(opts.Manifest, opts.Layouts),
+		locals:       opts.Locals,
+		images:       opts.Images,
+		client:       imageClient(opts.Client, opts.Config.Images.Serves),
+		token:        opts.Invalidate,
+		onRequest:    opts.OnRequest,
+		entropy:      opts.Entropy,
+		middleware:   opts.Middleware,
+		entry:        opts.Entry,
+		hostRules:    namesHosts(settings.Redirects),
+		mixedLocales: mixedCase(settings.I18n.Locales),
+		logger:       logger,
+		accessLog:    opts.AccessLog,
+		messages:     messageIndex(manifest),
 	}
 	app.chains, app.deferrals = routePlans(manifest)
 	return app
+}
+
+func mixedCase(locales []string) bool {
+	for _, locale := range locales {
+		for index := range len(locale) {
+			if locale[index] >= 'A' && locale[index] <= 'Z' {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func namesHosts(rules []config.Redirect) bool {
+	for _, rule := range rules {
+		if rule.Host != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func messageIndex(manifest *ir.Manifest) map[string]uint32 {
@@ -216,7 +243,11 @@ func (a *App) Handler() http.Handler {
 	} else {
 		handler = a.locale(handler)
 	}
-	return a.observe(a.compressed(a.guard(a.secure(a.crossOrigin(a.limited(a.reroute(handler)))))))
+	handler = a.reroute(handler)
+	for i := len(a.entry) - 1; i >= 0; i-- {
+		handler = a.entry[i](handler)
+	}
+	return a.observe(a.compressed(a.guard(a.secure(a.crossOrigin(a.limited(handler))))))
 }
 
 func imageClient(client *http.Client, allowed func(host string) bool) *http.Client {
@@ -302,7 +333,7 @@ func (a *App) renderPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.partial(r) {
-		a.writePartial(w, r, route, params)
+		a.partialPage(w, r, route, params, a.sharedLevel(r.Header.Get(PartialHeader), route))
 		return
 	}
 	a.hint(w, route)
@@ -513,17 +544,18 @@ func (a *App) Routes() []ir.Route {
 }
 
 func (a *App) synthetic(ctx context.Context, route ir.Route, params Params) *http.Request {
+	path := patternPath(route.Pattern)
+	if filled, err := Fill(route.Pattern, params); err == nil {
+		path = filled
+	}
 	request := (&http.Request{
 		Method: http.MethodGet,
-		URL:    &url.URL{Path: patternPath(route.Pattern)},
+		URL:    &url.URL{Path: path},
 		Header: http.Header{},
 	}).WithContext(ctx)
 	request = withLocale(request, a.config.I18n.DefaultLocale)
 	if a.vocab.Localises() {
 		request = request.WithContext(vocab.With(request.Context(), a.vocab))
-	}
-	if filled, err := Fill(route.Pattern, params); err == nil {
-		request.URL = &url.URL{Path: filled}
 	}
 	return request
 }
@@ -576,6 +608,7 @@ func (a *App) RenderStatic(route ir.Route) ([]byte, error) {
 		URL:    &url.URL{Path: patternPath(route.Pattern)},
 		Header: http.Header{},
 	}).WithContext(reply.WithRecorder(context.Background(), answer))
+	request = withLocale(request, a.config.I18n.DefaultLocale)
 	body, err := a.Render(route, request, Params{})
 	if err != nil {
 		return nil, err

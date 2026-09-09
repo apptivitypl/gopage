@@ -259,7 +259,8 @@
         "properties": {
           "from": {"type": "string"},
           "to": {"type": "string"},
-          "status": {"type": "integer", "minimum": 300, "maximum": 399, "default": 301}
+          "status": {"type": "integer", "minimum": 300, "maximum": 399, "default": 301},
+          "host": {"type": "string", "description": "Only redirect when the request carries this host. The port is ignored, www. is not."}
         }
       }
     },

@@ -30,7 +30,7 @@ func translated(t *testing.T, locale string) Translator {
 	app := New(Options{Manifest: manifest})
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	if locale != "" {
-		request = request.WithContext(context.WithValue(request.Context(), localeKey{}, locale))
+		request = withLocale(request, locale)
 	}
 	return app.translator(request)
 }
@@ -114,8 +114,7 @@ func TestAKeyWithNoTextAtAllComesBackAsTheKey(t *testing.T) {
 		Catalogs: []ir.Catalog{{Locale: "pl", Texts: [][ir.PluralForms]string{{}}}},
 	}
 	app := New(Options{Manifest: manifest})
-	request := httptest.NewRequest(http.MethodGet, "/", nil).
-		WithContext(context.WithValue(context.Background(), localeKey{}, "pl"))
+	request := withLocale(httptest.NewRequest(http.MethodGet, "/", nil), "pl")
 	if got := app.translator(request)("empty", 0, false); got != "empty" {
 		t.Errorf("translator = %q, want the key when the catalog holds no text", got)
 	}
@@ -127,8 +126,7 @@ func TestAMessageBeyondTheCatalogComesBackAsTheKey(t *testing.T) {
 		Catalogs: []ir.Catalog{{Locale: "pl", Texts: [][ir.PluralForms]string{{i18n.FormOther: "pierwszy"}}}},
 	}
 	app := New(Options{Manifest: manifest})
-	request := httptest.NewRequest(http.MethodGet, "/", nil).
-		WithContext(context.WithValue(context.Background(), localeKey{}, "pl"))
+	request := withLocale(httptest.NewRequest(http.MethodGet, "/", nil), "pl")
 	if got := app.translator(request)("second", 0, false); got != "second" {
 		t.Errorf("translator = %q, want the key for a message the catalog does not reach", got)
 	}

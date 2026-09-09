@@ -173,3 +173,36 @@ func TestAnAddressIsRedirectedToItsOneSpelling(t *testing.T) {
 		t.Errorf("the normalised address answered %d", code)
 	}
 }
+
+func TestAssetsAndReservedPathsAreNeverNormalised(t *testing.T) {
+	echo := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(r.URL.Path))
+	})
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"]},
+			"routing": {"normalize": {"case": "lower", "trailingSlash": "keep"}}
+		}`),
+		Assets: echo,
+		Public: []string{"/BingSiteAuth.xml"},
+		API:    map[string]http.Handler{"/api/Health": echo},
+	})
+	handler := app.Handler()
+	for _, target := range []string{
+		"/assets/island.REACT.js",
+		"/BingSiteAuth.xml",
+		"/robots.txt",
+		"/sitemap.xml",
+		"/api/Health",
+	} {
+		response := get(t, handler, target)
+		if response.Code == http.StatusMovedPermanently {
+			t.Errorf("%s was sent to %q", target, response.Header().Get("Location"))
+			continue
+		}
+		if response.Code != http.StatusOK {
+			t.Errorf("%s answered %d", target, response.Code)
+		}
+	}
+}

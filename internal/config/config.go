@@ -145,6 +145,7 @@ type Redirect struct {
 	From   string `json:"from,omitempty"`
 	To     string `json:"to,omitempty"`
 	Status int    `json:"status,omitempty"`
+	Host   string `json:"host,omitempty"`
 }
 
 type Rewrite struct {
@@ -514,6 +515,7 @@ func normalize(config *Config) {
 		if config.Redirects[i].Status == 0 {
 			config.Redirects[i].Status = http.StatusMovedPermanently
 		}
+		config.Redirects[i].Host = BareHost(config.Redirects[i].Host)
 	}
 	for i := range config.Hosts {
 		config.Hosts[i].Pattern = NormalizeHost(config.Hosts[i].Pattern)
@@ -809,12 +811,24 @@ func validate(config Config) error {
 			return fmt.Errorf("%s: locale %q collides with the reserved prefix /%s", FileName, locale, locale)
 		}
 	}
+	for i, locale := range config.I18n.Locales {
+		for _, other := range config.I18n.Locales[i+1:] {
+			if strings.EqualFold(locale, other) {
+				return fmt.Errorf("%s: locales %q and %q differ only in case, so one address would answer for both",
+					FileName, locale, other)
+			}
+		}
+	}
 	for _, redirect := range config.Redirects {
 		if redirect.From == "" || redirect.To == "" {
 			return fmt.Errorf("%s: a redirect needs both from and to", FileName)
 		}
 		if redirect.Status < 300 || redirect.Status > 399 {
 			return fmt.Errorf("%s: redirect %s uses status %d, want a 3xx", FileName, redirect.From, redirect.Status)
+		}
+		if strings.ContainsAny(redirect.Host, "/ ") {
+			return fmt.Errorf("%s: redirect %s names host %q, want a bare host name",
+				FileName, redirect.From, redirect.Host)
 		}
 	}
 	for _, rewrite := range config.Rewrites {
@@ -875,12 +889,29 @@ func (c Config) HostLocale(host string) (string, bool) {
 	return c.I18n.DefaultLocale, len(c.Hosts) == 0
 }
 
-func NormalizeHost(host string) string {
+func BareHost(host string) string {
 	lowered := strings.ToLower(strings.TrimSpace(host))
-	if cut := strings.LastIndex(lowered, ":"); cut > 0 && !strings.Contains(lowered[cut:], "]") {
+	cut := strings.LastIndex(lowered, ":")
+	if cut > 0 && !strings.Contains(lowered[cut:], "]") && isPort(lowered[cut+1:]) {
 		lowered = lowered[:cut]
 	}
-	return strings.TrimPrefix(lowered, "www.")
+	return lowered
+}
+
+func isPort(text string) bool {
+	if text == "" {
+		return false
+	}
+	for index := range len(text) {
+		if text[index] < '0' || text[index] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func NormalizeHost(host string) string {
+	return strings.TrimPrefix(BareHost(host), "www.")
 }
 
 func (c Config) KnownHost(host string) bool {
@@ -890,6 +921,12 @@ func (c Config) KnownHost(host string) bool {
 	normalized := NormalizeHost(host)
 	for _, entry := range c.Hosts {
 		if entry.Pattern == normalized {
+			return true
+		}
+	}
+	plain := BareHost(host)
+	for _, rule := range c.Redirects {
+		if rule.Host != "" && rule.Host == plain {
 			return true
 		}
 	}

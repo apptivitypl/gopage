@@ -200,3 +200,22 @@ func TestRenderRouteReportsALoaderFailure(t *testing.T) {
 		t.Error("the failure was swallowed")
 	}
 }
+
+func TestTheTraceReportsTheLocaleAndTheRoute(t *testing.T) {
+	var seen []Trace
+	app := New(Options{
+		Manifest:  metaChain(),
+		Config:    settings(t, `{"i18n": {"locales": ["en", "pl"]}}`),
+		OnRequest: func(trace Trace) { seen = append(seen, trace) },
+	})
+	get(t, app.Handler(), "/pl/docs/a")
+	if len(seen) != 1 {
+		t.Fatalf("traces = %+v", seen)
+	}
+	if seen[0].Locale != "pl" || seen[0].Route != "docs.slug" {
+		t.Errorf("trace = %+v, want the locale and the route of the prefixed address", seen[0])
+	}
+	if seen[0].Path != "/pl/docs/a" {
+		t.Errorf("path = %q, want the address the visitor asked for", seen[0].Path)
+	}
+}

@@ -359,3 +359,24 @@ func TestAPrivateProbeKeepsTheSitemapOutOfTheStore(t *testing.T) {
 		t.Error("a private probe must keep the sitemap out of the store")
 	}
 }
+
+func TestTheSitemapAdvertisesAddressesThatAnswerDirectly(t *testing.T) {
+	app := sitemapApp(t, `{
+		"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+		"routing": {"aliases": {"pl": {"docs": "dokumenty"}}, "normalize": {"case": "lower", "trailingSlash": "strip"}}
+	}`, Options{})
+	handler := app.Handler()
+	body := get(t, handler, "/sitemap.xml").Body.String()
+	found := 0
+	for _, part := range strings.Split(body, "<loc>")[1:] {
+		location, _, _ := strings.Cut(part, "</loc>")
+		path := strings.TrimPrefix(location, "http://example.com")
+		found++
+		if code := get(t, handler, path).Code; code != http.StatusOK {
+			t.Errorf("%s is advertised but answered %d", path, code)
+		}
+	}
+	if found == 0 {
+		t.Fatal("the sitemap advertised nothing")
+	}
+}
