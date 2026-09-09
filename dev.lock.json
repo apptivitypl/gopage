@@ -75,7 +75,7 @@
       }
     },
     "worker_module_brotli_bytes": 1859215,
-    "client_runtime_brotli_bytes": 2065,
+    "client_runtime_brotli_bytes": 2438,
     "client_chunks_brotli_bytes": 54701
   }
 }

@@ -603,11 +603,29 @@ describe("navigation", () => {
 		expect(spy).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 	});
 
-	it("keeps the place when only the query changes", async () => {
+	it("jumps to the top when only the query changes", async () => {
 		shell();
 		history.replaceState(null, "", "/items");
 		const spy = scrolls();
 		const link = anchor("/items?page=2");
+		respond("<h1>page two</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(link);
+		await vi.waitFor(() => expect(spy).toHaveBeenCalled());
+		expect(spy).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+	});
+
+	it("takes the scroll a paginator asks for on its container", async () => {
+		shell();
+		history.replaceState(null, "", "/items");
+		const spy = scrolls();
+		const holder = document.createElement("nav");
+		holder.setAttribute("data-gopage-scroll", "keep");
+		document.body.append(holder);
+		const link = document.createElement("a");
+		link.href = "/items?page=2";
+		holder.append(link);
 		respond("<h1>page two</h1>", { "GOPAGE-Level": "1" });
 
 		navigation();
@@ -646,6 +664,209 @@ describe("navigation", () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 
+	async function settleAt(href: string, body = "<h1>page</h1>"): Promise<void> {
+		respond(body, { "GOPAGE-Level": "1" });
+		const link = anchor(href);
+		click(link);
+		await vi.waitFor(() => expect(location.pathname + location.search).toBe(href));
+	}
+
+	it("comes back to the place a history entry was left at", async () => {
+		shell();
+		history.replaceState(null, "", "/list");
+		navigation();
+		await settleAt("/list?page=1");
+		const left = history.state;
+
+		document.documentElement.scrollTop = 300;
+		window.dispatchEvent(new Event("scroll"));
+		await settleAt("/item");
+
+		document.documentElement.scrollTop = 0;
+		history.replaceState(left, "", "/list?page=1");
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+
+		await vi.waitFor(() => expect(document.documentElement.scrollTop).toBe(300));
+	});
+
+	it("leaves the place alone when the entry carries no mark", async () => {
+		shell();
+		history.replaceState(null, "", "/list");
+		navigation();
+		await settleAt("/other");
+
+		document.documentElement.scrollTop = 120;
+		history.replaceState(null, "", "/list");
+		window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
+
+		await vi.waitFor(() => expect(document.querySelector("h1")?.textContent).toBe("page"));
+		expect(document.documentElement.scrollTop).toBe(120);
+	});
+
+	it("announces the address it arrived at", async () => {
+		shell();
+		history.replaceState(null, "", "/");
+		const seen: Array<Record<string, unknown>> = [];
+		const listen = (event: Event) => void seen.push((event as CustomEvent).detail);
+		document.addEventListener("gopage:navigated", listen);
+		respond("<h1>docs</h1>", { "GOPAGE-Level": "1" });
+
+		navigation();
+		click(anchor("/docs#part"));
+		await vi.waitFor(() => expect(seen).toHaveLength(1));
+		document.removeEventListener("gopage:navigated", listen);
+
+		expect(seen[0].path).toBe("/docs#part");
+		expect(seen[0].from).toBe("/");
+		expect(seen[0].history).toBe(false);
+		expect(document.querySelector("h1")?.textContent).toBe("docs");
+		expect(document.documentElement.hasAttribute("aria-busy")).toBe(false);
+	});
+
+	it("marks an arrival that came from the history", async () => {
+		shell();
+		history.replaceState(null, "", "/list");
+		navigation();
+		await settleAt("/list?page=1");
+		const left = history.state;
+		await settleAt("/item");
+
+		const seen: Array<Record<string, unknown>> = [];
+		const listen = (event: Event) => void seen.push((event as CustomEvent).detail);
+		document.addEventListener("gopage:navigated", listen);
+		history.replaceState(left, "", "/list?page=1");
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+
+		await vi.waitFor(() => expect(seen).toHaveLength(1));
+		document.removeEventListener("gopage:navigated", listen);
+		expect(seen[0].history).toBe(true);
+		expect(seen[0].path).toBe("/list?page=1");
+	});
+
+	it("says nothing when the answer is not a partial", async () => {
+		shell();
+		history.replaceState(null, "", "/");
+		const seen: Event[] = [];
+		const listen = (event: Event) => void seen.push(event);
+		document.addEventListener("gopage:navigated", listen);
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => ({ ok: true, url: "", headers: { get: () => "text/html" }, text: async () => "<h1>x</h1>" })),
+		);
+
+		navigation();
+		click(anchor("/elsewhere"));
+		await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+		await Promise.resolve();
+		document.removeEventListener("gopage:navigated", listen);
+		expect(seen).toHaveLength(0);
+	});
+
+	async function parked(y: number): Promise<unknown> {
+		shell();
+		history.replaceState(null, "", "/list");
+		navigation();
+		await settleAt("/list?page=1");
+		const left = history.state;
+		document.documentElement.scrollTop = y;
+		window.dispatchEvent(new Event("scroll"));
+		await settleAt("/item");
+		document.documentElement.scrollTop = 0;
+		history.replaceState(left, "", "/list?page=1");
+		return left;
+	}
+
+	it("keeps asking while the document is still growing", async () => {
+		const left = await parked(300);
+		let asked = 0;
+		vi.stubGlobal("scrollTo", (opts: { top: number }) => {
+			asked++;
+			if (asked >= 3) {
+				document.documentElement.scrollTop = opts.top;
+			}
+		});
+
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+		await vi.waitFor(() => expect(document.documentElement.scrollTop).toBe(300));
+		expect(asked).toBeGreaterThanOrEqual(3);
+	});
+
+	it("gives the page back to a visitor who takes it", async () => {
+		const left = await parked(300);
+		let asked = 0;
+		vi.stubGlobal("scrollTo", () => void asked++);
+
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+		await vi.waitFor(() => expect(asked).toBeGreaterThan(0));
+		window.dispatchEvent(new Event("keydown"));
+		const stopped = asked;
+		await new Promise((resolve) => setTimeout(resolve, 30));
+
+		expect(asked).toBeLessThanOrEqual(stopped + 1);
+		expect(document.documentElement.scrollTop).toBe(0);
+	});
+
+	it("gives up when the place never arrives", async () => {
+		const left = await parked(300);
+		let asked = 0;
+		const clock = Date.now;
+		vi.stubGlobal("scrollTo", () => {
+			asked++;
+			if (asked === 2) {
+				vi.stubGlobal("Date", { ...Date, now: () => clock() + 5000 });
+			}
+		});
+
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+		await vi.waitFor(() => expect(asked).toBeGreaterThanOrEqual(2));
+		const stopped = asked;
+		await new Promise((resolve) => setTimeout(resolve, 30));
+
+		expect(asked).toBeLessThanOrEqual(stopped + 1);
+	});
+
+	it("survives a project that writes its own history state", async () => {
+		const left = await parked(250);
+		void left;
+		document.documentElement.scrollTop = 40;
+		history.replaceState({ mine: true }, "", "/list?page=1");
+		window.dispatchEvent(new PopStateEvent("popstate", { state: { mine: true } }));
+
+		await vi.waitFor(() => expect(location.pathname + location.search).toBe("/list?page=1"));
+		expect(document.documentElement.scrollTop).toBe(40);
+	});
+
+	it("does not take its own scrolling for a visitor", async () => {
+		const left = await parked(300);
+		let asked = 0;
+		vi.stubGlobal("scrollTo", (opts: { top: number }) => {
+			asked++;
+			window.dispatchEvent(new Event("scroll"));
+			if (asked >= 3) {
+				document.documentElement.scrollTop = opts.top;
+			}
+		});
+
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+		await vi.waitFor(() => expect(document.documentElement.scrollTop).toBe(300));
+	});
+
+	it("stops restoring when the visitor moves on", async () => {
+		const left = await parked(300);
+		let asked = 0;
+		vi.stubGlobal("scrollTo", () => void asked++);
+
+		window.dispatchEvent(new PopStateEvent("popstate", { state: left }));
+		await vi.waitFor(() => expect(asked).toBeGreaterThan(0));
+		respond("<h1>next</h1>", { "GOPAGE-Level": "1" });
+		click(anchor("/next"));
+		await vi.waitFor(() => expect(location.pathname).toBe("/next"));
+
+		const stopped = asked;
+		await new Promise((resolve) => setTimeout(resolve, 30));
+		expect(asked).toBe(stopped);
+	});
+
 	it("keeps the hash a link carries and reaches the element", async () => {
 		shell();
 		history.replaceState(null, "", "/");
@@ -658,6 +879,16 @@ describe("navigation", () => {
 		await vi.waitFor(() => expect(location.pathname).toBe("/docs"));
 		expect(location.hash).toBe("#part");
 		expect(spy).not.toHaveBeenCalled();
+	});
+
+	it("leaves history state it cannot extend alone", async () => {
+		history.replaceState("token", "", "/token");
+		vi.resetModules();
+		const fresh = await import("./runtime");
+
+		fresh.navigation();
+
+		expect(history.state).toBe("token");
 	});
 });
 

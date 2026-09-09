@@ -298,10 +298,18 @@ const PARTIAL_TYPE = "text/vnd.gopage-partial";
 const LEVEL_HEADER = "GOPAGE-Level";
 const TITLE_HEADER = "GOPAGE-Title";
 
+const NAVIGATED = "gopage:navigated";
+const STAMP = "gopage";
+
 let generation = 0;
 let pending: AbortController | null = null;
 let wired = false;
 let settled = "";
+let entry = 0;
+let minted = 0;
+let restoring = false;
+let interrupted = false;
+const spots = new Map<number, number>();
 
 export function navigation(): void {
 	if (typeof document === "undefined" || wired) {
@@ -309,8 +317,33 @@ export function navigation(): void {
 	}
 	wired = true;
 	settled = here();
+	entry = stamp();
 	document.addEventListener("click", onClick);
 	window.addEventListener("popstate", onPop);
+	window.addEventListener("scroll", track, { passive: true });
+	for (const signal of ["wheel", "touchstart", "keydown", "pointerdown"]) {
+		window.addEventListener(signal, () => (interrupted = true), { passive: true });
+	}
+}
+
+function stamp(): number {
+	const held = history.state;
+	if (held != null && (typeof held !== "object" || Array.isArray(held))) {
+		return 0;
+	}
+	const id = ++minted;
+	try {
+		history.replaceState({ ...held, [STAMP]: id }, "");
+	} catch {
+		return 0;
+	}
+	return id;
+}
+
+function track(): void {
+	if (!restoring && entry) {
+		spots.set(entry, scrollY);
+	}
 }
 
 function onClick(event: MouseEvent): void {
@@ -322,14 +355,17 @@ function onClick(event: MouseEvent): void {
 		return;
 	}
 	event.preventDefault();
-	void go(link.href, true, link.dataset.gopageScroll);
+	void go(link.href, true, link.closest<HTMLElement>("[data-gopage-scroll]")?.dataset.gopageScroll);
 }
 
-function onPop(): void {
+function onPop(event: PopStateEvent): void {
 	const from = settled;
 	if (here() === from) {
 		return;
 	}
+	const held = event.state;
+	const id = held && typeof held === "object" ? (held as Record<string, unknown>)[STAMP] : 0;
+	entry = typeof id === "number" ? id : 0;
 	void go(location.href, false, undefined, from);
 }
 
@@ -350,13 +386,15 @@ function internal(link: HTMLAnchorElement): boolean {
 
 async function go(href: string, push: boolean, scroll?: string, from?: string): Promise<void> {
 	const mine = ++generation;
+	const came = from || here();
+	let arrived = "";
 	pending?.abort();
 	abandon();
 	const controller = new AbortController();
 	pending = controller;
 	document.documentElement.setAttribute("aria-busy", "true");
 	try {
-		const source = new URL(from || here(), location.href);
+		const source = new URL(came, location.href);
 		const response = await fetch(href, {
 			headers: { [PARTIAL_HEADER]: source.pathname },
 			signal: controller.signal,
@@ -381,13 +419,21 @@ async function go(href: string, push: boolean, scroll?: string, from?: string): 
 			document.title = decodeURIComponent(title.replace(/\+/g, " "));
 		}
 		const target = new URL(response.redirected ? response.url : href, location.href);
-		const moved = target.pathname !== source.pathname;
 		if (push) {
-			history.pushState(null, "", target.href);
+			if (entry) {
+				spots.set(entry, scrollY);
+			}
+			entry = ++minted;
+			advance(entry, target.href);
 		}
 		settled = target.pathname + target.search;
 		pull();
-		place(scroll, moved, target.hash);
+		if (push) {
+			place(scroll, target.hash);
+		} else {
+			restore(spots.get(entry), mine);
+		}
+		arrived = target.pathname + target.search + target.hash;
 	} catch {
 		if (mine === generation) {
 			location.href = href;
@@ -398,18 +444,53 @@ async function go(href: string, push: boolean, scroll?: string, from?: string): 
 			pending = null;
 		}
 	}
+	if (arrived) {
+		document.dispatchEvent(new CustomEvent(NAVIGATED, {
+			bubbles: true,
+			detail: { path: arrived, from: came, history: !push },
+		}));
+	}
 }
 
-function place(scroll: string | undefined, moved: boolean, hash: string): void {
-	const choice = scroll ?? (moved ? "top" : "keep");
-	if (choice === "keep") {
+function advance(id: number, url: string): void {
+	try {
+		history.pushState({ [STAMP]: id }, "", url);
+	} catch {
+		entry = 0;
+	}
+}
+
+function restore(spot: number | undefined, mine: number): void {
+	if (spot === undefined) {
+		return;
+	}
+	restoring = true;
+	interrupted = false;
+	const until = Date.now() + 500;
+	const step = (): void => {
+		if (mine !== generation || interrupted || document.hidden || Date.now() > until) {
+			restoring = false;
+			return;
+		}
+		scrollTo({ top: spot });
+		if (scrollY >= spot) {
+			restoring = false;
+			return;
+		}
+		requestAnimationFrame(step);
+	};
+	step();
+}
+
+function place(scroll: string | undefined, hash: string): void {
+	if (scroll === "keep") {
 		return;
 	}
 	if (hash) {
 		document.getElementById(hash.slice(1))?.scrollIntoView();
 		return;
 	}
-	scrollTo({ top: 0, behavior: choice === "smooth" && !reduced() ? "smooth" : "auto" });
+	scrollTo({ top: 0, behavior: scroll === "smooth" && !reduced() ? "smooth" : "auto" });
 }
 
 function reduced(): boolean {
