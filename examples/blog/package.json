@@ -6,6 +6,6 @@
     "build": "gopage build"
   },
   "devDependencies": {
-    "@apptivitypl/gopage": "0.4.0"
+    "@apptivitypl/gopage": "0.4.1"
   }
 }
