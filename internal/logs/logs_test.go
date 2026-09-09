@@ -419,3 +419,28 @@ func TestAValueCannotForgeAJsonField(t *testing.T) {
 		t.Errorf("entry = %+v, want the value carried whole and nothing else moved", held)
 	}
 }
+
+func TestALoggedValueStaysOnOneLine(t *testing.T) {
+	cases := map[string]string{
+		"/a\nERROR forged entry": "/aERROR forged entry",
+		"/a\r\nb":                "/ab",
+		"/plain/path":            "/plain/path",
+		"":                       "",
+	}
+	for input, want := range cases {
+		if got := Line(input); got != want {
+			t.Errorf("Line(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestAForgedPathCannotAddALogLine(t *testing.T) {
+	for _, format := range []string{FormatPretty, FormatJSON, FormatGCP, FormatConsole} {
+		text := lines(t, Options{Format: format}, func(logger *slog.Logger) {
+			logger.Error("write failed", "path", Line("/a\nERROR forged entry"))
+		})
+		if got := strings.Count(strings.TrimRight(text, "\n"), "\n"); got != 0 {
+			t.Errorf("%s wrote %d extra lines: %q", format, got, text)
+		}
+	}
+}

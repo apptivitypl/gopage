@@ -976,3 +976,42 @@ func TestRenderFragmentPassesOnAFailingLoader(t *testing.T) {
 		t.Error("a fragment whose plan reads what the loader did not return must fail")
 	}
 }
+
+func TestAPartialForAStreamedRouteIsNotCached(t *testing.T) {
+	var calls atomic.Int64
+	settings := streamConfig("inline")
+	settings.Nav.Mode = config.NavPartial
+	app := New(Options{
+		Manifest: &ir.Manifest{
+			Plans:  []ir.Plan{*streamPlan()},
+			Routes: []ir.Route{{Pattern: "/", Name: "home", Plan: 0}},
+		},
+		Config: settings,
+		Cache:  cache.New(cache.Options{Limit: 1 << 20}),
+		Props: map[string]PropsProvider{
+			"home": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				cache.From(r.Context()).TTL(time.Minute)
+				return runtime.Empty{}, nil
+			},
+		},
+		Deferred: map[string]DeferredProvider{
+			"Reviews": func(*http.Request, Params) (runtime.Accessible, error) {
+				calls.Add(1)
+				return slow("late"), nil
+			},
+		},
+	})
+	handler := app.Handler()
+	for range 2 {
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		request.Header.Set(PartialHeader, "/")
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		if got := recorder.Header().Get(CacheHeader); got != "bypass" {
+			t.Errorf("header = %q, want a deferred loader kept out of the cache", got)
+		}
+	}
+	if calls.Load() != 2 {
+		t.Errorf("deferred calls = %d, want every partial to run them again", calls.Load())
+	}
+}

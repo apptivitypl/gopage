@@ -62,12 +62,25 @@ func TestAContextWithoutARecorderStillAnswers(t *testing.T) {
 
 func TestKeyIsStableAndSeparated(t *testing.T) {
 	key := Key{Host: "example.com", Locale: "pl", Path: "/listings/1", Query: "page=2", Variant: "v1"}
-	if got := key.String(); got != "11:example.com2:pl11:/listings/16:page=22:v1" {
+	if got := key.String(); got != "11:example.com2:pl11:/listings/16:page=22:v11:0" {
 		t.Errorf("key = %q", got)
 	}
 	if key.String() != (Key{Host: "example.com", Locale: "pl", Path: "/listings/1",
 		Query: "page=2", Variant: "v1"}).String() {
 		t.Error("the same request must name the same entry")
+	}
+}
+
+func TestTheLevelSeparatesKeys(t *testing.T) {
+	document := Key{Host: "example.com", Path: "/docs/guide"}
+	tail := Key{Host: "example.com", Path: "/docs/guide", Level: 1}
+	deeper := Key{Host: "example.com", Path: "/docs/guide", Level: 2}
+	seen := map[string]int{document.String(): 0, tail.String(): 1, deeper.String(): 2}
+	if len(seen) != 3 {
+		t.Errorf("keys = %v, want one entry per level", seen)
+	}
+	if tail.String() != (Key{Host: "example.com", Path: "/docs/guide", Level: 1}).String() {
+		t.Error("the same level must name the same entry")
 	}
 }
 

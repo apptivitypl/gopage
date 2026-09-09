@@ -4,11 +4,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	goruntime "runtime"
 
+	"github.com/apptivitypl/gopage/internal/action"
+	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/redirect"
 	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
@@ -82,8 +87,11 @@ func TestOnlyTheSharedPrefixIsKept(t *testing.T) {
 
 func TestAnUnknownOriginFallsBackToTheWholeChain(t *testing.T) {
 	recorder := fetchPartial(t, navApp(t, "partial"), "/gone", "/docs")
-	if recorder.Header().Get(LevelHeader) != "0" {
-		t.Errorf("level = %q, want nothing kept", recorder.Header().Get(LevelHeader))
+	if got := recorder.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
+		t.Errorf("content type = %q, want the whole document rather than a tail", got)
+	}
+	if recorder.Header().Get(LevelHeader) != "" {
+		t.Errorf("level = %q, want no level on a document", recorder.Header().Get(LevelHeader))
 	}
 	if !strings.Contains(recorder.Body.String(), "<main>") {
 		t.Errorf("body = %q, want the root layout included", recorder.Body.String())
@@ -308,5 +316,275 @@ func TestAPartialHeaderAtTheCapStillMatches(t *testing.T) {
 	recorder := fetchPartial(t, navApp(t, "partial"), "/docs", "/docs/guide")
 	if got := recorder.Header().Get(LevelHeader); got != "2" {
 		t.Errorf("level = %q, want a header inside the cap matched", got)
+	}
+}
+
+func countingNav(t *testing.T, policy func(*cache.Recorder)) (*App, *atomic.Int64) {
+	t.Helper()
+	var calls atomic.Int64
+	app := New(Options{
+		Manifest: nested(),
+		Config:   settings(t, `{"nav": {"mode": "partial"}}`),
+		Cache:    cache.New(cache.Options{Limit: 1 << 20}),
+		Props: map[string]PropsProvider{
+			"docs.guide": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				calls.Add(1)
+				policy(cache.From(r.Context()))
+				return runtime.Empty{}, nil
+			},
+		},
+	})
+	return app, &calls
+}
+
+func TestASecondPartialForTheSameLevelIsServedFromTheCache(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	first := fetchPartial(t, app, "/docs", "/docs/guide")
+	if got := first.Header().Get(CacheHeader); got != "miss" {
+		t.Errorf("first = %q", got)
+	}
+	second := fetchPartial(t, app, "/docs", "/docs/guide")
+	if got := second.Header().Get(CacheHeader); got != "hit" {
+		t.Errorf("second = %q", got)
+	}
+	if calls.Load() != 1 {
+		t.Errorf("calls = %d, want the loader spared on the second click", calls.Load())
+	}
+	if second.Body.String() != first.Body.String() || second.Body.String() != "guide" {
+		t.Errorf("bodies = %q and %q", first.Body.String(), second.Body.String())
+	}
+	if got := second.Header().Get("Content-Type"); got != PartialType {
+		t.Errorf("content type on a hit = %q", got)
+	}
+	if got := second.Header().Get(LevelHeader); got != "2" {
+		t.Errorf("level on a hit = %q", got)
+	}
+}
+
+func TestADocumentAndAPartialForTheSameUrlDoNotShareAnEntry(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	document := get(t, app.Handler(), "/docs/guide")
+	tail := fetchPartial(t, app, "/docs", "/docs/guide")
+	if !strings.Contains(document.Body.String(), "<main>") {
+		t.Errorf("document = %q, want the whole chain", document.Body.String())
+	}
+	if tail.Body.String() != "guide" {
+		t.Errorf("partial = %q, want the page alone", tail.Body.String())
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d, want one render each", calls.Load())
+	}
+	if entries := app.CacheStats().Entries; entries != 2 {
+		t.Errorf("entries = %d, want the document and the tail kept apart", entries)
+	}
+}
+
+func TestEachSharedLevelGetsItsOwnEntry(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	levels := map[string]string{"/": "1", "/docs": "2", "/docs/guide": "2"}
+	for from, want := range levels {
+		if got := fetchPartial(t, app, from, "/docs/guide").Header().Get(LevelHeader); got != want {
+			t.Errorf("from %s: level = %q, want %q", from, got, want)
+		}
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d, want one render per level", calls.Load())
+	}
+	if entries := app.CacheStats().Entries; entries != 2 {
+		t.Errorf("entries = %d, want the source path out of the key", entries)
+	}
+}
+
+func TestACachedPartialStillCarriesItsTitle(t *testing.T) {
+	app := New(Options{
+		Manifest: nested(),
+		Config:   settings(t, `{"nav": {"mode": "partial"}}`),
+		Cache:    cache.New(cache.Options{Limit: 1 << 20}),
+		Props: map[string]PropsProvider{
+			"docs": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				cache.From(r.Context()).TTL(time.Minute)
+				return runtime.Empty{}, nil
+			},
+		},
+		Meta: map[string]MetaProvider{
+			"docs": func(*http.Request, Params, runtime.Accessible) (runtime.Meta, error) {
+				return runtime.Meta{Title: "żółw & co"}, nil
+			},
+		},
+	})
+	first := fetchPartial(t, app, "/", "/docs")
+	second := fetchPartial(t, app, "/", "/docs")
+	if got := second.Header().Get(CacheHeader); got != "hit" {
+		t.Errorf("second = %q", got)
+	}
+	if got := second.Header().Get(TitleHeader); got == "" || got != first.Header().Get(TitleHeader) {
+		t.Errorf("title on a hit = %q, want the one the loader produced", got)
+	}
+}
+
+func TestAPartialIsNeverAdvertisedAsShareable(t *testing.T) {
+	app, _ := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	for _, recorder := range []*httptest.ResponseRecorder{
+		fetchPartial(t, app, "/docs", "/docs/guide"),
+		fetchPartial(t, app, "/docs", "/docs/guide"),
+	} {
+		if got := recorder.Header().Get("Cache-Control"); got != "private, max-age=60" {
+			t.Errorf("cache-control = %q, want a partial kept out of shared caches", got)
+		}
+	}
+	plain, _ := countingNav(t, func(*cache.Recorder) {})
+	if got := fetchPartial(t, plain, "/docs", "/docs/guide").Header().Get("Cache-Control"); got != PrivateFreshness {
+		t.Errorf("cache-control without a policy = %q", got)
+	}
+}
+
+func TestAPartialFromAnUnknownOriginWarmsTheDocument(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	if got := fetchPartial(t, app, "/gone", "/docs/guide").Header().Get(CacheHeader); got != "miss" {
+		t.Errorf("first = %q", got)
+	}
+	if got := get(t, app.Handler(), "/docs/guide").Header().Get(CacheHeader); got != "hit" {
+		t.Errorf("the document after it = %q, want the entry the partial filled", got)
+	}
+	if calls.Load() != 1 {
+		t.Errorf("calls = %d, want the whole chain rendered once", calls.Load())
+	}
+}
+
+func TestAPartialWithAFlashIsRenderedFresh(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute) })
+	fetchPartial(t, app, "/docs", "/docs/guide")
+
+	request := httptest.NewRequest(http.MethodGet, "/docs/guide", nil)
+	request.Header.Set(PartialHeader, "/docs")
+	request.AddCookie(&http.Cookie{Name: hosted(action.FlashCookie), Value: "sent"})
+	recorder := httptest.NewRecorder()
+	app.Handler().ServeHTTP(recorder, request)
+
+	if got := recorder.Header().Get(CacheHeader); got != "bypass" {
+		t.Errorf("header = %q", got)
+	}
+	if got := recorder.Header().Get("Content-Type"); got != PartialType {
+		t.Errorf("content type = %q, want the tail even when the cache is skipped", got)
+	}
+	if recorder.Body.String() != "guide" {
+		t.Errorf("body = %q, want the page alone", recorder.Body.String())
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d", calls.Load())
+	}
+}
+
+func TestAPartialForAPrivateVisitorIsRenderedFresh(t *testing.T) {
+	var calls atomic.Int64
+	app := New(Options{
+		Manifest: nested(),
+		Config:   settings(t, `{"nav": {"mode": "partial"}, "security": {"privateCookies": ["session"]}}`),
+		Cache:    cache.New(cache.Options{Limit: 1 << 20}),
+		Props: map[string]PropsProvider{
+			"docs.guide": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				calls.Add(1)
+				cache.From(r.Context()).TTL(time.Minute)
+				return runtime.Empty{}, nil
+			},
+		},
+	})
+	for range 2 {
+		request := httptest.NewRequest(http.MethodGet, "/docs/guide", nil)
+		request.Header.Set(PartialHeader, "/docs")
+		request.AddCookie(&http.Cookie{Name: "session", Value: "abc"})
+		recorder := httptest.NewRecorder()
+		app.Handler().ServeHTTP(recorder, request)
+		if got := recorder.Header().Get(CacheHeader); got != "bypass" {
+			t.Errorf("header = %q", got)
+		}
+		if recorder.Body.String() != "guide" {
+			t.Errorf("body = %q", recorder.Body.String())
+		}
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d, want a signed-in visitor served fresh", calls.Load())
+	}
+}
+
+func TestInvalidatingATagClearsTheDocumentAndThePartial(t *testing.T) {
+	app, calls := countingNav(t, func(r *cache.Recorder) { r.TTL(time.Minute).Tag("guide") })
+	get(t, app.Handler(), "/docs/guide")
+	fetchPartial(t, app, "/docs", "/docs/guide")
+	if removed := app.Invalidate("guide"); removed != 2 {
+		t.Errorf("removed = %d, want both variants", removed)
+	}
+	get(t, app.Handler(), "/docs/guide")
+	fetchPartial(t, app, "/docs", "/docs/guide")
+	if calls.Load() != 4 {
+		t.Errorf("calls = %d, want both variants rendered again", calls.Load())
+	}
+}
+
+func TestALoaderRedirectReachesThePartialClient(t *testing.T) {
+	app := New(Options{
+		Manifest: nested(),
+		Config:   settings(t, `{"nav": {"mode": "partial"}}`),
+		Props: map[string]PropsProvider{
+			"docs.guide": func(*http.Request, Params) (runtime.Accessible, error) {
+				return nil, redirect.Fail(http.StatusSeeOther, "/docs")
+			},
+		},
+	})
+	recorder := fetchPartial(t, app, "/docs", "/docs/guide")
+	if recorder.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want the redirect the loader asked for", recorder.Code)
+	}
+	if got := recorder.Header().Get("Location"); got != "/docs" {
+		t.Errorf("location = %q", got)
+	}
+}
+
+func TestAPartialKeepsTheOutletNumberingOfTheDocument(t *testing.T) {
+	app := navApp(t, "partial")
+	document := get(t, app.Handler(), "/docs/guide").Body.String()
+	if !strings.Contains(document, runtime.MarkerOpen+"1-->") {
+		t.Fatalf("document = %q, want the nested outlet marked", document)
+	}
+	tail := fetchPartial(t, app, "/", "/docs/guide").Body.String()
+	if !strings.Contains(tail, runtime.MarkerOpen+"1-->") {
+		t.Errorf("partial = %q, want the outlet numbered as the document numbers it", tail)
+	}
+	if strings.Contains(tail, runtime.MarkerOpen+"0-->") {
+		t.Errorf("partial = %q, want no marker of a layout it does not carry", tail)
+	}
+}
+
+func TestALayoutOutsideThePartialDoesNotDecideItsFreshness(t *testing.T) {
+	held := nested()
+	held.Layouts = []ir.Layout{{Name: "root", Plan: 0}}
+	var calls atomic.Int64
+	app := New(Options{
+		Manifest: held,
+		Config:   settings(t, `{"nav": {"mode": "partial"}}`),
+		Cache:    cache.New(cache.Options{Limit: 1 << 20}),
+		Layouts: map[string]PropsProvider{
+			"root": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				cache.From(r.Context()).Private()
+				return runtime.Empty{}, nil
+			},
+		},
+		Props: map[string]PropsProvider{
+			"docs.guide": func(r *http.Request, _ Params) (runtime.Accessible, error) {
+				calls.Add(1)
+				cache.From(r.Context()).TTL(time.Minute)
+				return runtime.Empty{}, nil
+			},
+		},
+	})
+	if got := get(t, app.Handler(), "/docs/guide").Header().Get(CacheHeader); got != "bypass" {
+		t.Errorf("document = %q, want the private layout to keep it out of the cache", got)
+	}
+	fetchPartial(t, app, "/docs", "/docs/guide")
+	if got := fetchPartial(t, app, "/docs", "/docs/guide").Header().Get(CacheHeader); got != "hit" {
+		t.Errorf("partial = %q, want a tail the layout is not part of to be cached", got)
+	}
+	if calls.Load() != 2 {
+		t.Errorf("calls = %d, want the document and the first partial only", calls.Load())
 	}
 }

@@ -171,8 +171,8 @@ func TestI4ABrokenPartialHeaderStillAnswersAWholeChain(t *testing.T) {
 	if got.Code != http.StatusOK {
 		t.Fatalf("status = %d", got.Code)
 	}
-	if got.Header().Get(server.LevelHeader) != "0" {
-		t.Errorf("level = %q, want nothing kept", got.Header().Get(server.LevelHeader))
+	if kind := got.Header().Get("Content-Type"); kind != "text/html; charset=utf-8" {
+		t.Errorf("content type = %q, want the whole document", kind)
 	}
 	if !strings.Contains(got.Body.String(), "<nav>menu</nav>") {
 		t.Errorf("body = %q, want the root layout included", got.Body.String())

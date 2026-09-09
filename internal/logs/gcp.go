@@ -125,10 +125,10 @@ func (t Trace) Attrs(project string) []slog.Attr {
 func Request(r *http.Request, status, size int, took time.Duration) slog.Attr {
 	return slog.Any(RequestKey, map[string]any{
 		"requestMethod": r.Method,
-		"requestUrl":    r.URL.RequestURI(),
+		"requestUrl":    Line(r.URL.RequestURI()),
 		"status":        status,
 		"responseSize":  strconv.Itoa(size),
-		"userAgent":     r.UserAgent(),
+		"userAgent":     Line(r.UserAgent()),
 		"remoteIp":      r.RemoteAddr,
 		"protocol":      r.Proto,
 		"latency":       strconv.FormatFloat(took.Seconds(), 'f', 9, 64) + "s",

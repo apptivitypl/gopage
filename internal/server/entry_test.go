@@ -470,3 +470,341 @@ func TestAVisibleIslandPreloadsNothing(t *testing.T) {
 		t.Error("no manifest or no chunk map means no preloads")
 	}
 }
+
+func TestAMixedCaseLocalePrefixReachesItsLocale(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"routing": {"normalize": {"case": "lower"}}
+		}`),
+	})
+	handler := app.Handler()
+	cases := map[string]string{
+		"/PL/docs/a": "/pl/docs/a",
+		"/PL":        "/pl",
+		"/EN/docs/a": "/en/docs/a",
+		"/Pl/docs/A": "/pl/docs/a",
+	}
+	for target, want := range cases {
+		response := get(t, handler, target)
+		if response.Code != http.StatusMovedPermanently {
+			t.Errorf("%s answered %d", target, response.Code)
+			continue
+		}
+		if got := response.Header().Get("Location"); got != want {
+			t.Errorf("%s went to %q, want %q", target, got, want)
+		}
+	}
+}
+
+func TestAMixedCasePrefixIsFoundWithoutNormalisation(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config:   settings(t, `{"i18n": {"locales": ["en", "pl"], "prefixDefault": true}}`),
+	})
+	response := get(t, app.Handler(), "/PL/docs/a")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if got := response.Header().Get("Location"); got != "/pl/docs/a" {
+		t.Errorf("location = %q", got)
+	}
+}
+
+func TestAMixedCasePrefixOfTheDefaultLocaleLosesThePrefix(t *testing.T) {
+	app := New(Options{Manifest: metaChain(), Config: settings(t, `{"i18n": {"locales": ["en", "pl"]}}`)})
+	response := get(t, app.Handler(), "/EN/docs/a")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if got := response.Header().Get("Location"); got != "/docs/a" {
+		t.Errorf("location = %q", got)
+	}
+}
+
+func TestALocaleTagKeepsTheCaseItWasConfiguredWith(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config:   settings(t, `{"i18n": {"locales": ["en-US", "pl"], "defaultLocale": "en-US", "prefixDefault": true}}`),
+	})
+	handler := app.Handler()
+	if code := get(t, handler, "/en-US/docs/a").Code; code != http.StatusOK {
+		t.Errorf("the configured spelling answered %d", code)
+	}
+	response := get(t, handler, "/en-us/docs/a")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if got := response.Header().Get("Location"); got != "/en-US/docs/a" {
+		t.Errorf("location = %q", got)
+	}
+}
+
+func TestALocalePrefixIsCanonicalisedInOneHop(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"routing": {"aliases": {"pl": {"docs": "dokumenty"}}, "normalize": {"case": "lower", "trailingSlash": "strip"}}
+		}`),
+	})
+	handler := app.Handler()
+	for _, target := range []string{"/PL/Docs/A/", "/PL/docs/a", "/Pl", "/EN/docs/A"} {
+		response := get(t, handler, target)
+		if response.Code != http.StatusMovedPermanently {
+			t.Errorf("%s answered %d", target, response.Code)
+			continue
+		}
+		next := response.Header().Get("Location")
+		if code := get(t, handler, next).Code; code != http.StatusOK {
+			t.Errorf("%s went to %q, which answered %d", target, next, code)
+		}
+	}
+}
+
+func TestARedirectKeepsTheQuery(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"routing": {"normalize": {"case": "lower"}},
+			"redirects": [{"from": "/old", "to": "/", "status": 302}, {"from": "/kept", "to": "/?x=1", "status": 302}]
+		}`),
+	})
+	handler := app.Handler()
+	cases := map[string]string{
+		"/old?page=2":       "/?page=2",
+		"/kept?page=2":      "/?x=1",
+		"/PL/docs/a?page=2": "/pl/docs/a?page=2",
+		"/pl/docs/a":        "",
+	}
+	for target, want := range cases {
+		response := get(t, handler, target)
+		if want == "" {
+			if response.Code != http.StatusOK {
+				t.Errorf("%s answered %d", target, response.Code)
+			}
+			continue
+		}
+		if got := response.Header().Get("Location"); got != want {
+			t.Errorf("%s went to %q, want %q", target, got, want)
+		}
+	}
+}
+
+func fromHost(t *testing.T, handler http.Handler, host, target string) *httptest.ResponseRecorder {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, target, nil)
+	request.Host = host
+	handler.ServeHTTP(recorder, request)
+	return recorder
+}
+
+func TestARedirectCanBeScopedToAHost(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"redirects": [{"from": "/*", "to": "https://example.com/pl", "host": "pl.example.com"}]
+		}`),
+	})
+	handler := app.Handler()
+	cases := map[string]string{
+		"pl.example.com":      "https://example.com/pl",
+		"PL.Example.com":      "https://example.com/pl",
+		"pl.example.com:8443": "https://example.com/pl",
+		"example.com":         "",
+	}
+	for host, want := range cases {
+		response := fromHost(t, handler, host, "/")
+		if want == "" {
+			if response.Code != http.StatusOK {
+				t.Errorf("%s answered %d, want the page", host, response.Code)
+			}
+			continue
+		}
+		if response.Code != http.StatusMovedPermanently {
+			t.Errorf("%s answered %d", host, response.Code)
+			continue
+		}
+		if got := response.Header().Get("Location"); got != want {
+			t.Errorf("%s went to %q, want %q", host, got, want)
+		}
+	}
+}
+
+func TestAHostScopedRedirectAnswersForAnUnlistedHost(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"hosts": [{"pattern": "example.com", "locale": "en"}],
+			"redirects": [{"from": "/*", "to": "https://example.com/", "host": "old.example.com"}]
+		}`),
+	})
+	handler := app.Handler()
+	response := fromHost(t, handler, "old.example.com", "/anything")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d, want the redirect rather than a refusal", response.Code)
+	}
+	if code := fromHost(t, handler, "evil.test", "/").Code; code != http.StatusMisdirectedRequest {
+		t.Errorf("an unnamed host answered %d, want 421", code)
+	}
+}
+
+func TestEntryMiddlewareRunsBeforeTheRedirects(t *testing.T) {
+	consolidate := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Host == "pl.example.com" {
+				http.Redirect(w, r, "https://example.com/pl", http.StatusMovedPermanently)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"redirects": [{"from": "/", "to": "/en", "status": 302}]
+		}`),
+		Entry: []Middleware{consolidate},
+	})
+	handler := app.Handler()
+	response := fromHost(t, handler, "pl.example.com", "/")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if got := response.Header().Get("Location"); got != "https://example.com/pl" {
+		t.Errorf("location = %q", got)
+	}
+	other := fromHost(t, handler, "example.com", "/")
+	if other.Code != http.StatusFound || other.Header().Get("Location") != "/en" {
+		t.Errorf("status = %d, location = %q", other.Code, other.Header().Get("Location"))
+	}
+}
+
+func TestEntryMiddlewareRunsInOrder(t *testing.T) {
+	var order []string
+	tag := func(name string) Middleware {
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				order = append(order, name)
+				next.ServeHTTP(w, r)
+			})
+		}
+	}
+	app := New(Options{
+		Manifest:   manifest(),
+		Entry:      []Middleware{tag("first"), tag("second")},
+		Middleware: []Middleware{tag("late")},
+	})
+	get(t, app.Handler(), "/")
+	if strings.Join(order, ",") != "first,second,late" {
+		t.Errorf("order = %v", order)
+	}
+}
+
+func TestTheAskedPathSurvivesTheLocalePrefix(t *testing.T) {
+	type sighting struct {
+		path   string
+		prefix string
+		locale string
+	}
+	var seen sighting
+	watch := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen = sighting{path: AskedPath(r), prefix: AskedPrefix(r), locale: LocaleOf(r)}
+			next.ServeHTTP(w, r)
+		})
+	}
+	app := New(Options{
+		Manifest:   metaChain(),
+		Config:     settings(t, `{"i18n": {"locales": ["en", "pl"], "prefixDefault": true}}`),
+		Middleware: []Middleware{watch},
+	})
+	handler := app.Handler()
+	cases := map[string]sighting{
+		"/":          {path: "/", prefix: "", locale: "en"},
+		"/en":        {path: "/en", prefix: "/en", locale: "en"},
+		"/pl/docs/a": {path: "/pl/docs/a", prefix: "/pl", locale: "pl"},
+		"/docs/a":    {path: "/docs/a", prefix: "", locale: "en"},
+	}
+	for target, want := range cases {
+		seen = sighting{}
+		get(t, handler, target)
+		if seen != want {
+			t.Errorf("%s was seen as %+v, want %+v", target, seen, want)
+		}
+	}
+}
+
+func TestASubdomainRequestStillCarriesItsPath(t *testing.T) {
+	var seen string
+	watch := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen = AskedPath(r)
+			next.ServeHTTP(w, r)
+		})
+	}
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"mode": "subdomain", "locales": ["en", "pl"]},
+			"hosts": [{"pattern": "example.com", "locale": "en", "default": true}, {"pattern": "pl.example.com", "locale": "pl"}]
+		}`),
+		Middleware: []Middleware{watch},
+	})
+	fromHost(t, app.Handler(), "pl.example.com", "/docs/a")
+	if seen != "/docs/a" {
+		t.Errorf("original path = %q", seen)
+	}
+}
+
+func TestAShoutedPathThatIsNoLocaleIsOnlyNormalised(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"]},
+			"routing": {"normalize": {"case": "lower"}}
+		}`),
+	})
+	response := get(t, app.Handler(), "/Docs/A")
+	if response.Code != http.StatusMovedPermanently {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if got := response.Header().Get("Location"); got != "/docs/a" {
+		t.Errorf("location = %q", got)
+	}
+}
+
+func TestALocalePrefixIsAWholeSegment(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"routing": {"normalize": {"case": "lower"}}
+		}`),
+	})
+	handler := app.Handler()
+	for _, target := range []string{"/plx/docs", "/PLX/docs"} {
+		response := get(t, handler, target)
+		if got := response.Header().Get(LocaleHeader); got == "pl" {
+			t.Errorf("%s was read as a locale prefix", target)
+		}
+	}
+}
+
+func TestARequestOutsideTheChainCarriesNoRouting(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/docs/a", nil)
+	if got := AskedPath(request); got != "" {
+		t.Errorf("asked path = %q", got)
+	}
+	if got := AskedPrefix(request); got != "" {
+		t.Errorf("asked prefix = %q, want none on a request that never met the chain", got)
+	}
+	if got := LocaleOf(request); got != "" {
+		t.Errorf("locale = %q", got)
+	}
+}

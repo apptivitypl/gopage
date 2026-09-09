@@ -166,11 +166,11 @@ func TestTheApiNamespaceKeepsTheLocaleOutOfTheKey(t *testing.T) {
 		Config:   settings(t, "{\"i18n\": {\"locales\": [\"en\", \"pl\"]}}"),
 	})
 	request := httptest.NewRequest(http.MethodGet, "/api/health", nil)
-	if key := app.key(request); key.Locale != "" {
+	if key := app.key(request, 0); key.Locale != "" {
 		t.Errorf("key = %+v, want no locale on a reserved path", key)
 	}
 	page := httptest.NewRequest(http.MethodGet, "/", nil)
-	if key := app.key(page); key.Path != "/" {
+	if key := app.key(page, 0); key.Path != "/" {
 		t.Errorf("key = %+v", key)
 	}
 }
@@ -181,8 +181,8 @@ func TestTheHostIsPartOfTheKeyWhenHostsAreListed(t *testing.T) {
 		Config: settings(t, "{\"i18n\": {\"mode\": \"subdomain\"}, \"hosts\": [{\"pattern\": \"example.com\", \"locale\": \"en\"}]}"+
 			"{\"hosts\": [{\"pattern\": \"pl.example.com\", \"locale\": \"pl\"}]}"),
 	})
-	first := app.key(httptest.NewRequest(http.MethodGet, "http://example.com/", nil))
-	second := app.key(httptest.NewRequest(http.MethodGet, "http://pl.example.com/", nil))
+	first := app.key(httptest.NewRequest(http.MethodGet, "http://example.com/", nil), 0)
+	second := app.key(httptest.NewRequest(http.MethodGet, "http://pl.example.com/", nil), 0)
 	if first.String() == second.String() {
 		t.Errorf("hosts must separate the key: %q", first.String())
 	}
@@ -536,6 +536,16 @@ func TestFreshnessDescribesThePolicy(t *testing.T) {
 	for policy, want := range cases {
 		if got := Freshness(policy); got != want {
 			t.Errorf("Freshness(%+v) = %q, want %q", policy, got, want)
+		}
+	}
+	held := map[cache.Policy]string{
+		{}:                                     PrivateFreshness,
+		{TTL: 30 * time.Second}:                "private, max-age=30",
+		{TTL: time.Minute, Stale: time.Minute}: "private, max-age=60, stale-while-revalidate=60",
+	}
+	for policy, want := range held {
+		if got := VisitorFreshness(policy); got != want {
+			t.Errorf("VisitorFreshness(%+v) = %q, want %q", policy, got, want)
 		}
 	}
 }

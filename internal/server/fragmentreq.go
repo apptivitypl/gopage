@@ -7,6 +7,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
@@ -101,14 +102,14 @@ func (a *App) writeFragment(w http.ResponseWriter, r *http.Request, route ir.Rou
 
 	vary(w)
 	w.Header().Set("Content-Type", FragmentType)
-	w.Header().Set("Cache-Control", freshness(fragment, recorder))
+	w.Header().Set("Cache-Control", fragmentFreshness(fragment, recorder))
 	w.Header().Set("Content-Length", strconv.Itoa(out.Len()))
 	w.WriteHeader(http.StatusOK)
 	if r.Method == http.MethodHead {
 		return
 	}
 	if _, err := w.Write(out.Bytes()); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 
@@ -123,7 +124,7 @@ func (a *App) deferredIn(route ir.Route, name string) (ir.Fragment, *ir.Plan, bo
 	return fragment, plan, true
 }
 
-func freshness(fragment ir.Fragment, recorder *cache.Recorder) string {
+func fragmentFreshness(fragment ir.Fragment, recorder *cache.Recorder) string {
 	if !fragment.Cacheable() || !recorder.Shared() {
 		return "private, no-store"
 	}

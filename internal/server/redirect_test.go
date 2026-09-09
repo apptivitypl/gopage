@@ -19,6 +19,26 @@ func TestALocalePrefixNeverRedirectsOffSite(t *testing.T) {
 	}
 }
 
+func TestAProtocolRelativePathNeverBecomesAnOffSiteRedirect(t *testing.T) {
+	app := New(Options{
+		Manifest: metaChain(),
+		Config: settings(t, `{
+			"i18n": {"locales": ["en", "pl"], "prefixDefault": true},
+			"routing": {"normalize": {"case": "lower"}}
+		}`),
+	})
+	handler := app.Handler()
+	for _, target := range []string{"//evil.com/x", "//Evil.com/X", "/\\evil.com", "/PL//evil.com"} {
+		location := get(t, handler, target).Header().Get("Location")
+		if location == "" {
+			continue
+		}
+		if !strings.HasPrefix(location, "/") || strings.HasPrefix(location, "//") || strings.HasPrefix(location, "/\\") {
+			t.Errorf("%s went to %q, want an address on this site", target, location)
+		}
+	}
+}
+
 func TestAWildcardRedirectNeverBuildsAnOffSiteTarget(t *testing.T) {
 	app := New(Options{
 		Manifest: manifest(),

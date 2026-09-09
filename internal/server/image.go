@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/apptivitypl/gopage/internal/cache"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/reply"
 )
 
@@ -73,7 +74,7 @@ func (a *App) image(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := w.Write(value.Body); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 
@@ -94,7 +95,7 @@ func (a *App) failImage(w http.ResponseWriter, r *http.Request, err error) {
 		http.NotFound(w, r)
 		return
 	}
-	a.logger.Error("image failed", "path", r.URL.RawQuery, "error", err)
+	a.logger.Error("image failed", "path", logs.Line(r.URL.RawQuery), "error", err)
 	http.Error(w, "image unavailable", http.StatusBadRequest)
 }
 

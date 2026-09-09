@@ -216,7 +216,8 @@ The keys that decide something worth knowing about:
 | `nav.mode`                | `partial` sends only the part of the document that changed                                                                                                                                                                           |
 | `security.maxConnections` | a ceiling for the native server; omit it for none. The worker target is bounded by the platform instead                                                                                                                              |
 | `security.privateCookies` | names the cookies that make a response personal. A request carrying one is never cached                                                                                                                                              |
-| `routing.aliases`         | the segment each locale uses in public addresses, so one route answers `/jobs`, `/pl/praca` and `/de/arbeit`                                                                                                                          |
+| `routing.aliases`         | the segment each locale uses in public addresses, so one route answers `/docs`, `/pl/dokumenty` and `/de/handbuch`                                                                                                                    |
+| `redirects[].host`        | limits a redirect to one host, so old subdomains and `www` are consolidated in the configuration rather than at the edge. The port is ignored, `www.` is not, and a host named here answers without repeating it under `hosts`        |
 | `seo`                     | the built-in `/sitemap.xml` and `/robots.txt`: crawler rules, extra sitemaps, and `mode: "off"` on either when a route of yours answers the path                                                                                      |
 | `images`                  | `mode: "on"` serves `/_gopage/image` and points `<Image>` at it, resizing and re-encoding on the way out                                                                                                                              |
 | `cache.variants`          | how many entries one route may hold once its `{% vary %}` directives are multiplied out; a route over the ceiling is a build warning                                                                                                  |
@@ -269,7 +270,29 @@ readers who are not signed in.
 **Localised addresses.** `routing.aliases` gives one route a different segment per locale. The
 canonical form redirects to the public one, so a page has a single address, and `canonical` and
 `hreflang` follow without a second table to maintain. `routing.normalize` folds trailing slashes,
-case and diacritics onto one spelling.
+case and diacritics onto one spelling. A locale prefix is found whatever case it arrives in and
+redirected once to the spelling `i18n.locales` declares, so `/PL/about` lands on `/pl/about` rather
+than on nothing. Assets, `public/` files and reserved paths are never normalised, and a redirect
+keeps the query it was given.
+
+**Middleware.** `Options.Middleware` runs just before the router, after redirects, rewrites and the
+locale prefix have been settled, so it sees the path a route matches and answers `gopage.LocaleOf`.
+`Options.Entry` runs before all of that and sees the address exactly as it arrived, which is where a
+rule the configuration cannot express belongs — a host consolidation, say. Refusing an unknown host,
+the security headers, cross-origin protection and the body limit still come first, and neither the
+locale nor `Locals` is in the context yet. A middleware that wants the address as it arrived without
+giving up the rest of the chain reads `gopage.AskedPath(r)` and `gopage.AskedPrefix(r)`; the second
+answers the prefix the visitor spelled and nothing at all when there was none, which is what tells
+`/` and `/en` apart.
+
+**Partial navigation.** With `nav.mode: "partial"` a click sends only the part of the document that
+changed, and the answer goes through the same page cache as the document — the tail of the layout
+chain is its own entry, keyed by how much the two pages share rather than by where the visitor came
+from. A partial is never advertised to shared caches: a route with a TTL answers `private, max-age`,
+everything else `private, no-cache`. Links that change only the query stay in partial navigation, so
+pagination, sorting and filters do not reload the page. The scroll goes to the top when the path
+changes and stays put when only the query does; `data-gopage-scroll` on a link overrides that with
+`top`, `keep` or `smooth`, and `data-gopage-nav="off"` opts a link out altogether.
 
 **Chrome data.** A layout declares `Props` and `Load` of its own and reads them under `layout.`:
 

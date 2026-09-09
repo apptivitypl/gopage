@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
 )
@@ -71,7 +73,7 @@ func (a *App) document(w http.ResponseWriter, r *http.Request, contentType strin
 		a.writeText(w, r, contentType, value.Body, cache.StatusBypass, policy)
 		return
 	}
-	value, status, err := a.cache.Do(a.key(r).String(), load)
+	value, status, err := a.cache.Do(a.key(r, 0).String(), load)
 	if err != nil {
 		a.failDocument(w, r, err)
 		return
@@ -84,7 +86,7 @@ func (a *App) failDocument(w http.ResponseWriter, r *http.Request, err error) {
 		http.NotFound(w, r)
 		return
 	}
-	a.logger.Error("sitemap failed", "path", r.URL.Path, "error", err)
+	a.logger.Error("sitemap failed", "path", logs.Line(r.URL.Path), "error", err)
 	http.Error(w, "sitemap unavailable", http.StatusInternalServerError)
 }
 
@@ -177,5 +179,9 @@ func (a *App) probeRequest(r *http.Request, derived seo.Derived, recorder *cache
 	target.Path = derived.Entry.Path
 	target.RawQuery = ""
 	request.URL = &target
-	return withLocale(request, derived.Locale)
+	prefix := ""
+	if head := "/" + derived.Locale; strings.HasPrefix(target.Path, head) {
+		prefix = head
+	}
+	return withRouting(request, routing{locale: derived.Locale, path: target.Path, prefix: prefix})
 }

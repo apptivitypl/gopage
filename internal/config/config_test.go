@@ -517,3 +517,37 @@ func TestTheConnectionLimitDefaultsToNoLimit(t *testing.T) {
 		t.Errorf("limit = %d, want 512", got)
 	}
 }
+
+func TestTwoLocalesThatDifferOnlyInCaseAreRefused(t *testing.T) {
+	_ = parseErr(t, `{"i18n": {"locales": ["en-US", "en-us"]}}`)
+	parse(t, `{"i18n": {"locales": ["en-US", "pl"], "defaultLocale": "en-US"}}`)
+}
+
+func TestARedirectHostIsCanonicalised(t *testing.T) {
+	cases := map[string]string{
+		"Example.COM":          "example.com",
+		"www.example.com:8443": "www.example.com",
+		"[::1]:8080":           "[::1]",
+		"  old.example.com  ":  "old.example.com",
+	}
+	for input, want := range cases {
+		config := parse(t, `{"redirects": [{"from": "/a", "to": "/b", "host": "`+input+`"}]}`)
+		if got := config.Redirects[0].Host; got != want {
+			t.Errorf("host %q became %q, want %q", input, got, want)
+		}
+	}
+	_ = parseErr(t, `{"redirects": [{"from": "/a", "to": "/b", "host": "https://example.com"}]}`)
+}
+
+func TestAHostScopedRedirectNamesAKnownHost(t *testing.T) {
+	config := parse(t, `{
+		"hosts": [{"pattern": "example.com", "locale": "en"}],
+		"redirects": [{"from": "/*", "to": "https://example.com/", "host": "old.example.com"}]
+	}`)
+	if !config.KnownHost("old.example.com") {
+		t.Error("a host named by a redirect is a host the application answers for")
+	}
+	if config.KnownHost("evil.test") {
+		t.Error("an unnamed host stays refused")
+	}
+}

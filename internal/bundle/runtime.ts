@@ -170,13 +170,16 @@ export function start(): void {
 
 const SLOT_ATTRIBUTE = "data-gopage-slot";
 
+let watching = false;
+
 export function slots(root: ParentNode = document): void {
 	for (const template of root.querySelectorAll<HTMLTemplateElement>(`template[${SLOT_ATTRIBUTE}]`)) {
 		fill(template);
 	}
-	if (typeof MutationObserver === "undefined" || document.readyState === "complete") {
+	if (watching || typeof MutationObserver === "undefined" || document.readyState === "complete") {
 		return;
 	}
+	watching = true;
 	const observer = new MutationObserver((records) => {
 		for (const record of records) {
 			for (const node of record.addedNodes) {
@@ -188,7 +191,10 @@ export function slots(root: ParentNode = document): void {
 		sweep();
 	});
 	observer.observe(document.documentElement, { childList: true, subtree: true });
-	window.addEventListener("load", () => observer.disconnect(), { once: true });
+	window.addEventListener("load", () => {
+		observer.disconnect();
+		watching = false;
+	}, { once: true });
 }
 
 let scheduled = false;
@@ -274,7 +280,7 @@ async function draw(slot: HTMLElement): Promise<void> {
 
 function fill(template: HTMLTemplateElement): void {
 	const name = template.getAttribute(SLOT_ATTRIBUTE);
-	if (!name) {
+	if (!name || !template.content.childNodes.length) {
 		return;
 	}
 	const slot = document.querySelector(`gopage-slot[name="${CSS.escape(name)}"]`);
@@ -295,14 +301,16 @@ const TITLE_HEADER = "GOPAGE-Title";
 let generation = 0;
 let pending: AbortController | null = null;
 let wired = false;
+let settled = "";
 
 export function navigation(): void {
 	if (typeof document === "undefined" || wired) {
 		return;
 	}
 	wired = true;
+	settled = here();
 	document.addEventListener("click", onClick);
-	window.addEventListener("popstate", () => void go(location.href, false));
+	window.addEventListener("popstate", onPop);
 }
 
 function onClick(event: MouseEvent): void {
@@ -314,7 +322,19 @@ function onClick(event: MouseEvent): void {
 		return;
 	}
 	event.preventDefault();
-	void go(link.href, true);
+	void go(link.href, true, link.dataset.gopageScroll);
+}
+
+function onPop(): void {
+	const from = settled;
+	if (here() === from) {
+		return;
+	}
+	void go(location.href, false, undefined, from);
+}
+
+function here(): string {
+	return location.pathname + location.search;
 }
 
 function internal(link: HTMLAnchorElement): boolean {
@@ -325,10 +345,10 @@ function internal(link: HTMLAnchorElement): boolean {
 		return false;
 	}
 	const url = new URL(link.href, location.href);
-	return url.origin === location.origin && url.pathname !== location.pathname;
+	return url.origin === location.origin && url.pathname + url.search !== here();
 }
 
-async function go(href: string, push: boolean): Promise<void> {
+async function go(href: string, push: boolean, scroll?: string, from?: string): Promise<void> {
 	const mine = ++generation;
 	pending?.abort();
 	abandon();
@@ -336,9 +356,9 @@ async function go(href: string, push: boolean): Promise<void> {
 	pending = controller;
 	document.documentElement.setAttribute("aria-busy", "true");
 	try {
-		const from = location.pathname;
+		const source = new URL(from || here(), location.href);
 		const response = await fetch(href, {
-			headers: { [PARTIAL_HEADER]: from },
+			headers: { [PARTIAL_HEADER]: source.pathname },
 			signal: controller.signal,
 		});
 		const type = response.headers.get("content-type") ?? "";
@@ -360,10 +380,14 @@ async function go(href: string, push: boolean): Promise<void> {
 		if (title !== null) {
 			document.title = decodeURIComponent(title.replace(/\+/g, " "));
 		}
+		const target = new URL(response.redirected ? response.url : href, location.href);
+		const moved = target.pathname !== source.pathname;
 		if (push) {
-			history.pushState(null, "", response.url || href);
+			history.pushState(null, "", target.href);
 		}
-		scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
+		settled = target.pathname + target.search;
+		pull();
+		place(scroll, moved, target.hash);
 	} catch {
 		if (mine === generation) {
 			location.href = href;
@@ -374,6 +398,18 @@ async function go(href: string, push: boolean): Promise<void> {
 			pending = null;
 		}
 	}
+}
+
+function place(scroll: string | undefined, moved: boolean, hash: string): void {
+	const choice = scroll ?? (moved ? "top" : "keep");
+	if (choice === "keep") {
+		return;
+	}
+	if (hash) {
+		document.getElementById(hash.slice(1))?.scrollIntoView();
+		return;
+	}
+	scrollTo({ top: 0, behavior: choice === "smooth" && !reduced() ? "smooth" : "auto" });
 }
 
 function reduced(): boolean {
@@ -399,7 +435,6 @@ function swap(level: number, html: string): boolean {
 	range.deleteContents();
 	range.insertNode(range.createContextualFragment(html));
 	hydrate(document);
-	pull();
 	return true;
 }
 

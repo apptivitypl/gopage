@@ -30,8 +30,9 @@ func seoApp(t *testing.T, text string) *App {
 func metaOf(t *testing.T, app *App, target string) runtime.Meta {
 	t.Helper()
 	request := httptest.NewRequest(http.MethodGet, target, nil)
-	locale, rest, _ := app.route(request.URL.Path)
-	request = withLocale(withPath(request, rest), locale)
+	found := app.route(request.URL.Path)
+	rest := found.rest
+	request = withLocale(withPath(request.Context(), request, rest), found.locale)
 	route, params, ok := app.router.Match(rest)
 	if !ok {
 		t.Fatalf("no route for %s", rest)
