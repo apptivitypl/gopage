@@ -290,9 +290,20 @@ changed, and the answer goes through the same page cache as the document — the
 chain is its own entry, keyed by how much the two pages share rather than by where the visitor came
 from. A partial is never advertised to shared caches: a route with a TTL answers `private, max-age`,
 everything else `private, no-cache`. Links that change only the query stay in partial navigation, so
-pagination, sorting and filters do not reload the page. The scroll goes to the top when the path
-changes and stays put when only the query does; `data-gopage-scroll` on a link overrides that with
-`top`, `keep` or `smooth`, and `data-gopage-nav="off"` opts a link out altogether.
+pagination, sorting and filters do not reload the page.
+
+A click scrolls to the top, the way a full load does, and back or forward returns to the place the
+visitor left. `data-gopage-scroll` overrides the click rule with `top`, `keep` or `smooth`, and it is
+read from the nearest ancestor that carries it, so a paginator opts out once on its container rather
+than on every link. An address with a hash reaches that element instead. `data-gopage-nav="off"` opts
+a link out of partial navigation altogether.
+
+When the new content is in the document, the runtime dispatches `gopage:navigated` on `document`,
+carrying the address it arrived at, the one it came from, and whether the move came from the
+history. That is the signal to hang project code on; `aria-busy` on the root element is an
+accessibility hint, not a completion event, and anything on the page may write it. The event does
+not fire on the first load, on a hash-only move, or when a navigation falls back to a full reload,
+and it does not promise that deferred fragments and islands have arrived — those land later.
 
 **Chrome data.** A layout declares `Props` and `Load` of its own and reads them under `layout.`:
 
