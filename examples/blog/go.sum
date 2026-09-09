@@ -1,7 +1,7 @@
 github.com/andybalholm/brotli v1.2.3 h1:8H1qwOkl2LPfjf3YezB90JnCliZb6SInJ/OJkEbA5NQ=
 github.com/andybalholm/brotli v1.2.3/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
-github.com/apptivitypl/gopage v0.4.1 h1:eQQzJWaC2fNu5ZCyHmsOwrE0JlOoAmQxI1MD3vfujvs=
-github.com/apptivitypl/gopage v0.4.1/go.mod h1:pCDTLax9vfahT27OoM/OF7fNI4YBHbQjyWEANGCrQU0=
+github.com/apptivitypl/gopage v0.4.2 h1:nG17j5wJjm5nKF/B06r8gq3uEc8XUts26uo74huVB9k=
+github.com/apptivitypl/gopage v0.4.2/go.mod h1:pCDTLax9vfahT27OoM/OF7fNI4YBHbQjyWEANGCrQU0=
 github.com/syumai/workers v0.33.0 h1:ku24TZT8m32leS5wYId1F+pGPVXhl+TPnxaDwbr66y4=
 github.com/syumai/workers v0.33.0/go.mod h1:ZnqmdiHNBrbxOLrZ/HJ5jzHy6af9cmiNZk10R9NrIEA=
 github.com/xyproto/randomstring v1.0.5 h1:YtlWPoRdgMu3NZtP45drfy1GKoojuR7hmRcnhZqKjWU=
