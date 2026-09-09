@@ -1,0 +1,181 @@
+name: vscode
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version this release carries, for example 0.2.0
+        type: string
+        required: true
+      preRelease:
+        description: Publish to the pre-release channel, which needs an odd minor
+        type: boolean
+        default: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: vscode
+  cancel-in-progress: false
+
+env:
+  VSIX: gopage.vsix
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      released: ${{ steps.plan.outputs.released }}
+      channel: ${{ steps.plan.outputs.channel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Ask git whether this version is already out
+        id: plan
+        env:
+          VERSION: ${{ inputs.version }}
+          PRE_RELEASE: ${{ inputs.preRelease }}
+        run: |
+          if [ "$PRE_RELEASE" = "true" ]; then
+            echo "channel=--pre-release" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=" >> "$GITHUB_OUTPUT"
+          fi
+          tag="gopage-vscode@$VERSION"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is already tagged, so this run publishes nothing" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "publishing $tag" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  package:
+    name: package
+    needs: plan
+    if: needs.plan.outputs.released != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Hold the grammar against the compiler
+        run: go run ./cmd/gopagetool vscode check
+
+      - run: pnpm --filter gopage test:grammar
+      - run: pnpm --filter gopage test:unit
+
+      - name: Build the language server the extension drives
+        run: go build -o "$RUNNER_TEMP/gopage" ./cmd/gopage
+
+      - name: Run the extension host under a display server
+        env:
+          GOPAGE_BINARY: ${{ runner.temp }}/gopage
+        run: xvfb-run -a pnpm --filter gopage test:integration
+
+      - name: Write the version this release carries into the manifest
+        env:
+          VERSION: ${{ inputs.version }}
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: go run ./cmd/gopagetool vscode version --set "$VERSION" $CHANNEL
+
+      - name: Build the package
+        env:
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: pnpm --filter gopage exec vsce package --no-dependencies $CHANNEL -o "$VSIX"
+
+      - name: Show what the package holds
+        run: pnpm --filter gopage exec vsce ls --tree --no-dependencies
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vsix
+          path: editors/vscode/${{ env.VSIX }}
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: [plan, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: vsix
+          path: editors/vscode
+
+      - name: Publish to the visual studio marketplace
+        env:
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: pnpm --filter gopage exec vsce publish --oidc --packagePath "$VSIX" $CHANNEL --skip-duplicate
+
+      - name: Publish to open vsx
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: pnpm --filter gopage exec ovsx publish "$VSIX" --skip-duplicate
+
+  tag:
+    name: tag
+    needs: [plan, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Record what was published
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "pushed $TAG" >> "$GITHUB_STEP_SUMMARY"

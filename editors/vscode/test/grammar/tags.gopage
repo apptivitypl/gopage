@@ -1,0 +1,17 @@
+<!-- SYNTAX TEST "text.html.gopage" "components, elements and attributes"
+    <ItemCard client="idle" :Item="item" />
+<!-- ^^^^^^^^ entity.name.tag.component.gopage
+<!--          ^^^^^^ entity.other.attribute-name.gopage
+<!--                  ^^^^ constant.language.strategy.gopage
+<!--                        ^ punctuation.definition.binding.gopage
+<!--                         ^^^^ entity.other.attribute-name.bound.gopage
+<!--                               ^^^^ meta.embedded.expression.gopage
+    <Field name="Email" />
+<!-- ^^^^^ support.class.component.gopage
+    <button disabled?="Busy">go</button>
+<!-- ^^^^^^ entity.name.tag.html
+<!--        ^^^^^^^^ entity.other.attribute-name.gopage
+<!--                ^ keyword.operator.conditional.gopage
+    <Template #footer>{% children %}</Template>
+<!--          ^ punctuation.definition.slot.gopage
+<!--           ^^^^^^ entity.other.attribute-name.slot.gopage

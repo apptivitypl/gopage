@@ -1,0 +1,646 @@
+>---
+#^^^ text.html.gopage meta.frontmatter.gopage punctuation.definition.frontmatter.begin.gopage
+>import "time"
+#^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>
+>type Props struct {
+#^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>	Heading string
+#^^^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>	Items   []Item
+#^^^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>}
+#^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>
+>func Load(ctx *gopage.Ctx) (Props, error) {
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>	return Props{Heading: "hello"}, nil
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>}
+#^^ text.html.gopage meta.frontmatter.gopage meta.embedded.block.go
+>---
+#^^^ text.html.gopage meta.frontmatter.gopage punctuation.definition.frontmatter.end.gopage
+><h1>{{ Heading }}</h1>
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#   ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#    ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#      ^ text.html.gopage meta.interpolation.gopage
+#       ^^^^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#              ^ text.html.gopage meta.interpolation.gopage
+#               ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                 ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                   ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                     ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+><p>{{ t("items.count", count = len(Items), city = City) }}</p>
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#   ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#     ^ text.html.gopage meta.interpolation.gopage
+#      ^ text.html.gopage meta.interpolation.gopage support.function.message.gopage
+#       ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#        ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#         ^^^^^^^^^^^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                    ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                     ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                      ^ text.html.gopage meta.interpolation.gopage
+#                       ^^^^^^ text.html.gopage meta.interpolation.gopage variable.parameter.gopage
+#                             ^ text.html.gopage meta.interpolation.gopage keyword.operator.gopage
+#                              ^ text.html.gopage meta.interpolation.gopage
+#                               ^^^ text.html.gopage meta.interpolation.gopage support.function.filter.gopage
+#                                  ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                   ^^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                                        ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                         ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                          ^ text.html.gopage meta.interpolation.gopage
+#                                           ^^^^^ text.html.gopage meta.interpolation.gopage variable.parameter.gopage
+#                                                ^ text.html.gopage meta.interpolation.gopage keyword.operator.gopage
+#                                                 ^ text.html.gopage meta.interpolation.gopage
+#                                                  ^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                                                      ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                                       ^ text.html.gopage meta.interpolation.gopage
+#                                                        ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                                                          ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                                            ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                                             ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+><p>{{ Price | money("PLN") }} {{ At | relative }} {{ At | date("2006-01-02") }}</p>
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#   ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#     ^ text.html.gopage meta.interpolation.gopage
+#      ^^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#           ^ text.html.gopage meta.interpolation.gopage
+#            ^ text.html.gopage meta.interpolation.gopage keyword.operator.filter.gopage
+#             ^ text.html.gopage meta.interpolation.gopage
+#              ^^^^^ text.html.gopage meta.interpolation.gopage support.function.filter.gopage
+#                   ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                    ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                     ^^^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                        ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                         ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                          ^ text.html.gopage meta.interpolation.gopage
+#                           ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                             ^ text.html.gopage
+#                              ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                                ^ text.html.gopage meta.interpolation.gopage
+#                                 ^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                                   ^ text.html.gopage meta.interpolation.gopage
+#                                    ^ text.html.gopage meta.interpolation.gopage keyword.operator.filter.gopage
+#                                     ^ text.html.gopage meta.interpolation.gopage
+#                                      ^^^^^^^^ text.html.gopage meta.interpolation.gopage support.function.filter.gopage
+#                                              ^ text.html.gopage meta.interpolation.gopage
+#                                               ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                                                 ^ text.html.gopage
+#                                                  ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                                                    ^ text.html.gopage meta.interpolation.gopage
+#                                                     ^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                                                       ^ text.html.gopage meta.interpolation.gopage
+#                                                        ^ text.html.gopage meta.interpolation.gopage keyword.operator.filter.gopage
+#                                                         ^ text.html.gopage meta.interpolation.gopage
+#                                                          ^^^^ text.html.gopage meta.interpolation.gopage support.function.filter.gopage
+#                                                              ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                                               ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                                                                ^^^^^^^^^^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                                                                          ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                                                                           ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                                                                            ^ text.html.gopage meta.interpolation.gopage
+#                                                                             ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                                                                               ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                                                                 ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                                                                  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% standalone %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% vary cookie="theme" values="light,dark" %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#       ^ text.html.gopage meta.directive.gopage
+#        ^^^^^^ text.html.gopage meta.directive.gopage entity.other.attribute-name.gopage
+#              ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#               ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                ^^^^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                     ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                      ^ text.html.gopage meta.directive.gopage
+#                       ^^^^^^ text.html.gopage meta.directive.gopage entity.other.attribute-name.gopage
+#                             ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                              ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                               ^^^^^^^^^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                                         ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                                          ^ text.html.gopage meta.directive.gopage
+#                                           ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% let total = len(Items) + 1 %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#      ^ text.html.gopage meta.directive.gopage
+#       ^^^^^^ text.html.gopage meta.directive.gopage variable.parameter.gopage
+#             ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#              ^ text.html.gopage meta.directive.gopage
+#               ^^^ text.html.gopage meta.directive.gopage support.function.filter.gopage
+#                  ^ text.html.gopage meta.directive.gopage punctuation.separator.gopage
+#                   ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                        ^ text.html.gopage meta.directive.gopage punctuation.separator.gopage
+#                         ^ text.html.gopage meta.directive.gopage
+#                          ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                           ^ text.html.gopage meta.directive.gopage
+#                            ^ text.html.gopage meta.directive.gopage constant.numeric.gopage
+#                             ^ text.html.gopage meta.directive.gopage
+#                              ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% if !Ready || Flags[0] == true %}<p>{{ "a" ~ "b" }}</p>{% endif %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#     ^ text.html.gopage meta.directive.gopage
+#      ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#       ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#            ^ text.html.gopage meta.directive.gopage
+#             ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#               ^ text.html.gopage meta.directive.gopage
+#                ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                     ^ text.html.gopage meta.directive.gopage punctuation.separator.gopage
+#                      ^ text.html.gopage meta.directive.gopage constant.numeric.gopage
+#                       ^ text.html.gopage meta.directive.gopage punctuation.separator.gopage
+#                        ^ text.html.gopage meta.directive.gopage
+#                         ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                           ^ text.html.gopage meta.directive.gopage
+#                            ^^^^ text.html.gopage meta.directive.gopage constant.language.boolean.gopage
+#                                ^ text.html.gopage meta.directive.gopage
+#                                 ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+#                                   ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                    ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                     ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                                      ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                                        ^ text.html.gopage meta.interpolation.gopage
+#                                         ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                                          ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                                           ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                                            ^ text.html.gopage meta.interpolation.gopage
+#                                             ^ text.html.gopage meta.interpolation.gopage keyword.operator.gopage
+#                                              ^ text.html.gopage meta.interpolation.gopage
+#                                               ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                                                ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                                                 ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                                                  ^ text.html.gopage meta.interpolation.gopage
+#                                                   ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                                                     ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                                       ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                                        ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                                                         ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#                                                           ^ text.html.gopage meta.directive.gopage
+#                                                            ^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#                                                                 ^ text.html.gopage meta.directive.gopage
+#                                                                  ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% if Ready != false && Count >= 2 %}<p>{{ -Count }}</p>{% endif %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#     ^ text.html.gopage meta.directive.gopage
+#      ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#           ^ text.html.gopage meta.directive.gopage
+#            ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#              ^ text.html.gopage meta.directive.gopage
+#               ^^^^^ text.html.gopage meta.directive.gopage constant.language.boolean.gopage
+#                    ^ text.html.gopage meta.directive.gopage
+#                     ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                       ^ text.html.gopage meta.directive.gopage
+#                        ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                             ^ text.html.gopage meta.directive.gopage
+#                              ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                                ^ text.html.gopage meta.directive.gopage
+#                                 ^ text.html.gopage meta.directive.gopage constant.numeric.gopage
+#                                  ^ text.html.gopage meta.directive.gopage
+#                                   ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+#                                     ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                      ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                       ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                                        ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                                          ^ text.html.gopage meta.interpolation.gopage
+#                                           ^ text.html.gopage meta.interpolation.gopage keyword.operator.gopage
+#                                            ^^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                                                 ^ text.html.gopage meta.interpolation.gopage
+#                                                  ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                                                    ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                                      ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                                       ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                                                        ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#                                                          ^ text.html.gopage meta.directive.gopage
+#                                                           ^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#                                                                ^ text.html.gopage meta.directive.gopage
+#                                                                 ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% if total > 0 && Ready %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#     ^ text.html.gopage meta.directive.gopage
+#      ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#           ^ text.html.gopage meta.directive.gopage
+#            ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^ text.html.gopage meta.directive.gopage constant.numeric.gopage
+#               ^ text.html.gopage meta.directive.gopage
+#                ^^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                  ^ text.html.gopage meta.directive.gopage
+#                   ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                        ^ text.html.gopage meta.directive.gopage
+#                         ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  <Filter client="idle" :Cities="Cities" Selected="all" />
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.component.gopage
+#         ^ text.html.gopage meta.tag.gopage
+#          ^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#                 ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#                  ^^^^ text.html.gopage meta.tag.gopage constant.language.strategy.gopage
+#                      ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                       ^ text.html.gopage meta.tag.gopage
+#                        ^ text.html.gopage meta.tag.gopage punctuation.definition.binding.gopage
+#                         ^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.bound.gopage
+#                               ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#                                ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#                                 ^^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage variable.other.gopage
+#                                       ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                                        ^ text.html.gopage meta.tag.gopage
+#                                         ^^^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                                                 ^ text.html.gopage meta.tag.gopage
+#                                                  ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                                                   ^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                                                      ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                                                       ^ text.html.gopage meta.tag.gopage
+#                                                        ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% elif Other %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#       ^ text.html.gopage meta.directive.gopage
+#        ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  <Image src="/hero.avif" width="1200" height="800" alt="hero" />
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^^^^^ text.html.gopage meta.tag.gopage support.class.component.gopage
+#        ^ text.html.gopage meta.tag.gopage
+#         ^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#            ^ text.html.gopage meta.tag.gopage
+#             ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#              ^^^^^^^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                        ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                         ^ text.html.gopage meta.tag.gopage
+#                          ^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                               ^ text.html.gopage meta.tag.gopage
+#                                ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                                 ^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                                     ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                                      ^ text.html.gopage meta.tag.gopage
+#                                       ^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                                             ^ text.html.gopage meta.tag.gopage
+#                                              ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                                               ^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                                                  ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                                                   ^ text.html.gopage meta.tag.gopage
+#                                                    ^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                                                       ^ text.html.gopage meta.tag.gopage
+#                                                        ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                                                         ^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                                                             ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                                                              ^ text.html.gopage meta.tag.gopage
+#                                                               ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% else %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#       ^ text.html.gopage meta.directive.gopage
+#        ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  <p>{{ "none" | upper }}</p>
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#    ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#     ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#       ^ text.html.gopage meta.interpolation.gopage
+#        ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#         ^^^^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#             ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#              ^ text.html.gopage meta.interpolation.gopage
+#               ^ text.html.gopage meta.interpolation.gopage keyword.operator.filter.gopage
+#                ^ text.html.gopage meta.interpolation.gopage
+#                 ^^^^^ text.html.gopage meta.interpolation.gopage support.function.filter.gopage
+#                      ^ text.html.gopage meta.interpolation.gopage
+#                       ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                         ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                           ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                            ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% endif %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#        ^ text.html.gopage meta.directive.gopage
+#         ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% fragment "items" cache="5m" stale="1h" %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#           ^ text.html.gopage meta.directive.gopage
+#            ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#             ^^^^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                  ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                   ^ text.html.gopage meta.directive.gopage
+#                    ^^^^^ text.html.gopage meta.directive.gopage entity.other.attribute-name.gopage
+#                         ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                          ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                           ^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                             ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                              ^ text.html.gopage meta.directive.gopage
+#                               ^^^^^ text.html.gopage meta.directive.gopage entity.other.attribute-name.gopage
+#                                    ^ text.html.gopage meta.directive.gopage keyword.operator.gopage
+#                                     ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#                                      ^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                                        ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                                         ^ text.html.gopage meta.directive.gopage
+#                                          ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  {% for item in Items %}
+#^^ text.html.gopage
+#  ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#    ^ text.html.gopage meta.directive.gopage
+#     ^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#        ^ text.html.gopage meta.directive.gopage
+#         ^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^^ text.html.gopage meta.directive.gopage keyword.operator.word.gopage
+#                ^ text.html.gopage meta.directive.gopage
+#                 ^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                      ^ text.html.gopage meta.directive.gopage
+#                       ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>    <ItemCard :Item="item" />
+#^^^^ text.html.gopage
+#    ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#     ^^^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.component.gopage
+#             ^ text.html.gopage meta.tag.gopage
+#              ^ text.html.gopage meta.tag.gopage punctuation.definition.binding.gopage
+#               ^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.bound.gopage
+#                   ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#                    ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#                     ^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage variable.other.gopage
+#                         ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                          ^ text.html.gopage meta.tag.gopage
+#                           ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>    {% match item.Status %}
+#^^^^ text.html.gopage
+#    ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#      ^ text.html.gopage meta.directive.gopage
+#       ^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#            ^ text.html.gopage meta.directive.gopage
+#             ^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                 ^ text.html.gopage meta.directive.gopage punctuation.accessor.gopage
+#                  ^^^^^^ text.html.gopage meta.directive.gopage variable.other.property.gopage
+#                        ^ text.html.gopage meta.directive.gopage
+#                         ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>      {% when StatusActive %}<Badge :Label="t('status.active')" Tone="ok" />
+#^^^^^^ text.html.gopage
+#      ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#        ^ text.html.gopage meta.directive.gopage
+#         ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^^^^^^^^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#                          ^ text.html.gopage meta.directive.gopage
+#                           ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+#                             ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                              ^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.component.gopage
+#                                   ^ text.html.gopage meta.tag.gopage
+#                                    ^ text.html.gopage meta.tag.gopage punctuation.definition.binding.gopage
+#                                     ^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.bound.gopage
+#                                          ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#                                           ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#                                            ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage support.function.message.gopage
+#                                             ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage punctuation.separator.gopage
+#                                              ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.begin.gopage
+#                                               ^^^^^^^^^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage
+#                                                            ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.end.gopage
+#                                                             ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage punctuation.separator.gopage
+#                                                              ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                                                               ^ text.html.gopage meta.tag.gopage
+#                                                                ^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                                                                    ^ text.html.gopage meta.tag.gopage
+#                                                                     ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                                                                      ^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                                                                        ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                                                                         ^ text.html.gopage meta.tag.gopage
+#                                                                          ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>    {% endmatch %}
+#^^^^ text.html.gopage
+#    ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#      ^ text.html.gopage meta.directive.gopage
+#       ^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#               ^ text.html.gopage meta.directive.gopage
+#                ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  {% else %}
+#^^ text.html.gopage
+#  ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#    ^ text.html.gopage meta.directive.gopage
+#     ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#         ^ text.html.gopage meta.directive.gopage
+#          ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>    <li>{{ t("items.empty") }}</li>
+#^^^^ text.html.gopage
+#    ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#     ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#       ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#        ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#          ^ text.html.gopage meta.interpolation.gopage
+#           ^ text.html.gopage meta.interpolation.gopage support.function.message.gopage
+#            ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#             ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#              ^^^^^^^^^^^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage
+#                         ^ text.html.gopage meta.interpolation.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                          ^ text.html.gopage meta.interpolation.gopage punctuation.separator.gopage
+#                           ^ text.html.gopage meta.interpolation.gopage
+#                            ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                              ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>  {% endfor %}
+#^^ text.html.gopage
+#  ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#    ^ text.html.gopage meta.directive.gopage
+#     ^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#           ^ text.html.gopage meta.directive.gopage
+#            ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% endfragment %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#              ^ text.html.gopage meta.directive.gopage
+#               ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% fragment "Cheapest" defer %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#           ^ text.html.gopage meta.directive.gopage
+#            ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#             ^^^^^^^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#                     ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                      ^ text.html.gopage meta.directive.gopage
+#                       ^^^^^ text.html.gopage meta.directive.gopage entity.other.attribute-name.gopage
+#                            ^ text.html.gopage meta.directive.gopage
+#                             ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  <ul></ul>
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#     ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#      ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#        ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#          ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% placeholder %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#              ^ text.html.gopage meta.directive.gopage
+#               ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>  <ul aria-hidden="true"></ul>
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#     ^ text.html.gopage meta.tag.gopage
+#      ^^^^^^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                 ^ text.html.gopage meta.tag.gopage
+#                  ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                   ^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                       ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                        ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                         ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                           ^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                             ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% endfragment %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#              ^ text.html.gopage meta.directive.gopage
+#               ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+><div :class="{ 'is-active': Selected, 'is-wide': Width > 1 }">
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#    ^ text.html.gopage meta.tag.gopage
+#     ^ text.html.gopage meta.tag.gopage punctuation.definition.binding.gopage
+#      ^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.bound.gopage
+#           ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#            ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#             ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage punctuation.separator.gopage
+#              ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#               ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.begin.gopage
+#                ^^^^^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage
+#                         ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.end.gopage
+#                          ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage keyword.operator.gopage
+#                           ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                            ^^^^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage variable.other.gopage
+#                                    ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage punctuation.separator.gopage
+#                                     ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                                      ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.begin.gopage
+#                                       ^^^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage
+#                                              ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage string.quoted.single.gopage punctuation.definition.string.end.gopage
+#                                               ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage keyword.operator.gopage
+#                                                ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                                                 ^^^^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage variable.other.gopage
+#                                                      ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                                                       ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage keyword.operator.gopage
+#                                                        ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                                                         ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage constant.numeric.gopage
+#                                                          ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage
+#                                                           ^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage punctuation.separator.gopage
+#                                                            ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                                                             ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>  <a href="/x/{{ ID }}/y">link</a>
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#    ^ text.html.gopage meta.tag.gopage
+#     ^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#         ^ text.html.gopage meta.tag.gopage
+#          ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#           ^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#              ^^ text.html.gopage meta.tag.gopage string.quoted.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                ^ text.html.gopage meta.tag.gopage string.quoted.gopage meta.interpolation.gopage
+#                 ^^ text.html.gopage meta.tag.gopage string.quoted.gopage meta.interpolation.gopage variable.other.gopage
+#                   ^ text.html.gopage meta.tag.gopage string.quoted.gopage meta.interpolation.gopage
+#                    ^^ text.html.gopage meta.tag.gopage string.quoted.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                      ^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                        ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                         ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                          ^^^^ text.html.gopage
+#                              ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                ^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                 ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>  <button disabled?="Busy" :data-x="ID">go</button>
+#^^ text.html.gopage
+#  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#   ^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#         ^ text.html.gopage meta.tag.gopage
+#          ^^^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#                  ^ text.html.gopage meta.tag.gopage keyword.operator.conditional.gopage
+#                   ^ text.html.gopage meta.tag.gopage
+#                    ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#                     ^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                         ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                          ^ text.html.gopage meta.tag.gopage
+#                           ^ text.html.gopage meta.tag.gopage punctuation.definition.binding.gopage
+#                            ^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.bound.gopage
+#                                  ^ text.html.gopage meta.tag.gopage punctuation.separator.key-value.gopage
+#                                   ^ text.html.gopage meta.tag.gopage punctuation.definition.string.begin.gopage
+#                                    ^^ text.html.gopage meta.tag.gopage meta.embedded.expression.gopage variable.other.gopage
+#                                      ^ text.html.gopage meta.tag.gopage punctuation.definition.string.end.gopage
+#                                       ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                                        ^^ text.html.gopage
+#                                          ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                            ^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                                  ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+></div>
+#^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#  ^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#     ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+><Template #footer>{% children %}</Template>
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^^^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.component.gopage
+#         ^ text.html.gopage meta.tag.gopage
+#          ^ text.html.gopage meta.tag.gopage punctuation.definition.slot.gopage
+#           ^^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.slot.gopage
+#                 ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                  ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#                    ^ text.html.gopage meta.directive.gopage
+#                     ^^^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#                             ^ text.html.gopage meta.directive.gopage
+#                              ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+#                                ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                  ^^^^^^^^ text.html.gopage meta.tag.gopage entity.name.tag.component.gopage
+#                                          ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+>{% slot "footer" %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#       ^ text.html.gopage meta.directive.gopage
+#        ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.begin.gopage
+#         ^^^^^^ text.html.gopage meta.directive.gopage string.quoted.double.gopage
+#               ^ text.html.gopage meta.directive.gopage string.quoted.double.gopage punctuation.definition.string.end.gopage
+#                ^ text.html.gopage meta.directive.gopage
+#                 ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% raw JSONLD %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#      ^ text.html.gopage meta.directive.gopage
+#       ^^^^^^ text.html.gopage meta.directive.gopage variable.other.gopage
+#             ^ text.html.gopage meta.directive.gopage
+#              ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>{% outlet %}
+#^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.begin.gopage
+#  ^ text.html.gopage meta.directive.gopage
+#   ^^^^^^ text.html.gopage meta.directive.gopage keyword.control.gopage
+#         ^ text.html.gopage meta.directive.gopage
+#          ^^ text.html.gopage meta.directive.gopage punctuation.section.embedded.end.gopage
+>

@@ -1,0 +1,20 @@
+<!-- SYNTAX TEST "text.html.gopage" "interpolation, filters and messages"
+    {{ Price | money("PLN") }}
+<!--^^ punctuation.section.embedded.begin.gopage
+<!--   ^^^^^ variable.other.gopage
+<!--         ^ keyword.operator.filter.gopage
+<!--           ^^^^^ support.function.filter.gopage
+    {{ At | relative }}
+<!--        ^^^^^^^^ support.function.filter.gopage
+    {{ At | date("2006-01-02") }}
+<!--        ^^^^ support.function.filter.gopage
+    {{ t("items.count", count = len(Items)) }}
+<!--   ^ support.function.message.gopage
+<!--                    ^^^^^ variable.parameter.gopage
+<!--                            ^^^ support.function.filter.gopage
+    {{ Item.Status }}
+<!--       ^ punctuation.accessor.gopage
+<!--        ^^^^^^ variable.other.property.gopage
+    {{ A && B || C }}
+<!--     ^^ keyword.operator.gopage
+<!--          ^^ keyword.operator.gopage

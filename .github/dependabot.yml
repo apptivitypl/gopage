@@ -24,6 +24,8 @@ updates:
     groups:
       node:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "@vscode/vsce"
 
   - package-ecosystem: github-actions
     directory: /
@@ -36,3 +38,4 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+

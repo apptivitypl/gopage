@@ -1,0 +1,13 @@
+---
+type Props struct {
+	Heading string
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Heading: "hello"}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+{% if Heading %}
+  <p>{{ Heading | upper }}</p>
+{% endif %}

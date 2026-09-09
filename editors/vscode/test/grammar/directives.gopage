@@ -1,0 +1,20 @@
+<!-- SYNTAX TEST "text.html.gopage" "directives and expressions"
+    {% if Ready %}
+<!--^^ punctuation.section.embedded.begin.gopage
+<!--   ^^ keyword.control.gopage
+<!--      ^^^^^ variable.other.gopage
+<!--            ^^ punctuation.section.embedded.end.gopage
+    {% for item in Items %}
+<!--   ^^^ keyword.control.gopage
+<!--            ^^ keyword.operator.word.gopage
+    {% fragment "items" cache="5m" defer %}
+<!--   ^^^^^^^^ keyword.control.gopage
+<!--                    ^^^^^ entity.other.attribute-name.gopage
+    {% vary cookie="theme" values="light,dark" %}
+<!--   ^^^^ keyword.control.gopage
+<!--        ^^^^^^ entity.other.attribute-name.gopage
+<!--                       ^^^^^^ entity.other.attribute-name.gopage
+    {% standalone %}
+<!--   ^^^^^^^^^^ keyword.control.gopage
+    {% endfragment %}
+<!--   ^^^^^^^^^^^ keyword.control.gopage

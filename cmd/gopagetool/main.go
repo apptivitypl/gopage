@@ -64,6 +64,8 @@ func run(args []string) error {
 		return releaseCmd(args[1:])
 	case "example":
 		return exampleCmd(args[1:])
+	case "vscode":
+		return vscodeCmd(args[1:])
 	default:
 		return fmt.Errorf("unknown command %q\n\n%s", args[0], commandList())
 	}
@@ -84,6 +86,7 @@ func commandList() string {
 		"  smoke [--keep]",
 		"  release plan --version V [--json] | run --version V [PACKAGE] [--from DIR] [--publish] | trust | tags --version V",
 		"  example [--update] [--workspace] [--verify]",
+		"  vscode check | version --set VERSION",
 	}, "\n")
 }
 
@@ -239,6 +242,9 @@ func ci() error {
 		return err
 	}
 	if err := schemaCmd(); err != nil {
+		return err
+	}
+	if err := vscodeCheck(); err != nil {
 		return err
 	}
 	if err := exampleCmd(nil); err != nil {

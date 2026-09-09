@@ -1,0 +1,186 @@
+{
+  "Frontmatter": {
+    "prefix": "frontmatter",
+    "body": [
+      "---",
+      "type Props struct {",
+      "\t$1",
+      "}",
+      "",
+      "func Load(ctx *gopage.Ctx) (Props, error) {",
+      "\treturn Props{}, nil",
+      "}",
+      "",
+      "func Meta(ctx *gopage.Ctx, p Props) gopage.Meta {",
+      "\treturn gopage.Meta{Title: \"$2\"}",
+      "}",
+      "---",
+      "$0"
+    ],
+    "description": "A page frontmatter with Props, Load and Meta"
+  },
+  "If": {
+    "prefix": "if",
+    "body": [
+      "{% if ${1:condition} %}",
+      "\t$0",
+      "{% endif %}"
+    ],
+    "description": "A conditional block"
+  },
+  "If else": {
+    "prefix": "ifelse",
+    "body": [
+      "{% if ${1:condition} %}",
+      "\t$2",
+      "{% else %}",
+      "\t$0",
+      "{% endif %}"
+    ],
+    "description": "A conditional block with an alternative"
+  },
+  "Else if": {
+    "prefix": "elif",
+    "body": [
+      "{% elif ${1:condition} %}$0"
+    ],
+    "description": "Another branch of a conditional"
+  },
+  "For": {
+    "prefix": "for",
+    "body": [
+      "{% for ${1:item} in ${2:Items} %}",
+      "\t$0",
+      "{% endfor %}"
+    ],
+    "description": "A loop over a collection"
+  },
+  "For else": {
+    "prefix": "forelse",
+    "body": [
+      "{% for ${1:item} in ${2:Items} %}",
+      "\t$3",
+      "{% else %}",
+      "\t$0",
+      "{% endfor %}"
+    ],
+    "description": "A loop with an empty case"
+  },
+  "Match": {
+    "prefix": "match",
+    "body": [
+      "{% match ${1:Value} %}",
+      "\t{% when ${2:Case} %}$0",
+      "{% endmatch %}"
+    ],
+    "description": "An exhaustive match over a typed constant"
+  },
+  "Fragment": {
+    "prefix": "fragment",
+    "body": [
+      "{% fragment \"${1:name}\" cache=\"${2:5m}\" %}",
+      "\t$0",
+      "{% endfragment %}"
+    ],
+    "description": "A cached fragment"
+  },
+  "Deferred fragment": {
+    "prefix": "fragmentdefer",
+    "body": [
+      "{% fragment \"${1:Name}\" defer=\"${2|visible,load,idle|}\" %}",
+      "\t$3",
+      "{% placeholder %}",
+      "\t$0",
+      "{% endfragment %}"
+    ],
+    "description": "A deferred fragment with a placeholder"
+  },
+  "Let": {
+    "prefix": "let",
+    "body": [
+      "{% let ${1:name} = ${2:expression} %}$0"
+    ],
+    "description": "A local binding"
+  },
+  "Slot": {
+    "prefix": "slot",
+    "body": [
+      "{% slot \"${1:name}\" %}$0"
+    ],
+    "description": "A named slot a caller fills"
+  },
+  "Vary": {
+    "prefix": "vary",
+    "body": [
+      "{% vary cookie=\"${1:theme}\" values=\"${2:light,dark}\" %}$0"
+    ],
+    "description": "Split the cache on a cookie or a header"
+  },
+  "Outlet": {
+    "prefix": "outlet",
+    "body": [
+      "{% outlet %}$0"
+    ],
+    "description": "Where a layout renders the page below it"
+  },
+  "Children": {
+    "prefix": "children",
+    "body": [
+      "{% children %}$0"
+    ],
+    "description": "The default slot of a component"
+  },
+  "Meta": {
+    "prefix": "meta",
+    "body": [
+      "{% meta %}$0"
+    ],
+    "description": "The document head a page describes"
+  },
+  "Assets": {
+    "prefix": "assets",
+    "body": [
+      "{% assets %}$0"
+    ],
+    "description": "The stylesheets and scripts the build emits"
+  },
+  "Standalone": {
+    "prefix": "standalone",
+    "body": [
+      "{% standalone %}$0"
+    ],
+    "description": "Render this page without its layout"
+  },
+  "Message": {
+    "prefix": "t",
+    "body": [
+      "{{ t(\"${1:key}\") }}$0"
+    ],
+    "description": "A translated message"
+  },
+  "Raw": {
+    "prefix": "raw",
+    "body": [
+      "{% raw ${1:Expression} %}$0"
+    ],
+    "description": "Write a value that is already markup, without escaping it"
+  },
+  "Island": {
+    "prefix": "island",
+    "body": [
+      "<script client lang=\"tsx\">",
+      "export default function ${1:Component}() {",
+      "\treturn $0;",
+      "}",
+      "</script>"
+    ],
+    "description": "Browser code for a component"
+  },
+  "Component": {
+    "prefix": "component",
+    "body": [
+      "<${1:Name} client=\"${2|idle,load,visible,media|}\" :${3:Prop}=\"${4:value}\" />$0"
+    ],
+    "description": "A component that hydrates in the browser"
+  }
+}

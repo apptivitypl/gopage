@@ -1,0 +1,530 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "GoPage",
+  "scopeName": "text.html.gopage",
+  "patterns": [
+    {
+      "include": "#frontmatter"
+    },
+    {
+      "include": "#client-script-jsx"
+    },
+    {
+      "include": "#client-script-tsx"
+    },
+    {
+      "include": "#directive"
+    },
+    {
+      "include": "#interpolation"
+    },
+    {
+      "include": "#tag"
+    },
+    {
+      "include": "text.html.basic"
+    }
+  ],
+  "repository": {
+    "frontmatter": {
+      "name": "meta.frontmatter.gopage",
+      "begin": "\\A(---)[ \\t]*$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.frontmatter.begin.gopage"
+        }
+      },
+      "end": "^(---)[ \\t]*$",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.frontmatter.end.gopage"
+        }
+      },
+      "contentName": "meta.embedded.block.go",
+      "patterns": [
+        {
+          "include": "source.go"
+        }
+      ]
+    },
+    "client-script-jsx": {
+      "name": "meta.island.gopage",
+      "begin": "(<)(script)((?=[^>]*\\bclient\\b)(?=[^>]*\\blang\\s*=\\s*[\"'](?:js|jsx)[\"'])[^>]*)(>)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.script.html"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#island-attribute"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.tag.end.html"
+        }
+      },
+      "end": "(</)(script)\\s*(>)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.script.html"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.end.html"
+        }
+      },
+      "contentName": "meta.embedded.block.javascriptreact",
+      "patterns": [
+        {
+          "include": "source.js.jsx"
+        }
+      ]
+    },
+    "client-script-tsx": {
+      "name": "meta.island.gopage",
+      "begin": "(<)(script)((?=[^>]*\\bclient\\b)[^>]*)(>)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.script.html"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "#island-attribute"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.tag.end.html"
+        }
+      },
+      "end": "(</)(script)\\s*(>)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.html"
+        },
+        "2": {
+          "name": "entity.name.tag.script.html"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.end.html"
+        }
+      },
+      "contentName": "meta.embedded.block.typescriptreact",
+      "patterns": [
+        {
+          "include": "source.tsx"
+        }
+      ]
+    },
+    "island-attribute": {
+      "patterns": [
+        {
+          "match": "\\bclient\\b",
+          "name": "entity.other.attribute-name.island.gopage"
+        },
+        {
+          "match": "\\b([A-Za-z-]+)\\s*(=)\\s*([\"'][^\"']*[\"'])",
+          "captures": {
+            "1": {
+              "name": "entity.other.attribute-name.html"
+            },
+            "2": {
+              "name": "punctuation.separator.key-value.html"
+            },
+            "3": {
+              "name": "string.quoted.html"
+            }
+          }
+        }
+      ]
+    },
+    "directive": {
+      "name": "meta.directive.gopage",
+      "begin": "(\\{%)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.section.embedded.begin.gopage"
+        }
+      },
+      "end": "(%\\})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.section.embedded.end.gopage"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#directive-name"
+        },
+        {
+          "include": "#directive-setting"
+        },
+        {
+          "include": "#directive-flag"
+        },
+        {
+          "include": "#for-in"
+        },
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "directive-name": {
+      "match": "\\G\\s*(assets|children|elif|else|endfor|endfragment|endif|endmatch|for|fragment|if|let|match|meta|outlet|placeholder|raw|slot|standalone|vary|when)\\b",
+      "captures": {
+        "1": {
+          "name": "keyword.control.gopage"
+        }
+      }
+    },
+    "directive-setting": {
+      "match": "\\b(cache|cookie|defer|header|stale|values)\\b(?=\\s*=)",
+      "name": "entity.other.attribute-name.gopage"
+    },
+    "directive-flag": {
+      "match": "\\bdefer\\b(?=\\s*%\\})",
+      "name": "entity.other.attribute-name.gopage"
+    },
+    "for-in": {
+      "match": "\\bin\\b",
+      "name": "keyword.operator.word.gopage"
+    },
+    "interpolation": {
+      "name": "meta.interpolation.gopage",
+      "begin": "(\\{\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.section.embedded.begin.gopage"
+        }
+      },
+      "end": "(\\}\\})",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.section.embedded.end.gopage"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "expression": {
+      "patterns": [
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#number"
+        },
+        {
+          "include": "#boolean"
+        },
+        {
+          "include": "#message-call"
+        },
+        {
+          "include": "#filter"
+        },
+        {
+          "include": "#filter-call"
+        },
+        {
+          "include": "#property"
+        },
+        {
+          "include": "#named-argument"
+        },
+        {
+          "include": "#operator"
+        },
+        {
+          "include": "#punctuation"
+        },
+        {
+          "include": "#identifier"
+        }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.gopage",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.gopage"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.gopage"
+            }
+          }
+        },
+        {
+          "name": "string.quoted.single.gopage",
+          "begin": "'",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.gopage"
+            }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.gopage"
+            }
+          }
+        }
+      ]
+    },
+    "number": {
+      "match": "\\b\\d+(\\.\\d+)?\\b",
+      "name": "constant.numeric.gopage"
+    },
+    "boolean": {
+      "match": "\\b(true|false)\\b",
+      "name": "constant.language.boolean.gopage"
+    },
+    "message-call": {
+      "match": "\\b(t)\\s*(?=\\()",
+      "name": "support.function.message.gopage"
+    },
+    "filter": {
+      "match": "(?<!\\|)(\\|)(?!\\|)\\s*([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "keyword.operator.filter.gopage"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#filter-name"
+            }
+          ]
+        }
+      }
+    },
+    "filter-call": {
+      "match": "([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "patterns": [
+            {
+              "include": "#filter-name"
+            }
+          ]
+        }
+      }
+    },
+    "filter-name": {
+      "match": "\\b(date|default|len|lower|money|number|relative|trim|truncate|upper)\\b",
+      "name": "support.function.filter.gopage"
+    },
+    "strategy-value": {
+      "match": "\\b(idle|load|media|visible)\\b",
+      "name": "constant.language.strategy.gopage"
+    },
+    "builtin-component": {
+      "match": "\\b(Field|Form|Image)\\b",
+      "name": "support.class.component.gopage"
+    },
+    "property": {
+      "match": "(\\.)([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "punctuation.accessor.gopage"
+        },
+        "2": {
+          "name": "variable.other.property.gopage"
+        }
+      }
+    },
+    "named-argument": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?==(?!=))",
+      "name": "variable.parameter.gopage"
+    },
+    "operator": {
+      "match": "\\|\\||&&|==|!=|<=|>=|[!<>~+*/%?:#=-]",
+      "name": "keyword.operator.gopage"
+    },
+    "punctuation": {
+      "match": "[()\\[\\]{},]",
+      "name": "punctuation.separator.gopage"
+    },
+    "identifier": {
+      "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+      "name": "variable.other.gopage"
+    },
+    "tag": {
+      "name": "meta.tag.gopage",
+      "begin": "(</?)(?!(?i:script|style)\\b)([A-Za-z][A-Za-z0-9.-]*)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.begin.gopage"
+        },
+        "2": {
+          "patterns": [
+            {
+              "include": "#tag-name"
+            }
+          ]
+        }
+      },
+      "end": "(/>|>)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.end.gopage"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#slot-attribute"
+        },
+        {
+          "include": "#client-attribute"
+        },
+        {
+          "include": "#bound-attribute"
+        },
+        {
+          "include": "#conditional-attribute"
+        },
+        {
+          "include": "#plain-attribute"
+        },
+        {
+          "include": "#attribute-value"
+        }
+      ]
+    },
+    "tag-name": {
+      "patterns": [
+        {
+          "include": "#builtin-component"
+        },
+        {
+          "match": "\\b[A-Z][A-Za-z0-9]*\\b",
+          "name": "entity.name.tag.component.gopage"
+        },
+        {
+          "match": "\\b[a-z][A-Za-z0-9.-]*\\b",
+          "name": "entity.name.tag.html"
+        }
+      ]
+    },
+    "slot-attribute": {
+      "match": "(#)([A-Za-z_][A-Za-z0-9_]*)",
+      "captures": {
+        "1": {
+          "name": "punctuation.definition.slot.gopage"
+        },
+        "2": {
+          "name": "entity.other.attribute-name.slot.gopage"
+        }
+      }
+    },
+    "client-attribute": {
+      "match": "\\b(client)\\s*(=)\\s*([\"'])([a-z]*)([\"'])",
+      "captures": {
+        "1": {
+          "name": "entity.other.attribute-name.gopage"
+        },
+        "2": {
+          "name": "punctuation.separator.key-value.gopage"
+        },
+        "3": {
+          "name": "punctuation.definition.string.begin.gopage"
+        },
+        "4": {
+          "patterns": [
+            {
+              "include": "#strategy-value"
+            }
+          ]
+        },
+        "5": {
+          "name": "punctuation.definition.string.end.gopage"
+        }
+      }
+    },
+    "bound-attribute": {
+      "begin": "(:)([A-Za-z_][A-Za-z0-9_-]*)\\s*(=)\\s*([\"'])",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.binding.gopage"
+        },
+        "2": {
+          "name": "entity.other.attribute-name.bound.gopage"
+        },
+        "3": {
+          "name": "punctuation.separator.key-value.gopage"
+        },
+        "4": {
+          "name": "punctuation.definition.string.begin.gopage"
+        }
+      },
+      "end": "(\\4)",
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.end.gopage"
+        }
+      },
+      "contentName": "meta.embedded.expression.gopage",
+      "patterns": [
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "conditional-attribute": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_-]*)(\\?)(?=\\s*=)",
+      "captures": {
+        "1": {
+          "name": "entity.other.attribute-name.gopage"
+        },
+        "2": {
+          "name": "keyword.operator.conditional.gopage"
+        }
+      }
+    },
+    "plain-attribute": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_:.-]*)\\b",
+      "name": "entity.other.attribute-name.gopage"
+    },
+    "attribute-value": {
+      "name": "string.quoted.gopage",
+      "begin": "([\"'])",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.string.begin.gopage"
+        }
+      },
+      "end": "\\1",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.gopage"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#interpolation"
+        }
+      ]
+    }
+  }
+}

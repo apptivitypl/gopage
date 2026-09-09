@@ -334,6 +334,49 @@ jobs:
       - name: Check the stylesheet for the classes the compiler found
         run: grep -q 'max-w-3xl' "$RUNNER_TEMP"/starter/dist/assets/assets/app.*.css
 
+  extension:
+    name: vscode extension
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter gopage check-types
+      - run: pnpm --filter gopage test:grammar
+      - run: pnpm --filter gopage test:unit
+
+      - name: Build the language server the extension drives
+        run: go build -o "$RUNNER_TEMP/gopage" ./cmd/gopage
+
+      - name: Run the extension host under a display server
+        env:
+          GOPAGE_BINARY: ${{ runner.temp }}/gopage
+        run: xvfb-run -a pnpm --filter gopage test:integration
+
+      - name: Package the extension the way a release would
+        run: pnpm --filter gopage exec vsce package --no-dependencies -o /tmp/gopage.vsix
+
+      - name: Show what the package holds
+        run: pnpm --filter gopage exec vsce ls --tree --no-dependencies
+
   workflows:
     name: workflow audit
     runs-on: ubuntu-latest

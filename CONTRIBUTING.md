@@ -22,7 +22,13 @@ These are not style preferences. Every one of them fails a build.
    it. `gopagetool diag` fails otherwise.
 6. **The config schema and the Go struct move together.** `schema/gopage.schema.json` is checked
    against `internal/config` by reflection; a field added to one and not the other fails the build.
-7. **The committed examples are the templates' output.** `gopagetool example` regenerates
+7. **The editor grammar and the compiler move together.** Every directive, filter, activation
+   strategy and built-in component the compiler knows must appear in
+   `editors/vscode/syntaxes/gopage.tmLanguage.json`, and nothing else may. `gopagetool vscode check`
+   reads the four alternations out of the grammar and compares them with `syntax.Directives()`,
+   `runtime.FilterNames()`, `compile.Strategies()` and `compile.BuiltinNames()`. Adding a directive
+   to the parser and not to the grammar fails the build.
+8. **The committed examples are the templates' output.** `gopagetool example` regenerates
    `examples/hello-world`, `examples/blog` and `examples/catalog`, and fails on any difference. Fix
    one by changing the template and running `gopagetool example --update`, never by editing the
    example. They require a published gopage, so to build one against your checkout write a workspace
@@ -31,10 +37,10 @@ These are not style preferences. Every one of them fails a build.
    builds them with the published gopage they pin rather than with this checkout, because that is
    what someone outside the repository has; a branch that changes generated code therefore does not
    fail it, and the examples are re-pinned after the release that publishes the change.
-8. **The version lives in the tag, not in the tree.** See Releases below.
-9. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against the
-   figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or say
-   in the pull request why the cost buys something worth more.
+9. **The version lives in the tag, not in the tree.** See Releases below.
+10. **A regression is a bug until it is explained.** `gopagetool bench --check` compares against
+    the figures in `dev.lock.json`. If a change makes something slower or larger, either fix it or
+    say in the pull request why the cost buys something worth more.
 
 ## Before you push
 
@@ -43,10 +49,10 @@ go run ./cmd/gopagetool ci
 ```
 
 That runs the same gates CI does, in the same order: gofmt, `go vet`, golangci-lint, the tests, the
-diagnostic registry, the config schema and the coverage gate. It needs `golangci-lint` on your
-PATH; the version CI pins is in `.github/workflows/ci.yml`.
+diagnostic registry, the config schema, the editor grammar and the coverage gate. It needs
+`golangci-lint` on your PATH; the version CI pins is in `.github/workflows/ci.yml`.
 
-Two gates it does not run, because they are slower:
+Three gates it does not run, because they are slower:
 
 ```bash
 go run ./cmd/gopagetool bench --check
@@ -56,8 +62,26 @@ go run ./cmd/gopagetool bench --check
 PATH="$PWD/node_modules/.bin:$PATH" go run ./cmd/gopagetool smoke --reference
 ```
 
+```bash
+pnpm --filter gopage test:grammar && pnpm --filter gopage test:unit && pnpm --filter gopage test:integration
+```
+
 The second builds the reference application for both targets and checks that they answer with the
-same documents. It needs `pnpm install` first.
+same documents. It needs `pnpm install` first, and so does the third, which downloads a Visual
+Studio Code to run the extension in. On Linux the extension host needs a display server, so CI wraps
+that last command in `xvfb-run -a`.
+
+The extension's own diagnostics are checked against a real language server, so point
+`GOPAGE_BINARY` at one to run them: `go build -o /tmp/gopage ./cmd/gopage` and then
+`GOPAGE_BINARY=/tmp/gopage pnpm --filter gopage test:integration`. Without it those two tests skip
+rather than fail, because a checkout has no binary until something builds one.
+
+The grammar tests pass four stub grammars from `editors/vscode/test/grammar/stubs`. They are not
+decoration. `vscode-textmate` drops a rule whose `include` names a grammar it cannot resolve, and
+the test runner only ever loads the grammars this extension itself contributes, so without the
+stubs the frontmatter and island rules vanish and their tests pass by matching nothing. The stubs
+declare the four scopes the grammar delegates to and hold no patterns, which is enough to make the
+delegation observable while leaving the assertions about our own scopes exact.
 
 ## Layout
 
@@ -80,6 +104,7 @@ images/              the public wrapper the generated code imports when images a
 internal/build/      the build pipeline and code generation
 internal/paths/      where everything lands on disk, stated once
 internal/scaffold/   the templates gopage new writes
+editors/vscode/      the visual studio code extension
 internal/devserver/  the process gopage dev supervises, and the proxy in front of it
 internal/demo/       the node server the demo target ships
 examples/            the templates' output, committed and checked
@@ -134,6 +159,27 @@ reads as authentication, and the OIDC exchange never happens.
 npm refuses to configure a trusted publisher for a name it has never seen, so a new package has to be
 published once by hand and then passed to `gopagetool release trust`, which needs 2FA on the account
 and a browser login. Weigh that before adding one.
+
+### The editor extension
+
+`editors/vscode` is released on its own schedule, because a fix to the grammar has nothing to do
+with a release of the compiler. `vscode.yml` is dispatched with a version, the same way `publish.yml`
+is, and that number is again the only place the version exists: the committed manifest carries
+`0.0.0`, the workflow writes the dispatched version into it with `gopagetool vscode version --set`,
+and the tag `gopage-vscode@X.Y.Z` is pushed once both registries have accepted the package. Rule 7
+refuses a manifest that carries anything but `0.0.0`, so a stamped checkout can never be committed.
+
+The same package is published to the Visual Studio Marketplace and to Open VSX, from one built
+`.vsix`, so the two listings can never diverge. `--skip-duplicate` on both makes a re-dispatch safe
+after a partial failure. The Marketplace authenticates over OIDC, so no token for it exists
+anywhere; Open VSX has no equivalent yet and reads `OVSX_PAT` from the `vscode-marketplace`
+environment.
+
+The Marketplace has no prerelease versions, only channels, and it moves every user to the highest
+version on offer. The channel is therefore carried by the minor: **an even minor is released, an odd
+minor is pre-release**. `gopagetool vscode version` refuses a version whose minor disagrees with the
+dispatched channel, because publishing a released `0.3.0` over a pre-release `0.3.x` would silently
+pull every pre-release user back onto the stable channel.
 
 ## Licence
 

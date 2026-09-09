@@ -7,3 +7,4 @@ rules:
   artipacked:
     ignore:
       - publish.yml
+      - vscode.yml

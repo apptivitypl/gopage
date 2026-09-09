@@ -365,6 +365,10 @@ fetches the Tailwind binary this project pins, which the build does on its own w
 `gopage lsp` speaks the language server protocol on stdin and stdout, so an editor can show the same
 diagnostics the build would, and `gopage version` prints the version the binary was built from.
 
+For Visual Studio Code that server is already wrapped up: the [GoPage extension](editors/vscode)
+highlights the Go frontmatter, the markup and the islands, completes directives and filters, and
+shows those diagnostics in the Problems panel.
+
 ## What is not there yet
 
 - Windows is built and tested on every change, but a handful of tests skip there because they rely

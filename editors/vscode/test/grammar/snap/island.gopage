@@ -1,0 +1,7 @@
+<div class="ticker">{{ Label }}</div>
+<script client lang="tsx">
+export default function Ticker({ label }: { label: string }) {
+	const now = Date.now();
+	return <span>{label}{now}</span>;
+}
+</script>

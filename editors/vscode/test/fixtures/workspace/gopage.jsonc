@@ -1,0 +1,6 @@
+{
+  "$schema": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json",
+  "app": {
+    "name": "fixture"
+  }
+}

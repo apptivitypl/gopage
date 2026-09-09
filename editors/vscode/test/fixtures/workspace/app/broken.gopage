@@ -1,0 +1,8 @@
+---
+type Props struct {
+	Heading string
+}
+---
+<h1>{{ Heading }}</h1>
+{% iff Heading %}
+{% endif %}

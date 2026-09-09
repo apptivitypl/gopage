@@ -25,3 +25,10 @@ coverage.html
 /.wrangler
 
 node_modules/
+
+# What the vscode extension builds. The bundle is assembled at package time and
+# the version it carries lives in the tag, never in the tree.
+/editors/vscode/dist
+/editors/vscode/out
+/editors/vscode/.vscode-test
+*.vsix

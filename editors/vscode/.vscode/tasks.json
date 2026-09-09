@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "compile",
+      "type": "shell",
+      "command": "pnpm run compile",
+      "group": "build",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "compile tests",
+      "type": "shell",
+      "command": "pnpm run compile && pnpm run compile:tests",
+      "group": "build",
+      "problemMatcher": "$tsc"
+    }
+  ]
+}

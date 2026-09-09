@@ -1,0 +1,50 @@
+---
+import "time"
+
+type Props struct {
+	Heading string
+	Items   []Item
+}
+
+func Load(ctx *gopage.Ctx) (Props, error) {
+	return Props{Heading: "hello"}, nil
+}
+---
+<h1>{{ Heading }}</h1>
+<p>{{ t("items.count", count = len(Items), city = City) }}</p>
+<p>{{ Price | money("PLN") }} {{ At | relative }} {{ At | date("2006-01-02") }}</p>
+{% standalone %}
+{% vary cookie="theme" values="light,dark" %}
+{% let total = len(Items) + 1 %}
+{% if !Ready || Flags[0] == true %}<p>{{ "a" ~ "b" }}</p>{% endif %}
+{% if Ready != false && Count >= 2 %}<p>{{ -Count }}</p>{% endif %}
+{% if total > 0 && Ready %}
+  <Filter client="idle" :Cities="Cities" Selected="all" />
+{% elif Other %}
+  <Image src="/hero.avif" width="1200" height="800" alt="hero" />
+{% else %}
+  <p>{{ "none" | upper }}</p>
+{% endif %}
+{% fragment "items" cache="5m" stale="1h" %}
+  {% for item in Items %}
+    <ItemCard :Item="item" />
+    {% match item.Status %}
+      {% when StatusActive %}<Badge :Label="t('status.active')" Tone="ok" />
+    {% endmatch %}
+  {% else %}
+    <li>{{ t("items.empty") }}</li>
+  {% endfor %}
+{% endfragment %}
+{% fragment "Cheapest" defer %}
+  <ul></ul>
+{% placeholder %}
+  <ul aria-hidden="true"></ul>
+{% endfragment %}
+<div :class="{ 'is-active': Selected, 'is-wide': Width > 1 }">
+  <a href="/x/{{ ID }}/y">link</a>
+  <button disabled?="Busy" :data-x="ID">go</button>
+</div>
+<Template #footer>{% children %}</Template>
+{% slot "footer" %}
+{% raw JSONLD %}
+{% outlet %}

@@ -1,0 +1,41 @@
+><div class="ticker">{{ Label }}</div>
+#^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+# ^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#    ^ text.html.gopage meta.tag.gopage
+#     ^^^^^ text.html.gopage meta.tag.gopage entity.other.attribute-name.gopage
+#          ^ text.html.gopage meta.tag.gopage
+#           ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.begin.gopage
+#            ^^^^^^ text.html.gopage meta.tag.gopage string.quoted.gopage
+#                  ^ text.html.gopage meta.tag.gopage string.quoted.gopage punctuation.definition.string.end.gopage
+#                   ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+#                    ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.begin.gopage
+#                      ^ text.html.gopage meta.interpolation.gopage
+#                       ^^^^^ text.html.gopage meta.interpolation.gopage variable.other.gopage
+#                            ^ text.html.gopage meta.interpolation.gopage
+#                             ^^ text.html.gopage meta.interpolation.gopage punctuation.section.embedded.end.gopage
+#                               ^^ text.html.gopage meta.tag.gopage punctuation.definition.tag.begin.gopage
+#                                 ^^^ text.html.gopage meta.tag.gopage entity.name.tag.html
+#                                    ^ text.html.gopage meta.tag.gopage punctuation.definition.tag.end.gopage
+><script client lang="tsx">
+#^ text.html.gopage meta.island.gopage punctuation.definition.tag.begin.html
+# ^^^^^^ text.html.gopage meta.island.gopage entity.name.tag.script.html
+#       ^ text.html.gopage meta.island.gopage
+#        ^^^^^^ text.html.gopage meta.island.gopage entity.other.attribute-name.island.gopage
+#              ^ text.html.gopage meta.island.gopage
+#               ^^^^ text.html.gopage meta.island.gopage entity.other.attribute-name.html
+#                   ^ text.html.gopage meta.island.gopage punctuation.separator.key-value.html
+#                    ^^^^^ text.html.gopage meta.island.gopage string.quoted.html
+#                         ^ text.html.gopage meta.island.gopage punctuation.definition.tag.end.html
+>export default function Ticker({ label }: { label: string }) {
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.island.gopage meta.embedded.block.typescriptreact
+>	const now = Date.now();
+#^^^^^^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.island.gopage meta.embedded.block.typescriptreact
+>	return <span>{label}{now}</span>;
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ text.html.gopage meta.island.gopage meta.embedded.block.typescriptreact
+>}
+#^^ text.html.gopage meta.island.gopage meta.embedded.block.typescriptreact
+></script>
+#^^ text.html.gopage meta.island.gopage punctuation.definition.tag.begin.html
+#  ^^^^^^ text.html.gopage meta.island.gopage entity.name.tag.script.html
+#        ^ text.html.gopage meta.island.gopage punctuation.definition.tag.end.html
+>

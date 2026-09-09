@@ -1,0 +1,169 @@
+{
+  "name": "gopage",
+  "displayName": "GoPage",
+  "description": "Language support for GoPage templates: highlighting, diagnostics, completion and hover.",
+  "version": "0.0.0",
+  "publisher": "apptivitypl",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters"
+  ],
+  "keywords": [
+    "gopage",
+    "go",
+    "template",
+    "html",
+    "cloudflare workers"
+  ],
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0b0e13",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apptivitypl/gopage.git",
+    "directory": "editors/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/apptivitypl/gopage/issues"
+  },
+  "homepage": "https://github.com/apptivitypl/gopage#readme",
+  "qna": "https://github.com/apptivitypl/gopage/discussions",
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "gopage",
+        "aliases": [
+          "GoPage",
+          "gopage"
+        ],
+        "extensions": [
+          ".gopage"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/icon.png",
+          "dark": "./images/icon.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gopage",
+        "scopeName": "text.html.gopage",
+        "path": "./syntaxes/gopage.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.go": "go",
+          "meta.embedded.block.typescriptreact": "typescriptreact",
+          "meta.embedded.block.javascriptreact": "javascriptreact"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "gopage",
+        "path": "./snippets/gopage.code-snippets"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "gopage.jsonc",
+        "url": "https://raw.githubusercontent.com/apptivitypl/gopage/main/schema/gopage.schema.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "gopage.build",
+        "title": "Build the project",
+        "category": "GoPage"
+      },
+      {
+        "command": "gopage.dev",
+        "title": "Start the development server",
+        "category": "GoPage"
+      },
+      {
+        "command": "gopage.restartServer",
+        "title": "Restart the language server",
+        "category": "GoPage"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "gopage",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The gopage subcommand this task runs."
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "GoPage",
+      "properties": {
+        "gopage.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "Path to the `gopage` binary. Empty looks in the workspace's `node_modules/.bin`, then on `PATH`."
+        },
+        "gopage.languageServer.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "markdownDescription": "Run `gopage lsp` for diagnostics, completion and hover. Highlighting and snippets work without it."
+        },
+        "gopage.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "scope": "window",
+          "description": "Trace the messages exchanged with the language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "compile": "node esbuild.mjs",
+    "package": "npm run check-types && node esbuild.mjs --production",
+    "vscode:prepublish": "npm run package",
+    "test:unit": "vitest run",
+    "test:grammar": "vscode-tmgrammar-test -g test/grammar/stubs/go.tmLanguage.json -g test/grammar/stubs/tsx.tmLanguage.json -g test/grammar/stubs/jsx.tmLanguage.json -g test/grammar/stubs/html.tmLanguage.json 'test/grammar/*.gopage' && vscode-tmgrammar-snap -g test/grammar/stubs/go.tmLanguage.json -g test/grammar/stubs/tsx.tmLanguage.json -g test/grammar/stubs/jsx.tmLanguage.json -g test/grammar/stubs/html.tmLanguage.json 'test/grammar/snap/*.gopage'",
+    "test:integration": "npm run compile && npm run compile:tests && vscode-test",
+    "test:grammar:update": "vscode-tmgrammar-snap -g test/grammar/stubs/go.tmLanguage.json -g test/grammar/stubs/tsx.tmLanguage.json -g test/grammar/stubs/jsx.tmLanguage.json -g test/grammar/stubs/html.tmLanguage.json -u 'test/grammar/snap/*.gopage'",
+    "compile:tests": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.10.1",
+    "@types/vscode": "1.91.0",
+    "@vscode/test-cli": "0.0.15",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "3.9.3-11",
+    "esbuild": "0.28.2",
+    "ovsx": "1.1.1",
+    "typescript": "5.9.2",
+    "vitest": "3.2.6",
+    "vscode-tmgrammar-test": "0.1.3"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.1"
+  }
+}

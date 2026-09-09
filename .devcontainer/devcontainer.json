@@ -16,6 +16,6 @@
   "postCreateCommand": "go work init . examples/hello-world examples/blog && go mod download && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack enable && pnpm install && (cd examples/hello-world && pnpm install) && go run ./cmd/gopage css install",
   "postAttachCommand": "go run ./cmd/gopage dev --dir examples/hello-world --addr 0.0.0.0:3000",
   "customizations": {
-    "vscode": {"extensions": ["golang.go"]}
+    "vscode": {"extensions": ["golang.go", "apptivitypl.gopage"]}
   }
 }
