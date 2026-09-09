@@ -8,6 +8,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/assets"
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/cookie"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/redirect"
 	"github.com/apptivitypl/gopage/internal/vocab"
 )
@@ -66,7 +67,7 @@ func AskedPrefix(r *http.Request) string {
 func (a *App) guard(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !a.config.KnownHost(r.Host) {
-			a.logger.Warn("host refused", "host", r.Host, "path", r.URL.Path)
+			a.logger.Warn("host refused", "host", logs.Line(r.Host), "path", logs.Line(r.URL.Path))
 			http.Error(w, "misdirected request", http.StatusMisdirectedRequest)
 			return
 		}
@@ -100,7 +101,7 @@ func (a *App) reroute(next http.Handler) http.Handler {
 			}
 			inside, ok := redirect.Path(target)
 			if !ok {
-				a.logger.Warn("rewrite refused", "path", r.URL.Path, "target", target)
+				a.logger.Warn("rewrite refused", "path", logs.Line(r.URL.Path), "target", logs.Line(target))
 				http.Error(w, "bad request", http.StatusBadRequest)
 				return
 			}
@@ -117,7 +118,7 @@ func (a *App) sendRedirect(w http.ResponseWriter, r *http.Request, target string
 	}
 	safe, ok := redirect.Location(target)
 	if !ok {
-		a.logger.Warn("redirect refused", "path", r.URL.Path, "target", target)
+		a.logger.Warn("redirect refused", "path", logs.Line(r.URL.Path), "target", logs.Line(target))
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}

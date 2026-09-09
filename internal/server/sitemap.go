@@ -9,6 +9,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
 )
@@ -85,7 +86,7 @@ func (a *App) failDocument(w http.ResponseWriter, r *http.Request, err error) {
 		http.NotFound(w, r)
 		return
 	}
-	a.logger.Error("sitemap failed", "path", r.URL.Path, "error", err)
+	a.logger.Error("sitemap failed", "path", logs.Line(r.URL.Path), "error", err)
 	http.Error(w, "sitemap unavailable", http.StatusInternalServerError)
 }
 

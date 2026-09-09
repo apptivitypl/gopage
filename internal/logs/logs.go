@@ -90,6 +90,10 @@ func LevelOf(text string) slog.Level {
 	}
 }
 
+func Line(text string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(text, "\n", ""), "\r", "")
+}
+
 func Access() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(AccessVar))) {
 	case "on", "1", "true":

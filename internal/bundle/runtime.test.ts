@@ -708,6 +708,17 @@ describe("deferred slots", () => {
 		expect(mount).toHaveBeenCalled();
 	});
 
+	it("keeps the slot when a template it already took comes back", () => {
+		const target = slot("Reviews");
+		const holder = template("Reviews", "<b>late</b>");
+
+		slots();
+		document.body.append(holder);
+		slots();
+
+		expect(target.innerHTML).toBe("<b>late</b>");
+	});
+
 	it("drops a template whose slot is gone", () => {
 		template("Absent", "<b>orphan</b>");
 

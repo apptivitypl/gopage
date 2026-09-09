@@ -20,6 +20,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/config"
 	"github.com/apptivitypl/gopage/internal/i18n"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
 	"github.com/apptivitypl/gopage/internal/seo"
@@ -414,7 +415,7 @@ func (a *App) write(w http.ResponseWriter, r *http.Request, body *runtime.Buffer
 		return
 	}
 	if _, err := w.Write(body.Bytes()); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 

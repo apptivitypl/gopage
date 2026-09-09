@@ -12,6 +12,7 @@ import (
 	"github.com/apptivitypl/gopage/internal/action"
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/redirect"
 	"github.com/apptivitypl/gopage/internal/reply"
 	"github.com/apptivitypl/gopage/internal/runtime"
@@ -174,7 +175,7 @@ func (a *App) writeBytes(w http.ResponseWriter, r *http.Request, value cache.Val
 		return
 	}
 	if _, err := w.Write(value.Body); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 

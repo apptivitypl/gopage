@@ -75,7 +75,7 @@ func Mux(handlers map[string]Handler) http.Handler {
 			handler, ok = handlers[http.MethodGet]
 		}
 		if !ok {
-			logger.Warn("api method not allowed", "path", r.URL.Path, "method", r.Method, "allow", allow)
+			logger.Warn("api method not allowed", "path", logs.Line(r.URL.Path), "method", r.Method, "allow", allow)
 			w.Header().Set("Allow", allow)
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -84,12 +84,12 @@ func Mux(handlers map[string]Handler) http.Handler {
 		r = r.WithContext(reply.WithRecorder(r.Context(), answer))
 		response, err := handler(r)
 		if err != nil {
-			logger.Error("api handler failed", "path", r.URL.Path, "method", r.Method, "error", err)
+			logger.Error("api handler failed", "path", logs.Line(r.URL.Path), "method", r.Method, "error", err)
 			writeError(w, http.StatusInternalServerError)
 			return
 		}
 		if response == nil {
-			logger.Error("api handler answered nothing", "path", r.URL.Path, "method", r.Method)
+			logger.Error("api handler answered nothing", "path", logs.Line(r.URL.Path), "method", r.Method)
 			writeError(w, http.StatusInternalServerError)
 			return
 		}
@@ -99,7 +99,7 @@ func Mux(handlers map[string]Handler) http.Handler {
 			response = coded.WithStatus(answer.Code())
 		}
 		if err := response.Respond(w); err != nil {
-			logger.Error("api write failed", "path", r.URL.Path, "error", err)
+			logger.Error("api write failed", "path", logs.Line(r.URL.Path), "error", err)
 		}
 	})
 }

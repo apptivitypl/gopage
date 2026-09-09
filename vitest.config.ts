@@ -3,6 +3,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
 	test: {
 		environment: "happy-dom",
+		environmentOptions: {
+			happyDOM: { settings: { navigation: { disableMainFrameNavigation: true, disableChildFrameNavigation: true } } },
+		},
 		include: ["internal/**/*.test.ts"],
 		coverage: {
 			provider: "v8",

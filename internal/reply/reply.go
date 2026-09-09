@@ -143,12 +143,12 @@ func (r *Recorder) Deliver(w http.ResponseWriter, request *http.Request, secure 
 	r.mu.Unlock()
 	logger := logs.From(request.Context())
 	if rejected != 0 {
-		logger.Warn("status refused", "path", request.URL.Path, "status", rejected)
+		logger.Warn("status refused", "path", logs.Line(request.URL.Path), "status", rejected)
 	}
 	for _, held := range cookies {
 		shaped, err := Check(held, secure)
 		if err != nil {
-			logger.Warn("cookie refused", "path", request.URL.Path, "cookie", held.Name, "error", err)
+			logger.Warn("cookie refused", "path", logs.Line(request.URL.Path), "cookie", held.Name, "error", err)
 			continue
 		}
 		http.SetCookie(w, shaped)

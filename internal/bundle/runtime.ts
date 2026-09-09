@@ -170,13 +170,16 @@ export function start(): void {
 
 const SLOT_ATTRIBUTE = "data-gopage-slot";
 
+let watching = false;
+
 export function slots(root: ParentNode = document): void {
 	for (const template of root.querySelectorAll<HTMLTemplateElement>(`template[${SLOT_ATTRIBUTE}]`)) {
 		fill(template);
 	}
-	if (typeof MutationObserver === "undefined" || document.readyState === "complete") {
+	if (watching || typeof MutationObserver === "undefined" || document.readyState === "complete") {
 		return;
 	}
+	watching = true;
 	const observer = new MutationObserver((records) => {
 		for (const record of records) {
 			for (const node of record.addedNodes) {
@@ -188,7 +191,10 @@ export function slots(root: ParentNode = document): void {
 		sweep();
 	});
 	observer.observe(document.documentElement, { childList: true, subtree: true });
-	window.addEventListener("load", () => observer.disconnect(), { once: true });
+	window.addEventListener("load", () => {
+		observer.disconnect();
+		watching = false;
+	}, { once: true });
 }
 
 let scheduled = false;
@@ -274,7 +280,7 @@ async function draw(slot: HTMLElement): Promise<void> {
 
 function fill(template: HTMLTemplateElement): void {
 	const name = template.getAttribute(SLOT_ATTRIBUTE);
-	if (!name) {
+	if (!name || !template.content.childNodes.length) {
 		return;
 	}
 	const slot = document.querySelector(`gopage-slot[name="${CSS.escape(name)}"]`);

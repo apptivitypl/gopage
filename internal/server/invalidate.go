@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ func (a *App) invalidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.bearer(r) {
-		a.logger.Warn("invalidation refused", "path", r.URL.Path)
+		a.logger.Warn("invalidation refused", "path", logs.Line(r.URL.Path))
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -38,7 +39,7 @@ func (a *App) invalidate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(`{"dropped":` + strconv.Itoa(dropped) + `}`)); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 

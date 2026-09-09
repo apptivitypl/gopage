@@ -104,7 +104,7 @@ func (a *App) observe(next http.Handler) http.Handler {
 
 func (a *App) panicked(w *Recorder, r *http.Request, logger *slog.Logger, raised any, stack []byte) {
 	logger.Error("handler panicked",
-		"path", r.URL.Path, "method", r.Method,
+		"path", logs.Line(r.URL.Path), "method", r.Method,
 		"error", fmt.Sprint(raised), "stack", string(stack))
 	if w.status != 0 {
 		return
@@ -119,7 +119,7 @@ func (a *App) access(w *Recorder, r *http.Request, logger *slog.Logger, took tim
 	status := w.Status()
 	logger.LogAttrs(r.Context(), levelFor(status), logs.RequestMessage,
 		slog.String("method", r.Method),
-		slog.String("path", r.URL.Path),
+		slog.String("path", logs.Line(r.URL.Path)),
 		slog.Int("status", status),
 		slog.Int("bytes", w.written),
 		slog.Duration("took", took),

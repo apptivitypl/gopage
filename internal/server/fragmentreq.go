@@ -7,6 +7,7 @@ import (
 
 	"github.com/apptivitypl/gopage/internal/cache"
 	"github.com/apptivitypl/gopage/internal/ir"
+	"github.com/apptivitypl/gopage/internal/logs"
 	"github.com/apptivitypl/gopage/internal/runtime"
 )
 
@@ -108,7 +109,7 @@ func (a *App) writeFragment(w http.ResponseWriter, r *http.Request, route ir.Rou
 		return
 	}
 	if _, err := w.Write(out.Bytes()); err != nil {
-		a.logger.Error("write failed", "path", r.URL.Path, "error", err)
+		a.logger.Error("write failed", "path", logs.Line(r.URL.Path), "error", err)
 	}
 }
 
