@@ -7,11 +7,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "4.1.11",
-    "happy-dom": "20.13.2",
+    "@vitest/coverage-v8": "5.0.0",
+    "happy-dom": "20.14.0",
     "typescript": "7.0.2",
-    "vitest": "4.1.11",
-    "wrangler": "4.128.0"
+    "vitest": "5.0.0",
+    "wrangler": "4.129.0"
   },
   "packageManager": "pnpm@10.4.1",
   "pnpm": {
