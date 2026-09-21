@@ -337,7 +337,7 @@ func (a *App) renderPage(w http.ResponseWriter, r *http.Request) {
 		a.partialPage(w, r, route, params, a.sharedLevel(r.Header.Get(PartialHeader), route))
 		return
 	}
-	a.hint(w, route)
+	a.hint(w, r, route)
 	if names := a.deferredFor(route); len(names) > 0 && !a.config.Fragments.Fetches() {
 		a.streamPage(w, r, route, params, names)
 		return
@@ -345,7 +345,7 @@ func (a *App) renderPage(w http.ResponseWriter, r *http.Request) {
 	a.cachedPage(w, r, route, params)
 }
 
-func (a *App) hint(w http.ResponseWriter, route ir.Route) {
+func (a *App) hint(w http.ResponseWriter, r *http.Request, route ir.Route) {
 	link := a.assetLink
 	if extra := a.preloads[route.Name].link; extra != "" {
 		if link != "" {
@@ -357,6 +357,9 @@ func (a *App) hint(w http.ResponseWriter, route ir.Route) {
 		return
 	}
 	w.Header().Set(AssetsHeader, link)
+	if r.ProtoMajor < 2 {
+		return
+	}
 	w.Header().Set("Link", link)
 	w.WriteHeader(http.StatusEarlyHints)
 	w.Header().Del("Link")

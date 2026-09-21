@@ -180,7 +180,9 @@ func TestAPanicAfterEarlyHintsStillRendersTheErrorPage(t *testing.T) {
 			"index": func(*http.Request, Params) (runtime.Accessible, error) { panic("loader exploded") },
 		},
 	})
-	server := httptest.NewServer(app.Handler())
+	server := httptest.NewUnstartedServer(app.Handler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
 	defer server.Close()
 
 	response, err := server.Client().Get(server.URL + "/")

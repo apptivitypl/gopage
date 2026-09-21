@@ -126,8 +126,23 @@ func TestTheCodingIsReadFromTheHeader(t *testing.T) {
 
 func TestEarlyHintsDoNotDecideTheEncoding(t *testing.T) {
 	app := New(Options{Manifest: bigManifest(), AssetLink: `</assets/app.css>; rel=preload`})
-	recorder := asked(t, app, "/", "br")
-	if got := recorder.Header().Get("Content-Encoding"); got != Brotli {
+	server := httptest.NewUnstartedServer(app.Handler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
+	defer server.Close()
+
+	request, err := http.NewRequest(http.MethodGet, server.URL+"/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Accept-Encoding", "br")
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	if got := response.Header.Get("Content-Encoding"); got != Brotli {
 		t.Errorf("encoding = %q, want the 103 to leave the decision to the real answer", got)
 	}
 }
