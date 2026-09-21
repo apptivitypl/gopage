@@ -347,7 +347,9 @@ func TestAssetsAreMountedUnderTheirPrefix(t *testing.T) {
 func TestEarlyHintsCarryTheAssetLink(t *testing.T) {
 	link := `</assets/app.abc.css>; rel=preload; as=style`
 	app := New(Options{Manifest: manifest(), AssetLink: link})
-	server := httptest.NewServer(app.Handler())
+	server := httptest.NewUnstartedServer(app.Handler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
 	defer server.Close()
 
 	var hinted string
@@ -380,6 +382,42 @@ func TestEarlyHintsCarryTheAssetLink(t *testing.T) {
 	}
 	if got := response.Header.Get("Link"); got != "" {
 		t.Errorf("link = %q, want it dropped from the final response", got)
+	}
+}
+
+func TestEarlyHintsAreSkippedOverHTTP11(t *testing.T) {
+	link := `</assets/app.abc.css>; rel=preload; as=style`
+	app := New(Options{Manifest: manifest(), AssetLink: link})
+	server := httptest.NewServer(app.Handler())
+	defer server.Close()
+
+	hinted := false
+	request, err := http.NewRequest(http.MethodGet, server.URL+"/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request = request.WithContext(httptrace.WithClientTrace(request.Context(), &httptrace.ClientTrace{
+		Got1xxResponse: func(code int, header textproto.MIMEHeader) error {
+			if code == http.StatusEarlyHints {
+				hinted = true
+			}
+			return nil
+		},
+	}))
+	response, err := server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	if hinted {
+		t.Error("early hints sent over HTTP/1.1, want them withheld")
+	}
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("status = %d", response.StatusCode)
+	}
+	if got := response.Header.Get(AssetsHeader); got != link {
+		t.Errorf("assets header = %q, want it kept on the final response", got)
 	}
 }
 
@@ -428,7 +466,9 @@ func TestAnEagerIslandPreloadsItsChunksForTheRoute(t *testing.T) {
 		AssetLink: `</assets/app.css>; rel=preload; as=style`,
 		Preloads:  map[string][]string{"Stars": {"island.REACT.js", "island.STARS.js"}},
 	})
-	server := httptest.NewServer(app.Handler())
+	server := httptest.NewUnstartedServer(app.Handler())
+	server.EnableHTTP2 = true
+	server.StartTLS()
 	defer server.Close()
 
 	var hinted string
