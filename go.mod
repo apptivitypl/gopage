@@ -7,18 +7,18 @@ toolchain go1.26.8
 require github.com/bmatcuk/doublestar/v4 v4.10.0
 
 require (
-	github.com/andybalholm/brotli v1.2.3
+	github.com/andybalholm/brotli v1.2.4
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20260830003929-9f48cc723c1c
 	github.com/evanw/esbuild v0.28.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/tdewolff/minify/v2 v2.24.17
-	golang.org/x/image v0.43.0
-	golang.org/x/net v0.58.0
+	golang.org/x/image v0.46.0
+	golang.org/x/net v0.59.0
 	golang.org/x/sync v0.23.0
-	golang.org/x/term v0.45.0
-	golang.org/x/text v0.41.0
+	golang.org/x/term v0.46.0
+	golang.org/x/text v0.42.0
 )
 
 require (
@@ -40,5 +40,5 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tdewolff/parse/v2 v2.8.16 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 )
