@@ -8,10 +8,10 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "5.0.0",
-    "happy-dom": "20.14.0",
+    "happy-dom": "20.14.5",
     "typescript": "7.0.2",
     "vitest": "5.0.0",
-    "wrangler": "4.129.0"
+    "wrangler": "4.131.2"
   },
   "packageManager": "pnpm@10.4.1",
   "pnpm": {
