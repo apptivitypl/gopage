@@ -50,7 +50,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Review
-        uses: anomalyco/opencode/github@2670273ff17da96f85c5826ced57aa1b368754fa # v2.0.12
+        uses: anomalyco/opencode/github@1f4d07a4a519185955ae8ab2ea3607805509e386 # v2.0.27
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
